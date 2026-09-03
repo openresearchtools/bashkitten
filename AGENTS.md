@@ -106,12 +106,35 @@ Store every session in its own directory. Session history is split into monotoni
 
 ```text
 sessions/<session-id>/
-├── meta.json
+├── title
 ├── 000001.jsonl
 ├── 000002.jsonl
 ├── 000003.jsonl
+├── control.sock
 └── attachments/
 ```
+
+Do not create `meta.json`. Derive session information from the directory and files that already exist:
+
+- The session ID is the directory name.
+- The highest-numbered JSONL is the current segment.
+- The current segment's modification time is the session's last completed activity time.
+- A live session process or control socket means the session is running.
+- No live session process means the persisted session is finished.
+- The numbered JSONLs are the complete session history.
+
+The only sidebar-specific sidecar is `title`, a plain text file containing one line. Initially write a shortened form of the first user message. Make one secondary model call using the first user message to generate a short conversation title, then overwrite `title` with that result. Generate a title only once; never make title-generation calls while listing or loading the sidebar. If title generation fails, retain the shortened fallback title. The user or agent may edit the file directly. Record the title call's token usage in the current JSONL so its real provider cost remains visible, but do not include title-generation content in the agent context or compaction calculation.
+
+To populate the sidebar cheaply:
+
+1. List the session directories.
+2. Find each directory's highest-numbered JSONL.
+3. Use that JSONL's modification time for recency sorting.
+4. Read the one-line `title` file.
+5. Check whether the session process or control socket is active.
+6. Return only the requested newest page and load more as the user scrolls.
+
+The Web UI may cache these derived entries in memory while it runs. Do not add a metadata schema, database, global index, or JSONL history parsing merely to populate the sidebar.
 
 The highest-numbered JSONL is the current segment. Every completed compaction closes the current segment and creates exactly one new numbered JSONL. Older segments are immutable history.
 
