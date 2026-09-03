@@ -70,6 +70,8 @@ Its responsibilities are limited to:
 - Sending text messages and attached photos or screenshots to sessions.
 - Displaying normal assistant output and calls and results from the seven built-in tools.
 - Displaying Pi-equivalent token consumption, context percentage, input and output tokens, cache usage, cache statistics, and cost values supplied by the agent process.
+- Configuring, authenticating, and selecting models from the three supported provider modes defined below.
+- Managing the local llama.cpp router and its models through an ordinary settings interface.
 
 The Web UI must bind to `127.0.0.1` by default. Its port comes from BashKitten's local configuration. Changing the port restarts only the Web UI server and must not interrupt agent sessions.
 
@@ -79,7 +81,79 @@ The Web UI has exactly one local username-and-password account. When no Web UI u
 
 Resetting the Web UI user removes the local login identity and invalidates existing Web UI logins. It must not delete session JSONLs, attachments, skills, configuration unrelated to authentication, or running agent processes. The next Web UI visit returns to first-time signup.
 
-The Web UI must not contain a sophisticated file browser, worktree manager, plugin marketplace, MCP interface, npm package system, or unrelated dashboard features. Provider login and model configuration are not part of the current Web UI scope unless they are explicitly specified later.
+The Web UI must not contain a sophisticated file browser, worktree manager, plugin marketplace, MCP interface, npm package system, or unrelated dashboard features. Its provider and model interface must remain limited to the three explicitly supported provider modes below.
+
+## Providers, authentication, and models
+
+BashKitten supports exactly three user-facing provider modes:
+
+1. OpenAI subscription.
+2. OpenAI-compatible API.
+3. llama.cpp.
+
+Do not add another built-in provider mode. Pin the same upstream Pi commit used for tool, compaction, and token-usage parity. Pi is the behavioral specification for authentication, credential refresh, model definitions, request construction, message conversion, tool calling, image input, reasoning, streaming events, error handling, cancellation, retries, provider usage normalization, and cost accounting for these providers. Rewrite the required implementation in Rust; BashKitten must not require Pi, Node.js, npm, or Pi's JavaScript/TypeScript runtime.
+
+### OpenAI subscription
+
+Port Pi's OpenAI subscription support with exact 1:1 behavioral parity, including:
+
+- The complete OpenAI OAuth login flow and all model-visible and user-visible login behavior.
+- Secure local credential storage, credential resolution, expiry handling, refresh, and concurrent-refresh behavior.
+- Pi's OpenAI subscription model catalog and model-selection behavior.
+- The exact API, request transformations, headers, streaming parser, reasoning handling, tool-call handling, image handling, errors, cancellation, and usage accounting used by pinned Pi.
+
+Do not replace subscription OAuth with an API key, introduce a different OAuth client or flow, or send subscription traffic through the generic provider implementation when pinned Pi uses dedicated OpenAI subscription behavior.
+
+### OpenAI-compatible API
+
+Port Pi's `openai-completions` provider implementation with exact 1:1 behavioral parity. The normal configuration UI must provide:
+
+- A user-defined provider name.
+- Base URL.
+- Model ID.
+- Optional API key or bearer token.
+- Context window and maximum output-token values when the server does not report reliable values.
+- Pi's applicable compatibility controls and defaults for developer/system roles, reasoning parameters, tool calls, streaming, usage, and other OpenAI-compatible differences.
+
+The UI may discover models from a compatible server when that server exposes a model-list endpoint, but it must always allow the user to enter a model ID directly. Do not depend on an external model-catalog service. Store credentials locally with access restricted to the current user and never write secrets into session JSONLs, logs, tool output, or browser-visible history.
+
+### llama.cpp
+
+Port Pi's complete llama.cpp router integration with exact 1:1 behavioral parity. This is not merely an arbitrary OpenAI-compatible base-URL preset. Preserve Pi's router connection and authentication, model discovery, persisted model catalog, model loading and unloading, loaded-model selection, Hugging Face search and download flow, quantization selection, cancellation, gated-model warning, retry behavior, and the rule that models are never silently unloaded or deleted.
+
+Use Pi's OpenAI-compatible request path for inference exactly where pinned Pi does. Preserve the provider compatibility settings, model metadata, context-window reporting, streaming, tools, reasoning, image support, usage values, and errors that Pi applies to llama.cpp.
+
+BashKitten additionally owns a small Debian-specific llama.cpp launcher. Detect the installed backend from Debian's package database:
+
+- Installed `llama-cpp-cuda` means the CUDA build.
+- Otherwise, installed `llama-cpp` means the CPU/Vulkan build.
+- Both packages expose `/usr/bin/llama-server`.
+- If neither package or the executable is present, report that llama.cpp is unavailable rather than guessing from GPU hardware or silently installing a package.
+
+Run `llama-server` in router mode without `--model`, `-m`, or `-hf`. Bind it to `127.0.0.1` by default. Its lifecycle must be tracked by the BashKitten systemd user target so a Web UI crash cannot stop it or leave it orphaned.
+
+The Web UI must provide an ordinary llama.cpp settings and model-management interface. Users must not be required to edit a configuration file or type a launch command for normal configuration. At minimum expose:
+
+- Detected package and backend: CUDA or CPU/Vulkan.
+- Router running state and restart control.
+- Models directory.
+- Router port.
+- Optional router API key.
+- Context size.
+- GPU-layer offload as Auto/all available layers, CPU only, or an explicit layer count.
+- CPU thread count.
+- Batch size.
+- Parallel slot count.
+- Flash-attention setting when supported by the installed llama.cpp build.
+- Memory-map and memory-lock settings.
+- Model autoload behavior.
+- An optional extra-arguments field for current or advanced `llama-server` options that do not justify permanent BashKitten controls.
+
+Map the normal controls directly to the corresponding `llama-server` arguments. Auto/all GPU offload maps to `-ngl 999`, CPU only maps to `-ngl 0`, and an explicit count maps to that exact `-ngl` value. Enable llama.cpp's Jinja chat-template/tool-calling support by default as Pi requires. Keep all generated launch arguments visible in the UI so configuration is inspectable and hackable.
+
+The llama.cpp page must also provide Pi-equivalent model management: list discovered GGUF models, distinguish loaded and unloaded models, load or unload a selected model, choose whether to retain other loaded models, download by Hugging Face repository and quantization, cancel an active load or download, and select a loaded model for a BashKitten session. Per-model context sizes and advanced overrides must support llama.cpp model presets rather than inventing a second incompatible preset format.
+
+The configured or reported llama.cpp context window must feed the exact Pi token-usage and automatic-compaction calculations. The Web UI must display the value supplied by the agent/provider state and must not independently guess context capacity from the GGUF filename or detected GPU.
 
 ### GTK system controller and tray
 
@@ -123,7 +197,7 @@ Do not create `meta.json`. Derive session information from the directory and fil
 - No live session process means the persisted session is finished.
 - The numbered JSONLs are the complete session history.
 
-The only sidebar-specific sidecar is `title`, a plain text file containing one line. Initially write a shortened form of the first user message. Make one secondary model call using the first user message to generate a short conversation title, then overwrite `title` with that result. Generate a title only once; never make title-generation calls while listing or loading the sidebar. If title generation fails, retain the shortened fallback title. The user or agent may edit the file directly. Record the title call's token usage in the current JSONL so its real provider cost remains visible, but do not include title-generation content in the agent context or compaction calculation.
+The only sidebar-specific sidecar is `title`, a plain text file containing one line. Derive it locally and deterministically from the first user message: use the first non-empty line, collapse whitespace, shorten it to the configured sidebar-title length, and add an ellipsis when truncated. Use a simple local fallback such as `Image session` when the first message contains no text. This display shortening must not alter the complete user message stored in the session or sent to the model. Never make a secondary model request to generate or improve a title. The user or agent may edit the file directly.
 
 To populate the sidebar cheaply:
 
