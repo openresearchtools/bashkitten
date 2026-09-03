@@ -268,6 +268,35 @@ Agent-created sessions use the same command, registry, authentication, validatio
 
 Record the selected provider, model, thinking level, and effective non-secret model parameters in the session's first numbered JSONL so the session can be resumed and audited without `meta.json`. Never persist provider credentials there.
 
+### Changing model or thinking within a session
+
+Users and agents may change the selected model and thinking level of an existing session. The Web UI must expose both selectors for the current session, and the CLI must provide the equivalent operation:
+
+```bash
+bashkitten session model <session-id> \
+  --model <provider/model-id> \
+  --thinking <level>
+```
+
+Use the same unified registry and validation as new-session creation. The requested thinking level must be one of the destination model's advertised levels. A change requested while the session is streaming or executing a tool waits until the next safe agent-loop boundary; never replace a model in the middle of a provider request or tool call.
+
+Record successful changes using Pi-equivalent model-change and thinking-level-change entries in the current numbered JSONL. Preserve their ordering relative to messages and compactions so resuming the session restores the model and thinking level active at the latest point in its history.
+
+Before committing a model change, rebuild the active context and evaluate it against the destination model's context window. Use the destination model's configured context window and the exact pinned-Pi token estimator, reserve-token value, threshold formula, and stale-usage fallback rules. Recalculate the displayed context capacity and percentage for the destination model; do not retain the previous model's percentage merely because the messages did not change.
+
+If the active context is above the destination model's automatic-compaction threshold, compact before sending any request to the destination model. Perform this pre-switch compaction with the current model, which is already capable of receiving the existing larger context. The operation order is:
+
+1. Wait for a safe agent-loop boundary.
+2. Estimate the rebuilt active context against the destination model's context window and Pi compaction threshold.
+3. If required, run Pi's exact compaction implementation with the current model and create the next numbered JSONL normally.
+4. Confirm that the resulting compacted context fits the destination threshold.
+5. Append the model-change and any thinking-level-change entries, then activate the destination model.
+6. Allow the next provider request to use the destination model.
+
+If compaction fails, is cancelled, or still cannot fit the destination model, reject the switch with a clear error and leave the current model and thinking level active. Never send a predictably oversized first request to the smaller model, silently discard messages, truncate tool exchanges, or change the destination model's declared context size.
+
+This pre-switch trigger is a deliberate BashKitten safety difference from pinned Pi versions that do not pre-compact when moving to a smaller context window. The trigger timing is the only divergence: token estimation, threshold calculations, compaction prompts, cut-point selection, generated metadata, usage accounting, and rebuilt context remain exactly Pi-compatible.
+
 ### GTK system controller and tray
 
 Provide a small GTK application for system settings and lifecycle control. It is not the Web UI, does not run agents, and does not contain an agent session browser.
@@ -356,6 +385,8 @@ Preserve exactly for the pinned Pi version:
 - The compacted context rebuilt for the following model request.
 - The recorded compaction metadata and `tokensBefore` calculation.
 - Usage and cost attributed to the compaction model request.
+
+In addition to Pi's ordinary automatic and manual triggers, apply the explicitly documented pre-switch trigger when changing to a model whose context window cannot safely contain the active context. This additional trigger must call the same exact Pi-compatible compaction implementation; do not create a second compaction algorithm or prompt for model switching.
 
 Do not silently fix, reinterpret, or improve Pi behavior, including observable quirks. Any intentional divergence requires an explicit project decision and documentation; it must not enter as an implementation convenience.
 
