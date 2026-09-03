@@ -53,21 +53,33 @@ Stopping, restarting, or crashing the Web UI must not stop any agent session. On
 
 ### Web UI server
 
-The Web UI is only a user interface into sessions. It must not contain or own the agent runtime. Its responsibilities are limited to:
+The Web UI is a completely separate process from the agent sessions and GTK controller. It is only a user interface into sessions and must not contain, own, or execute the agent runtime.
+
+Implement the Web UI as plain HTML, CSS, and JavaScript embedded into the Rust Web UI server binary. Do not require Node.js or npm at build or runtime, and do not introduce a large frontend framework.
+
+Its responsibilities are limited to:
 
 - First-time signup and subsequent login for one local Web UI user.
 - Listing running and finished sessions.
-- Creating, opening, viewing, steering, queueing, and stopping sessions.
-- Reading completed history from numbered JSONL files.
-- Showing the newest active JSONL first and loading older JSONLs when the user scrolls upward.
-- Connecting to running session control sockets for live output.
-- Sending text messages and image attachments to sessions.
+- Creating, opening, resuming, viewing, steering, queueing, and stopping sessions.
+- Presenting each session primarily as a chat view.
+- Loading the newest numbered JSONL immediately.
+- Loading older JSONLs incrementally when the user scrolls upward.
+- Reading completed session history directly from the numbered JSONLs.
+- Connecting to a running session's control socket and combining completed JSONL history with its live in-memory stream.
+- Sending text messages and attached photos or screenshots to sessions.
+- Displaying normal assistant output and calls and results from the seven built-in tools.
+- Displaying Pi-equivalent token consumption, context percentage, input and output tokens, cache usage, cache statistics, and cost values supplied by the agent process.
 
 The Web UI must bind to `127.0.0.1` by default. Its port comes from BashKitten's local configuration. Changing the port restarts only the Web UI server and must not interrupt agent sessions.
 
-When no Web UI user exists, the Web UI shows first-time signup and allows the first local visitor to choose the username and password. Store only the password hash. After signup, normal visits show the login screen.
+Closing the browser or stopping, restarting, or crashing the Web UI server must not stop any running agent. Agents continue working without a browser or Web UI process.
+
+The Web UI has exactly one local username-and-password account. When no Web UI user exists, it shows first-time signup and allows the first local visitor to choose the username and password. Store only the password hash. After signup, normal visits show the login screen.
 
 Resetting the Web UI user removes the local login identity and invalidates existing Web UI logins. It must not delete session JSONLs, attachments, skills, configuration unrelated to authentication, or running agent processes. The next Web UI visit returns to first-time signup.
+
+The Web UI must not contain a sophisticated file browser, worktree manager, plugin marketplace, MCP interface, npm package system, or unrelated dashboard features. Provider login and model configuration are not part of the current Web UI scope unless they are explicitly specified later.
 
 ### GTK system controller and tray
 
