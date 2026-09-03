@@ -35,6 +35,34 @@ All model-visible wording listed above must be copied verbatim from the pinned P
 
 Parity must be checked with fixtures that run equivalent calls against the pinned Pi implementation and the Rust implementation and compare their observable results. A tool is not complete merely because its normal case works; it is complete only when its schema, prompting, normal behavior, failures, cancellation, and edge cases match Pi.
 
+## Passive Markdown skills
+
+BashKitten uses one deliberately simple, flat skills directory:
+
+```text
+~/.config/bashkitten/skills/
+├── web-search.md
+├── browser-use.md
+├── rust-review.md
+└── any-name-the-user-adds.md
+```
+
+Each skill is an ordinary Markdown file with a short, self-explanatory filename. Do not require a `SKILL.md` filename, one-directory-per-skill layout, front matter, manifests, metadata schemas, a registry, package installation, embeddings, semantic search, or a skill-loader framework. Do not search additional global, project-local, package-provided, or hidden skill locations.
+
+BashKitten itself must not read, parse, preload, rank, select, or inject skill contents into the model context. It only includes brief model-visible guidance that the skills directory exists. The agent decides whether the current task may benefit from a skill, uses the existing `ls` tool to inspect filenames, and uses the existing `read` tool to open only the Markdown files it considers relevant. If no filename appears relevant, it continues without reading a skill.
+
+The default system prompt must communicate this behavior concisely:
+
+```text
+Optional skills are ordinary Markdown files in ~/.config/bashkitten/skills/. When a task may benefit from one, use ls to inspect the filenames and read only the files you consider relevant. You may create or edit skill files with the ordinary tools when useful or requested.
+```
+
+Skill text enters the model context only as the normal result of the agent's explicit `read` call. A skill is guidance, not executable code, a hidden capability, or an additional tool. Instructions inside a skill may tell the agent to use the seven built-in tools or external commands through `bash`, but BashKitten does not execute a skill automatically.
+
+Users and agents may create, edit, rename, or remove skill Markdown files using the same seven tools and normal filesystem permissions. There is no separate skill-management API or model tool. Agents may also install ordinary system or user packages through `bash` when the operating system permissions and the user's instructions allow it; package management is not a BashKitten capability or dependency resolver.
+
+This passive flat-folder skill design is an intentional BashKitten difference from Pi's skill discovery framework. It must not weaken the exact Pi parity requirements for the seven tool definitions and their tool-specific prompt guidance.
+
 ## System components and lifecycle
 
 BashKitten consists of three distinct components with separate process lifetimes:
