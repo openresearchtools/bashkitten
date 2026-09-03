@@ -70,7 +70,7 @@ Its responsibilities are limited to:
 - Sending text messages and attached photos or screenshots to sessions.
 - Displaying normal assistant output and calls and results from the seven built-in tools.
 - Displaying Pi-equivalent token consumption, context percentage, input and output tokens, cache usage, cache statistics, and cost values supplied by the agent process.
-- Configuring, authenticating, and selecting models from the three supported provider modes defined below.
+- Configuring, authenticating, listing, and selecting models and model-supported thinking levels from the three provider modes defined below.
 - Managing the local llama.cpp router and its models through an ordinary settings interface.
 
 The Web UI must bind to `127.0.0.1` by default. Its port comes from BashKitten's local configuration. Changing the port restarts only the Web UI server and must not interrupt agent sessions.
@@ -110,12 +110,10 @@ Port Pi's `openai-completions` provider implementation with exact 1:1 behavioral
 
 - A user-defined provider name.
 - Base URL.
-- Model ID.
 - Optional API key or bearer token.
-- Context window and maximum output-token values when the server does not report reliable values.
-- Pi's applicable compatibility controls and defaults for developer/system roles, reasoning parameters, tool calls, streaming, usage, and other OpenAI-compatible differences.
+- One or more user-configured model presets. Each preset includes its model ID, optional display name, context window, maximum output-token value, supported thinking levels, default thinking level, request parameters, and Pi's applicable compatibility controls and defaults for developer/system roles, reasoning parameters, tool calls, streaming, usage, and other OpenAI-compatible differences.
 
-The UI may discover models from a compatible server when that server exposes a model-list endpoint, but it must always allow the user to enter a model ID directly. Do not depend on an external model-catalog service. Store credentials locally with access restricted to the current user and never write secrets into session JSONLs, logs, tool output, or browser-visible history.
+The UI may discover model IDs from a compatible server when that server exposes a model-list endpoint and offer to create presets from them, but it must always allow the user to enter a model ID directly. A discovered model does not become launchable until the user saves its preset, because its context, thinking, compatibility, and request parameters may not be reliably discoverable. Do not depend on an external model-catalog service. Store credentials locally with access restricted to the current user and never write secrets into session JSONLs, logs, tool output, or browser-visible history.
 
 ### llama.cpp
 
@@ -154,6 +152,54 @@ Map the normal controls directly to the corresponding `llama-server` arguments. 
 The llama.cpp page must also provide Pi-equivalent model management: list discovered GGUF models, distinguish loaded and unloaded models, load or unload a selected model, choose whether to retain other loaded models, download by Hugging Face repository and quantization, cancel an active load or download, and select a loaded model for a BashKitten session. Per-model context sizes and advanced overrides must support llama.cpp model presets rather than inventing a second incompatible preset format.
 
 The configured or reported llama.cpp context window must feed the exact Pi token-usage and automatic-compaction calculations. The Web UI must display the value supplied by the agent/provider state and must not independently guess context capacity from the GGUF filename or detected GPU.
+
+### Unified model list, thinking levels, and defaults
+
+The Web UI, BashKitten CLI, user-created sessions, and agent-created sessions must all use one unified model registry and the same validation path. There must not be separate Web UI and CLI model lists that can drift.
+
+Populate the registry as follows:
+
+- After OpenAI subscription login, automatically populate every model available through Pi's pinned OpenAI subscription model catalog. Preserve Pi's model identifiers, capabilities, context values, and supported thinking levels.
+- For an OpenAI-compatible provider, include every model preset that the user has explicitly configured in advance. A provider may contain multiple model presets, each with its own parameters and thinking support.
+- For llama.cpp, discover GGUF models through Pi's router integration and let the user save the model preset and launch parameters required to run each model. Every configured llama.cpp model must remain visible whether it is currently loaded or unloaded. Unconfigured discovered files may appear in the llama.cpp setup page but are not launchable session models until their preset is saved.
+
+Every launchable registry entry must expose:
+
+- Stable provider and model identifiers.
+- Display name.
+- Availability and authentication state.
+- Context window and maximum output tokens.
+- Supported input capabilities.
+- Whether reasoning is supported.
+- Every thinking level accepted for that model.
+- The model's default thinking level.
+- The configured parameters needed to invoke or load it.
+
+Never display a thinking level that the selected model cannot actually accept. For OpenAI subscription models, derive thinking support and levels exactly as pinned Pi does. For OpenAI-compatible and llama.cpp models, require the user preset to declare the supported levels and their corresponding Pi-compatible request behavior when the server cannot report them reliably.
+
+Provide the same complete list in the Web UI model selector and through the CLI:
+
+```bash
+bashkitten models
+bashkitten models --json
+```
+
+The human-readable form is for users. The JSON form is the stable machine-readable interface for agents and scripts and must include the allowed thinking levels and default for every model. These are CLI commands invoked through the existing `bash` tool, not additional model tools.
+
+Allow the user to choose one valid default model-and-thinking pair. A new-session form must be prepopulated with that pair while still allowing both fields to be changed before launch. If an explicit model is selected, the thinking selector must immediately show only that model's allowed levels. Starting a session without explicit overrides uses the configured default pair.
+
+Both users and agents can override the defaults when creating a session. The CLI must support:
+
+```bash
+bashkitten session start \
+  --model <provider/model-id> \
+  --thinking <level> \
+  --prompt "Inspect the parser"
+```
+
+Agent-created sessions use the same command, registry, authentication, validation, and availability checks as user-created sessions. An agent can first run `bashkitten models --json`, choose any listed model and one of that model's listed thinking levels, and launch a child session with that exact pair. Do not restrict agents to the parent's provider, model, or thinking level.
+
+Record the selected provider, model, thinking level, and effective non-secret model parameters in the session's first numbered JSONL so the session can be resumed and audited without `meta.json`. Never persist provider credentials there.
 
 ### GTK system controller and tray
 
@@ -277,6 +323,24 @@ Parity fixtures must compare BashKitten and pinned Pi across normal turns, tool-
 
 A subagent is an ordinary BashKitten session launched by another session. There is no separate subagent runtime or orchestration framework.
 
+Before launching a child, an agent may inspect the same model choices shown to the user:
+
+```bash
+bashkitten models --json
+```
+
+It may then launch the child with any listed model and supported thinking level:
+
+```bash
+bashkitten session start \
+  --parent "$BASHKITTEN_SESSION_ID" \
+  --model <provider/model-id> \
+  --thinking <level> \
+  --prompt "Investigate the failing tests"
+```
+
+If `--model` and `--thinking` are omitted, the child uses the configured default pair. The command prints the new child session ID so the parent can send messages to it immediately.
+
 Every running session has one Unix-domain control socket and two in-memory message queues:
 
 - `steer`: deliver the message at the next safe agent-loop boundary, before the next model request.
@@ -329,7 +393,8 @@ Do not use blocking `wait` as the normal subagent workflow because it can preven
 
 The complete subagent framework consists only of:
 
-- Launching an ordinary session with its parent session ID.
+- Listing the shared model registry with `bashkitten models` or `bashkitten models --json`.
+- Launching an ordinary session with its parent session ID and optional model and thinking overrides.
 - `bashkitten send --steer`.
 - `bashkitten send --queue`.
 - The session and parent environment variables.
