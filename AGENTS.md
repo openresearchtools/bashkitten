@@ -37,19 +37,19 @@ Parity must be checked with fixtures that run equivalent calls against the pinne
 
 ## System components and lifecycle
 
-BashKitten consists of three independent components with separate process lifetimes:
+BashKitten consists of three distinct components with separate process lifetimes:
 
 1. Agent session processes.
 2. The Web UI server.
 3. The GTK system controller and optional tray.
 
-Use systemd user services as the operating-system lifecycle mechanism. Do not add another application framework or make any of these three components own the lifetime of the others.
+The GTK system controller is the lifecycle authority for one BashKitten instance. The Web UI and agent sessions remain independent sibling processes rather than running inside the controller or inside one another. Use systemd user services and a shared BashKitten target to track those processes; do not build a second process supervisor.
 
 ### Agent session processes
 
-Every active agent session is its own system process and owns its own in-memory agent state, live response stream, control socket, message queues, and numbered JSONL files. Agent sessions must run with or without the Web UI or GTK controller running.
+Every active agent session is its own system process and owns its own in-memory agent state, live response stream, control socket, message queues, and numbered JSONL files. Agent sessions must run with or without the Web UI running. A controller restart must be able to rediscover all session services that systemd is already tracking.
 
-Stopping, restarting, or crashing the Web UI or GTK controller must not stop any agent session. One agent session crashing must not stop any other agent session. Finished sessions remain available from their JSONL files and can be listed and opened later.
+Stopping, restarting, or crashing the Web UI must not stop any agent session. One agent session crashing must not stop any other agent session. Finished sessions remain available from their JSONL files and can be listed and opened later. Explicitly quitting BashKitten through the controller must gracefully stop the Web UI and every running agent session so no processes are left behind.
 
 ### Web UI server
 
@@ -75,16 +75,18 @@ Provide a small GTK application for system settings and lifecycle control. It is
 
 Its settings window contains only the necessary controls:
 
-- Start the Web UI automatically at desktop login.
+- Start BashKitten automatically at desktop login.
 - Automatically restart the Web UI server after a crash.
 - View and change the Web UI port.
 - Reset the local Web UI user so the next visit performs first-time signup.
 - Open the Web UI in the default browser.
 - Show basic About and license information.
 
-The automatic-restart toggle controls the Web UI service's systemd restart behavior. The start-at-login toggle controls whether the Web UI user service is enabled at login. Neither setting controls or terminates agent session processes.
+The automatic-restart toggle controls the Web UI service's systemd restart behavior. The start-at-login toggle controls whether the BashKitten controller and its systemd target start at desktop login.
 
-The GTK controller may also provide a system tray icon. Choosing Settings from the tray must open the same GTK settings window; do not create a separate tray-only settings interface. Closing or crashing the controller or tray must not stop the Web UI or any agent session.
+The controller must treat an explicit Quit, a normal application exit, or `SIGTERM` as a request to stop the complete BashKitten target. The controller itself must use systemd restart-on-failure behavior for abnormal crashes. After a crash, systemd restarts it and the restarted controller rediscovers the Web UI and agent-session services already tracked under the BashKitten target. Those processes are therefore not orphans and must not be tied directly to the GTK process ID.
+
+The GTK controller may also provide a system tray icon. Choosing Settings from the tray must open the same GTK settings window; do not create a separate tray-only settings interface. When the tray is enabled, closing the settings window hides it while the controller keeps running. Choosing Quit from the tray or settings window stops the complete BashKitten systemd target, including the Web UI and all agent sessions, and then exits the controller. When the tray is disabled, closing the controller window performs the same complete quit.
 
 ## Subagents and inter-session communication
 
