@@ -1,0 +1,11 @@
+FROM docker.io/library/rust:1.93-bookworm
+
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+       ca-certificates dpkg-dev fd-find libgtk-4-dev pkg-config ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN rustup component add rustfmt clippy
+
+WORKDIR /source
+ENTRYPOINT ["/source/packaging/build-in-container.sh"]

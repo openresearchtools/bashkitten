@@ -1,0 +1,64 @@
+[package]
+name = "bashkitten"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "A small, standalone Rust coding-agent harness"
+repository = "https://github.com/openresearchtools/bashkitten"
+
+[lib]
+name = "bashkitten"
+path = "src/lib.rs"
+
+[[bin]]
+name = "bashkitten"
+path = "src/bin/bashkitten.rs"
+
+[[bin]]
+name = "bashkitten-agent"
+path = "src/bin/bashkitten-agent.rs"
+
+[[bin]]
+name = "bashkitten-web"
+path = "src/bin/bashkitten-web.rs"
+
+[[bin]]
+name = "bashkitten-controller"
+path = "src/bin/bashkitten-controller.rs"
+
+[dependencies]
+anyhow = "1.0"
+argon2 = "0.5"
+async-stream = "0.3"
+axum = { version = "0.8", features = ["multipart"] }
+base64 = "0.22"
+bytes = "1.10"
+chrono = { version = "0.4", features = ["serde"] }
+clap = { version = "4.5", features = ["derive"] }
+fs2 = "0.4"
+futures-util = "0.3"
+gtk4 = "0.10"
+hex = "0.4"
+libc = "0.2"
+mime_guess = "2.0"
+rand = "0.9"
+regex = "1.11"
+reqwest = { version = "0.12", default-features = false, features = ["json", "multipart", "rustls-tls", "stream"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+subtle = "2.6"
+tokio = { version = "1.47", features = ["full"] }
+tokio-stream = { version = "0.1", features = ["sync"] }
+toml = "0.9"
+url = "2.5"
+uuid = { version = "1.18", features = ["serde", "v4", "v7"] }
+walkdir = "2.5"
+
+[dev-dependencies]
+tempfile = "3.20"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

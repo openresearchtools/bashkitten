@@ -1,0 +1,12 @@
+[Unit]
+Description=BashKitten managed llama.cpp router
+PartOf=bashkitten.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bashkitten llama serve
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=bashkitten.target

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=BashKitten
+Comment=Open BashKitten settings
+Exec=bashkitten-controller
+Icon=bashkitten
+Terminal=false
+Categories=Development;Utility;

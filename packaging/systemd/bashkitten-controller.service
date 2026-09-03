@@ -1,0 +1,12 @@
+[Unit]
+Description=BashKitten GTK controller
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bashkitten-controller
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=default.target

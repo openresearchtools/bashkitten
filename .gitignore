@@ -1,0 +1,14 @@
+# Local credentials and copied provider sessions
+/secrets/
+
+# Rust build output
+/target/
+
+# Local build and package artifacts
+/dist/
+/work/
+*.deb
+
+# Local runtime state used by development and browser tests
+/.runtime/
+/.test-data/

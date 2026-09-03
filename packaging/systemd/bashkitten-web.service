@@ -1,0 +1,13 @@
+[Unit]
+Description=BashKitten Web UI
+PartOf=bashkitten.target
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bashkitten-web
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=bashkitten.target
