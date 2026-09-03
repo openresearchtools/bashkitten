@@ -88,6 +88,82 @@ The controller must treat an explicit Quit, a normal application exit, or `SIGTE
 
 The GTK controller may also provide a system tray icon. Choosing Settings from the tray must open the same GTK settings window; do not create a separate tray-only settings interface. When the tray is enabled, closing the settings window hides it while the controller keeps running. Choosing Quit from the tray or settings window stops the complete BashKitten systemd target, including the Web UI and all agent sessions, and then exits the controller. When the tray is disabled, closing the controller window performs the same complete quit.
 
+## Session storage and memory lifecycle
+
+Store every session in its own directory. Session history is split into monotonically numbered JSONL files:
+
+```text
+sessions/<session-id>/
+├── meta.json
+├── 000001.jsonl
+├── 000002.jsonl
+├── 000003.jsonl
+└── attachments/
+```
+
+The highest-numbered JSONL is the current segment. Every completed compaction closes the current segment and creates exactly one new numbered JSONL. Older segments are immutable history.
+
+The active session process keeps the current run in memory. Provider token deltas and partial assistant or tool output are streamed from that memory and are not written token by token to JSONL. Persist the in-memory session state at only these normal boundaries:
+
+- The complete agent turn has settled.
+- Compaction completes and produces the next numbered JSONL.
+
+At a completed-turn boundary, append the completed entries accumulated since the previous boundary to the current JSONL and flush them. Do not rewrite older entries. At a compaction boundary, persist the completed pre-compaction state, close the current JSONL, and write the compacted active context into the newly numbered JSONL.
+
+When a session process starts or resumes, load the highest-numbered JSONL into memory immediately. Do not load older segments into the agent's active context. If no compaction occurs, the next user, steering, or queued message continues from the current in-memory context and the newest JSONL. After compaction, replace the in-memory context immediately with Pi's compacted context, create the next numbered JSONL, and use that compacted context for the next model request.
+
+The Web UI initially reads only the highest-numbered JSONL. For a running session, it combines that completed on-disk history with the live in-memory stream received from the session control socket. When the user scrolls upward, load preceding JSONL files in descending order as needed. Do not concatenate or parse every historical segment before showing the current session.
+
+The numbered-file layout is BashKitten's deliberate storage difference from Pi. It must not change the logical conversation, compaction result, model context, or usage accounting.
+
+## Exact Pi compaction parity
+
+Compaction is a strict compatibility boundary. Use the same pinned upstream Pi commit used for tool parity, and rewrite its compaction implementation in Rust with exact 1:1 behavioral parity. Do not design a new summarizer or adjust Pi's behavior.
+
+Preserve exactly for the pinned Pi version:
+
+- Automatic-compaction enablement and defaults.
+- The exact context-window, reserve-token, and threshold calculations that decide when automatic compaction runs.
+- Every token-estimation and fallback calculation used by the trigger and cut-point logic.
+- The exact backward walk, cut-point selection, recent-token retention, and message selection behavior.
+- Handling of an earlier compaction summary and iterative compaction.
+- Conversion and serialization of conversation content for summarization.
+- The complete compaction system prompt, user prompt, labels, headings, wording, and formatting verbatim.
+- Manual compaction and automatic compaction behavior.
+- Overflow recovery, cancellation, error behavior, and post-compaction continuation.
+- The compacted context rebuilt for the following model request.
+- The recorded compaction metadata and `tokensBefore` calculation.
+- Usage and cost attributed to the compaction model request.
+
+Do not silently fix, reinterpret, or improve Pi behavior, including observable quirks. Any intentional divergence requires an explicit project decision and documentation; it must not enter as an implementation convenience.
+
+Parity fixtures must feed identical session histories and usage records to pinned Pi and BashKitten and compare the automatic-compaction decision, selected cut point, exact summarization request text and payload, retained context, metadata, and all token calculations. Generated summary prose need not be deterministic, but the request and the way its result is incorporated must match.
+
+## Exact Pi token-usage parity
+
+Rewrite Pi's token-usage and cost-accounting logic in Rust with exact 1:1 parity against the same pinned Pi commit. Pi is the specification for provider usage normalization, context usage, compaction decisions, accumulated totals, cache statistics, and displayed values.
+
+Preserve Pi's exact handling and calculations for:
+
+- Input tokens.
+- Output tokens.
+- Cache-read tokens.
+- Cache-write tokens.
+- Total tokens.
+- Context tokens, context-window size, and context percentage.
+- Per-category cost and total cost.
+- Model pricing and request-wide pricing tiers.
+- Assistant-message usage, tool-result usage, and compaction usage.
+- Cache-hit statistics and resets across compaction.
+- Missing, zero, estimated, or provider-specific usage values.
+- The period after compaction when context usage is unknown until the next model response.
+
+The agent process is the sole authority for these calculations. Persist the same raw usage fields and calculated values Pi persists. The Web UI must render values supplied by the agent and must not implement a second JavaScript calculation that could drift.
+
+The Web UI must show the actual Pi-equivalent session usage, including current context consumption and percentage, cumulative input and output, cache reads and writes, applicable cache statistics, and total cost. Use Pi's labels, formatting, rounding, and unknown-value behavior verbatim from the pinned version. Never replace an unknown value with a fabricated zero or estimate unless pinned Pi does so.
+
+Parity fixtures must compare BashKitten and pinned Pi across normal turns, tool-heavy turns, cached requests, model changes, compaction, missing provider usage, and pricing tiers. A usage implementation is incomplete if the displayed values happen to look plausible but differ from Pi's calculations.
+
 ## Subagents and inter-session communication
 
 A subagent is an ordinary BashKitten session launched by another session. There is no separate subagent runtime or orchestration framework.
@@ -129,7 +205,7 @@ bashkitten send <child-session-id> --steer \
 
 The same mechanism handles communication from the Web UI, CLI, parent sessions, child sessions, and sibling sessions. Do not introduce a message broker, database-backed queue, dedicated model tool, or separate inter-agent protocol.
 
-The session's socket-listener thread accepts messages while the main thread is streaming a response or running a command. It places each message in the requested in-memory queue. Once delivered to the model, the receiving session writes the message to its JSONL with the sending session ID and delivery mode, for example:
+The session's socket-listener thread accepts messages while the main thread is streaming a response or running a command. It places each message in the requested in-memory queue. Once delivered to the model, the receiving session adds the message to its in-memory state with the sending session ID and delivery mode. It is persisted at the next normal turn-completion or compaction boundary, for example:
 
 ```json
 {
