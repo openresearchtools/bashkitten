@@ -1327,9 +1327,6 @@ fn build_codex_responses_body(request: &ProviderRequest) -> Result<Value> {
     if let Some(session_id) = request.session_id.as_deref() {
         body.insert("prompt_cache_key".into(), Value::String(session_id.into()));
     }
-    if let Some(max_tokens) = request.max_tokens {
-        body.insert("max_output_tokens".into(), Value::from(max_tokens));
-    }
     if let Some(temperature) = request.temperature {
         let temperature = serde_json::Number::from_f64(temperature)
             .context("temperature must be a finite number")?;

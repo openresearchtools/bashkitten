@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BashKitten</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #11100f;
+      --sidebar: #171614;
+      --surface: #1c1a18;
+      --surface-2: #24211e;
+      --line: #332f2b;
+      --line-soft: #26231f;
+      --text: #eee9e2;
+      --muted: #978f86;
+      --accent: #ee984f;
+      --accent-hover: #f5a760;
+      --danger: #e06a67;
+      --ok: #67bd80;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font-size: 14px; }
+    button, input, select, textarea { color: inherit; font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: default; opacity: .52; }
+    .hidden { display: none !important; }
+
+    .icon-button {
+      display: inline-grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      padding: 0;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--muted);
+    }
+    .icon-button:hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
+    .primary { border: 0; background: var(--accent); color: #201208; font-weight: 700; }
+    .primary:hover { background: var(--accent-hover); }
+
+    #auth {
+      width: min(380px, calc(100vw - 32px));
+      margin: 12vh auto;
+      padding: 28px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: 0 24px 70px #0007;
+    }
+    #auth h1 { margin: 0 0 8px; font-size: 24px; }
+    #auth p { color: var(--muted); }
+    #auth input {
+      display: block;
+      width: 100%;
+      margin: 10px 0;
+      padding: 11px 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--bg);
+      outline: none;
+    }
+    #auth input:focus { border-color: var(--accent); }
+    #auth button { width: 100%; margin-top: 5px; padding: 11px; border-radius: 10px; }
+
+    #app { display: grid; grid-template-columns: 264px minmax(0, 1fr); height: 100dvh; }
+    #sidebar { display: flex; min-width: 0; flex-direction: column; border-right: 1px solid var(--line-soft); background: var(--sidebar); }
+    .sidebar-header { display: flex; height: 58px; align-items: center; gap: 8px; padding: 0 12px; }
+    .brand { flex: 1; font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
+    #sessions { flex: 1; overflow: auto; padding: 5px 8px 14px; }
+    .session {
+      margin: 2px 0;
+      padding: 10px 11px;
+      overflow: hidden;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+    .session:hover { background: #211f1c; }
+    .session.active { background: #292622; }
+    .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+    .session small { display: flex; align-items: center; gap: 5px; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+    .running-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--ok); }
+    .sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--line-soft); }
+    .sidebar-footer button { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; }
+    .sidebar-footer button:hover { background: var(--surface-2); color: var(--text); }
+
+    #workspace { display: grid; min-width: 0; height: 100dvh; grid-template-rows: 58px minmax(0, 1fr) auto; }
+    .topbar { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line-soft); }
+    .chat-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
+    #title { max-width: min(48vw, 540px); overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+    #folderBtn {
+      display: flex;
+      min-width: 0;
+      max-width: min(32vw, 360px);
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      overflow: hidden;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #folderBtn:not(:disabled):hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
+    #folderBtn span { overflow: hidden; text-overflow: ellipsis; }
+    #usage { flex: 0 0 auto; color: var(--muted); font-size: 11px; white-space: nowrap; }
+    #stopBtn { padding: 6px 10px; border: 1px solid #5f3734; border-radius: 8px; background: transparent; color: var(--danger); font-size: 12px; }
+
+    #chat {
+      overflow: auto;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
+    }
+    .chat-inner { width: min(820px, calc(100% - 36px)); min-height: 100%; margin: 0 auto; padding: 28px 0 40px; }
+    .welcome { display: grid; min-height: calc(100dvh - 260px); place-content: center; color: var(--muted); text-align: center; }
+    .welcome .cat { margin-bottom: 8px; font-size: 30px; filter: grayscale(.15); }
+    .welcome strong { color: var(--text); font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
+    .welcome p { margin: 7px 0 0; font-size: 13px; }
+    .message { display: flex; margin: 18px 0; }
+    .message.user { justify-content: flex-end; }
+    .message-content { min-width: 0; max-width: 100%; line-height: 1.58; overflow-wrap: anywhere; }
+    .message.user .message-content { max-width: 78%; padding: 9px 13px; border-radius: 15px 15px 4px 15px; background: var(--surface-2); }
+    .message.assistant .message-content { width: 100%; }
+    .message.error .message-content { padding-left: 12px; border-left: 2px solid var(--danger); color: #f0aaa7; }
+    .markdown p { margin: 0 0 10px; }
+    .markdown p:last-child { margin-bottom: 0; }
+    .markdown ul, .markdown ol { margin: 5px 0 10px; padding-left: 24px; }
+    .markdown h1, .markdown h2, .markdown h3 { margin: 14px 0 7px; line-height: 1.25; }
+    .markdown h1 { font-size: 20px; } .markdown h2 { font-size: 17px; } .markdown h3 { font-size: 15px; }
+    .markdown code { padding: 2px 5px; border-radius: 5px; background: var(--surface-2); color: #f1c49e; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .markdown pre, .tool-body pre { margin: 8px 0 0; padding: 10px 12px; overflow: auto; border: 1px solid var(--line-soft); border-radius: 8px; background: #0d0c0b; color: #d9d2ca; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    .message-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+    .message-images img { max-width: 300px; max-height: 240px; border-radius: 10px; object-fit: contain; }
+
+    .activity {
+      margin: 7px 0;
+      overflow: hidden;
+      border: 1px solid var(--line-soft);
+      border-radius: 9px;
+      background: #151412;
+      color: var(--muted);
+    }
+    .activity[open] { border-color: var(--line); }
+    .activity summary { display: flex; min-height: 34px; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; list-style: none; font-size: 12px; }
+    .activity summary::-webkit-details-marker { display: none; }
+    .activity summary::before { width: 15px; color: #bcb3a9; content: "›"; font-size: 18px; line-height: 1; transform: rotate(0deg); transition: transform .12s; }
+    .activity[open] summary::before { transform: rotate(90deg); }
+    .activity .tool-name { color: #ddd5cd; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 650; }
+    .activity .tool-focus { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .activity .tool-state { margin-left: auto; color: var(--ok); }
+    .activity.error .tool-state { color: var(--danger); }
+    .tool-body { padding: 0 10px 10px 33px; }
+    .tool-body pre { max-height: 330px; }
+    .thought summary { color: #8f8a84; font-style: italic; }
+
+    #composerWrap { padding: 0 18px 18px; background: linear-gradient(180deg, transparent, var(--bg) 16px); }
+    #composer { width: min(840px, 100%); margin: 0 auto; }
+    #attachmentTray { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 6px 8px; }
+    .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
+    .attachment img { width: 100%; height: 100%; object-fit: cover; }
+    .attachment button { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: #000c; color: white; font-size: 12px; }
+    .compose-box { overflow: hidden; border: 1px solid #403a35; border-radius: 15px; background: var(--surface); box-shadow: 0 10px 38px #0004; }
+    .compose-box:focus-within { border-color: #66574a; }
+    #prompt { display: block; width: 100%; min-height: 58px; max-height: 190px; padding: 13px 14px 5px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.45; }
+    .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 5px; padding: 7px 8px 8px; }
+    .composer-toolbar select { height: 30px; min-width: 0; padding: 0 24px 0 8px; overflow: hidden; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; text-overflow: ellipsis; }
+    .composer-toolbar select:hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
+    #delivery { width: 86px; } #model { width: 190px; } #thinking { width: 92px; }
+    .toolbar-spacer { flex: 1; }
+    #attachBtn { width: 30px; height: 30px; }
+    #sendBtn { width: 31px; height: 31px; border-radius: 9px; font-size: 17px; }
+    #composerHint { min-height: 16px; padding-top: 5px; color: var(--muted); font-size: 10px; text-align: center; }
+    #workspace.dragging::after { position: fixed; z-index: 20; inset: 70px 30px 110px 294px; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 18px; background: #11100fe8; color: var(--text); content: "Drop images into this chat"; font-size: 16px; }
+
+    dialog { width: min(560px, calc(100vw - 28px)); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px #000a; }
+    dialog::backdrop { background: #0008; }
+    .dialog-body { padding: 20px; }
+    .dialog-body h2 { margin: 0 0 16px; font-size: 18px; }
+    .dialog-body label { display: block; margin: 11px 0; color: var(--muted); font-size: 12px; }
+    .dialog-body input, .dialog-body select { display: block; width: 100%; margin-top: 5px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
+    .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+    .dialog-actions button { padding: 8px 13px; border: 1px solid var(--line); border-radius: 8px; background: transparent; }
+    .dialog-actions .primary { border: 0; }
+    #folderDialog { width: min(480px, calc(100vw - 28px)); }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+    .settings-grid .wide { grid-column: 1 / -1; }
+    .check { display: flex !important; align-items: center; gap: 8px; }
+    .check input { width: auto !important; margin: 0 !important; }
+    .meta { color: var(--muted); font-size: 11px; }
+
+    @media (max-width: 780px) {
+      #app { grid-template-columns: 1fr; }
+      #sidebar { display: none; }
+      #folderBtn { max-width: 44vw; }
+      #usage { display: none; }
+      .chat-inner { width: min(100% - 24px, 820px); }
+      #composerWrap { padding: 0 10px 10px; }
+      #model { width: 145px; }
+      #workspace.dragging::after { inset: 65px 12px 100px; }
+    }
+  </style>
+</head>
+<body>
+  <section id="auth" class="hidden">
+    <h1>🐈 BashKitten</h1>
+    <p id="authHint"></p>
+    <form id="authForm">
+      <input id="username" autocomplete="username" placeholder="Username" required>
+      <input id="password" type="password" autocomplete="current-password" placeholder="Password (8+ characters)" required minlength="8">
+      <button class="primary" type="submit">Continue</button>
+      <p id="authError" class="meta"></p>
+    </form>
+  </section>
+
+  <section id="app" class="hidden">
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">🐈 BashKitten</div>
+        <button id="newBtn" class="icon-button" type="button" title="New chat" aria-label="New chat">＋</button>
+      </div>
+      <div id="sessions"></div>
+      <div class="sidebar-footer"><button id="settingsBtn" type="button"><span>⚙</span> Settings</button></div>
+    </aside>
+
+    <main id="workspace">
+      <header class="topbar">
+        <div class="chat-heading">
+          <strong id="title">New chat</strong>
+          <button id="folderBtn" type="button" title="Set working folder"><span aria-hidden="true">⌁</span><span id="folderLabel">Set folder</span></button>
+        </div>
+        <span id="usage"></span>
+        <button id="stopBtn" class="hidden" type="button">Stop</button>
+      </header>
+      <div id="chat"><div id="chatInner" class="chat-inner"></div></div>
+      <div id="composerWrap">
+        <form id="composer">
+          <div id="attachmentTray" class="hidden"></div>
+          <div class="compose-box">
+            <textarea id="prompt" rows="2" placeholder="Message BashKitten…" aria-label="Message BashKitten"></textarea>
+            <div class="composer-toolbar">
+              <input id="files" class="hidden" type="file" accept="image/*" multiple>
+              <button id="attachBtn" class="icon-button" type="button" title="Attach images" aria-label="Attach images">＋</button>
+              <select id="delivery" title="Message delivery"><option value="queue">Queue</option><option value="steer">Steer</option></select>
+              <select id="model" title="Model"></select>
+              <select id="thinking" title="Thinking level"></select>
+              <span class="toolbar-spacer"></span>
+              <button id="sendBtn" class="primary" type="submit" title="Send" aria-label="Send">↑</button>
+            </div>
+          </div>
+          <div id="composerHint">Paste, drag, or attach screenshots</div>
+        </form>
+      </div>
+    </main>
+  </section>
+
+  <dialog id="folderDialog">
+    <form id="folderForm" class="dialog-body">
+      <h2>Working folder</h2>
+      <label>Absolute path<input id="folderPath" required placeholder="/home/user/project"></label>
+      <p class="meta">Each session keeps the folder it starts with.</p>
+      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button class="primary">Use folder</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog">
+    <form id="settingsForm" class="dialog-body">
+      <h2>Settings</h2>
+      <div class="settings-grid">
+        <label>Web port<input id="webPort" type="number" min="1024" max="65535"></label>
+        <label class="wide">Default working folder<input id="defaultCwd"></label>
+        <label>Default model<select id="defaultModel"></select></label>
+        <label>Default thinking<select id="defaultThinking"></select></label>
+        <label class="check wide"><input id="llamaEnabled" type="checkbox"> Enable managed llama.cpp router</label>
+        <label>llama.cpp port<input id="llamaPort" type="number"></label>
+        <label>Context size<input id="llamaContext" type="number"></label>
+      </div>
+      <div class="dialog-actions">
+        <button id="importPi" type="button">Import Pi login</button>
+        <button id="restartLlama" type="button">Restart llama.cpp</button>
+      </div>
+      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button class="primary">Save</button></div>
+      <p class="meta">Port changes apply when the Web service restarts. BashKitten performs no telemetry or update checks.</p>
+    </form>
+  </dialog>
+
+  <script>
+    let csrf = '';
+    let hasUser = false;
+    let models = [];
+    let current = null;
+    let source = null;
+    let config = null;
+    let pendingCwd = '';
+    let pendingFiles = [];
+    const $ = selector => document.querySelector(selector);
+
+    async function api(url, options = {}) {
+      options.headers = options.headers || {};
+      if (options.method && options.method !== 'GET') options.headers['x-bashkitten-csrf'] = csrf;
+      const response = await fetch(url, options);
+      const value = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(value.error || response.statusText);
+      return value;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function inlineMarkdown(value) {
+      return escapeHtml(value)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
+    }
+
+    function markdown(value) {
+      const pieces = String(value ?? '').split(/```/);
+      return pieces.map((piece, index) => {
+        if (index % 2) {
+          const body = piece.replace(/^[^\n]*\n/, '');
+          return `<pre><code>${escapeHtml(body)}</code></pre>`;
+        }
+        const lines = piece.split('\n');
+        let html = '';
+        let list = '';
+        const closeList = () => { if (list) { html += `</${list}>`; list = ''; } };
+        for (const line of lines) {
+          const bullet = line.match(/^\s*[-*]\s+(.+)/);
+          const numbered = line.match(/^\s*\d+[.)]\s+(.+)/);
+          if (bullet || numbered) {
+            const wanted = bullet ? 'ul' : 'ol';
+            if (list !== wanted) { closeList(); html += `<${wanted}>`; list = wanted; }
+            html += `<li>${inlineMarkdown((bullet || numbered)[1])}</li>`;
+            continue;
+          }
+          closeList();
+          const heading = line.match(/^(#{1,3})\s+(.+)/);
+          if (heading) { const level = heading[1].length; html += `<h${level}>${inlineMarkdown(heading[2])}</h${level}>`; }
+          else if (line.trim()) html += `<p>${inlineMarkdown(line)}</p>`;
+        }
+        closeList();
+        return html;
+      }).join('');
+    }
+
+    function textBlocks(content) {
+      if (typeof content === 'string') return content;
+      return (content || []).filter(block => block.type === 'text').map(block => block.text || '').join('\n');
+    }
+
+    function messageRow(role, extra = '') {
+      const row = document.createElement('div');
+      row.className = `message ${role} ${extra}`.trim();
+      const body = document.createElement('div');
+      body.className = 'message-content';
+      row.append(body);
+      $('#chatInner').append(row);
+      return body;
+    }
+
+    function renderImages(content, body) {
+      const images = (Array.isArray(content) ? content : []).filter(block => block.type === 'image');
+      if (!images.length) return;
+      const holder = document.createElement('div');
+      holder.className = 'message-images';
+      for (const block of images) {
+        const image = document.createElement('img');
+        image.alt = 'Attached image';
+        image.src = `data:${block.mimeType};base64,${block.data}`;
+        holder.append(image);
+      }
+      body.append(holder);
+    }
+
+    function toolFocus(argumentsValue) {
+      const value = argumentsValue || {};
+      const focus = value.path || value.command || value.pattern || value.query || '';
+      const text = typeof focus === 'string' ? focus : JSON.stringify(focus);
+      return text.length > 100 ? `${text.slice(0, 99)}…` : text;
+    }
+
+    function findTool(callId) {
+      return [...document.querySelectorAll('.activity[data-call]')].reverse().find(node => node.dataset.call === callId);
+    }
+
+    function renderToolCall(block, body) {
+      let details = findTool(block.id);
+      if (details) return details;
+      details = document.createElement('details');
+      details.className = 'activity';
+      details.dataset.call = block.id;
+      const summary = document.createElement('summary');
+      const name = document.createElement('span');
+      name.className = 'tool-name';
+      name.textContent = block.name;
+      const focus = document.createElement('span');
+      focus.className = 'tool-focus';
+      focus.textContent = toolFocus(block.arguments);
+      const state = document.createElement('span');
+      state.className = 'tool-state';
+      state.textContent = 'queued';
+      summary.append(name, focus, state);
+      const toolBody = document.createElement('div');
+      toolBody.className = 'tool-body';
+      const input = document.createElement('pre');
+      input.textContent = JSON.stringify(block.arguments || {}, null, 2);
+      toolBody.append(input);
+      details.append(summary, toolBody);
+      body.append(details);
+      return details;
+    }
+
+    function renderToolResult(message) {
+      let details = findTool(message.toolCallId);
+      if (!details) {
+        const body = messageRow('assistant');
+        details = renderToolCall({id: message.toolCallId, name: message.toolName, arguments: {}}, body);
+      }
+      details.classList.toggle('error', Boolean(message.isError));
+      const state = details.querySelector('.tool-state');
+      state.textContent = message.isError ? 'failed' : 'done';
+      const toolBody = details.querySelector('.tool-body');
+      const output = document.createElement('pre');
+      output.textContent = textBlocks(message.content) || '(no output)';
+      toolBody.append(output);
+      if (message.details?.diff) {
+        const diff = document.createElement('pre');
+        diff.textContent = message.details.diff;
+        toolBody.append(diff);
+      }
+    }
+
+    function updateUsage(usage) {
+      if (!usage) return;
+      const selected = models.find(model => `${model.provider}/${model.id}` === $('#model').value);
+      const context = selected?.context_window || 0;
+      const percent = context ? `${(usage.totalTokens / context * 100).toFixed(1)}%` : '';
+      const parts = [];
+      if (usage.input) parts.push(`↑${formatTokens(usage.input)}`);
+      if (usage.output) parts.push(`↓${formatTokens(usage.output)}`);
+      if (usage.cacheRead) parts.push(`R${formatTokens(usage.cacheRead)}`);
+      if (usage.cacheWrite) parts.push(`W${formatTokens(usage.cacheWrite)}`);
+      if (context) parts.push(`${percent}/${formatTokens(context)}`);
+      $('#usage').textContent = parts.join('  ');
+    }
+
+    function formatTokens(value) {
+      if (value < 1000) return String(value);
+      if (value < 10000) return `${(value / 1000).toFixed(1)}k`;
+      if (value < 1000000) return `${Math.round(value / 1000)}k`;
+      return `${(value / 1000000).toFixed(value < 10000000 ? 1 : 0)}M`;
+    }
+
+    function renderMessage(message) {
+      if (!message) return;
+      if (message.role === 'toolResult') return renderToolResult(message);
+      if (message.role === 'user') {
+        const body = messageRow('user');
+        const text = textBlocks(message.content);
+        if (text) { const content = document.createElement('div'); content.className = 'markdown'; content.innerHTML = markdown(text); body.append(content); }
+        renderImages(message.content, body);
+        return;
+      }
+      if (message.role !== 'assistant') return;
+      const body = messageRow('assistant', message.errorMessage ? 'error' : '');
+      if (message.errorMessage) {
+        body.textContent = message.errorMessage;
+        updateUsage(message.usage);
+        return;
+      }
+      for (const block of message.content || []) {
+        if (block.type === 'text' && block.text) {
+          const content = document.createElement('div');
+          content.className = 'markdown';
+          content.innerHTML = markdown(block.text);
+          body.append(content);
+        } else if (block.type === 'thinking' && block.thinking) {
+          const thought = document.createElement('details');
+          thought.className = 'activity thought';
+          const summary = document.createElement('summary');
+          summary.textContent = 'Thinking';
+          const content = document.createElement('div');
+          content.className = 'tool-body';
+          const pre = document.createElement('pre');
+          pre.textContent = block.thinking;
+          content.append(pre);
+          thought.append(summary, content);
+          body.append(thought);
+        } else if (block.type === 'toolCall') {
+          renderToolCall(block, body);
+        }
+      }
+      updateUsage(message.usage);
+    }
+
+    function clearLive() {
+      $('#liveAssistant')?.remove();
+      $('#liveThinking')?.remove();
+    }
+
+    function renderEvent(event) {
+      if (event.type === 'session') return;
+      if (event.type === 'assistant_delta') {
+        let body = $('#liveAssistant .message-content');
+        if (!body) { body = messageRow('assistant'); body.parentElement.id = 'liveAssistant'; }
+        body.textContent += event.delta;
+      } else if (event.type === 'thinking_delta') {
+        let details = $('#liveThinking');
+        if (!details) {
+          const body = messageRow('assistant');
+          details = document.createElement('details');
+          details.id = 'liveThinking';
+          details.className = 'activity thought';
+          details.open = true;
+          details.innerHTML = '<summary>Thinking…</summary><div class="tool-body"><pre></pre></div>';
+          body.append(details);
+        }
+        details.querySelector('pre').textContent += event.delta;
+      } else if (event.type === 'message') {
+        clearLive();
+        renderMessage(event.message);
+      } else if (event.type === 'tool_start') {
+        const details = findTool(event.id);
+        if (details) details.querySelector('.tool-state').textContent = 'running';
+      } else if (event.type === 'agent_start') {
+        $('#stopBtn').classList.remove('hidden');
+        $('#composerHint').textContent = 'Agent is working';
+      } else if (event.type === 'agent_end') {
+        $('#stopBtn').classList.add('hidden');
+        $('#composerHint').textContent = 'Paste, drag, or attach screenshots';
+        source?.close();
+        source = null;
+        loadSessions().catch(() => {});
+      } else if (event.type === 'model_change') {
+        $('#composerHint').textContent = `Using ${event.model}`;
+      } else if (event.type === 'compaction_start') {
+        $('#composerHint').textContent = 'Compacting context…';
+      }
+      $('#chat').scrollTop = $('#chat').scrollHeight;
+    }
+
+    function renderEntry(entry) {
+      if (entry.type === 'message') renderMessage(entry.message);
+      else if (entry.type === 'compaction') {
+        const body = messageRow('assistant');
+        const details = document.createElement('details');
+        details.className = 'activity';
+        details.innerHTML = `<summary><span class="tool-name">compaction</span><span class="tool-focus">${escapeHtml(formatTokens(entry.tokensBefore || 0))} tokens summarized</span><span class="tool-state">done</span></summary><div class="tool-body"><pre>${escapeHtml(entry.summary || '')}</pre></div>`;
+        body.append(details);
+      }
+    }
+
+    function showWelcome() {
+      $('#chatInner').innerHTML = '<div class="welcome"><div><div class="cat">🐈</div><strong>What are we working on?</strong><p>Choose a folder, then send the first message.</p></div></div>';
+    }
+
+    function fillSelect(element, list, chosen) {
+      element.innerHTML = list.map(model => `<option value="${escapeHtml(`${model.provider}/${model.id}`)}">${escapeHtml(model.name)}</option>`).join('');
+      if (chosen && list.some(model => `${model.provider}/${model.id}` === chosen)) element.value = chosen;
+      setThinking(element);
+    }
+
+    function setThinking(modelElement, target = $('#thinking')) {
+      const model = models.find(value => `${value.provider}/${value.id}` === modelElement.value);
+      const old = target.value;
+      target.innerHTML = (model?.thinking_levels || ['off']).map(level => `<option value="${escapeHtml(level)}">${escapeHtml(level)}</option>`).join('');
+      target.value = (model?.thinking_levels || []).includes(old) ? old : (model?.default_thinking || 'off');
+    }
+
+    async function loadModels() {
+      const value = await api('/api/models');
+      models = value.models.filter(model => model.available);
+      fillSelect($('#model'), models, value.defaultModel);
+      fillSelect($('#defaultModel'), models, value.defaultModel);
+      setThinking($('#defaultModel'), $('#defaultThinking'));
+      $('#thinking').value = value.defaultThinking;
+      $('#defaultThinking').value = value.defaultThinking;
+    }
+
+    async function loadSettings() {
+      const value = await api('/api/settings');
+      config = value.config;
+      pendingCwd = config.default_cwd;
+      $('#webPort').value = config.web_port;
+      $('#defaultCwd').value = config.default_cwd;
+      $('#llamaEnabled').checked = config.llama.enabled;
+      $('#llamaPort').value = config.llama.port;
+      $('#llamaContext').value = config.llama.context_size;
+    }
+
+    async function loadSessions() {
+      const value = await api('/api/sessions?limit=100');
+      $('#sessions').innerHTML = value.sessions.map(session => `<div class="session${current?.id === session.id ? ' active' : ''}" data-id="${escapeHtml(session.id)}"><b>${escapeHtml(session.title)}</b><small>${session.running ? '<span class="running-dot"></span>' : ''}<span>${escapeHtml(session.model || '')}</span></small></div>`).join('');
+      document.querySelectorAll('.session').forEach(element => element.onclick = () => openSession(value.sessions.find(session => session.id === element.dataset.id)));
+      return value.sessions;
+    }
+
+    function connectSession(id, consume = renderEvent) {
+      source?.close();
+      return new Promise((resolve, reject) => {
+        const stream = new EventSource(`/api/sessions/${id}/events`);
+        source = stream;
+        let subscribed = false;
+        const timeout = setTimeout(() => {
+          if (!subscribed) {
+            stream.close();
+            if (source === stream) source = null;
+            reject(new Error('Could not connect to the agent session'));
+          }
+        }, 5000);
+        stream.onmessage = event => {
+          try {
+            const value = JSON.parse(event.data);
+            if (!value.type && value.ok && value.message === 'subscribed') {
+              subscribed = true;
+              clearTimeout(timeout);
+              resolve();
+              return;
+            }
+            consume(value);
+          } catch {}
+        };
+        stream.addEventListener('offline', () => {
+          clearTimeout(timeout);
+          stream.close();
+          if (source === stream) source = null;
+          if (!subscribed) reject(new Error('Agent session is offline'));
+        });
+      });
+    }
+
+    async function openSession(session) {
+      if (!session) return;
+      current = session;
+      source?.close();
+      source = null;
+      pendingFiles = [];
+      renderAttachments();
+      $('#title').textContent = session.title;
+      $('#folderLabel').textContent = session.cwd || 'Working folder';
+      $('#folderBtn').disabled = true;
+      $('#folderBtn').title = 'The working folder is fixed for this session';
+      $('#stopBtn').classList.toggle('hidden', !session.running);
+      $('#delivery').classList.remove('hidden');
+      if (session.model) {
+        $('#model').value = session.model;
+        setThinking($('#model'));
+        $('#thinking').value = session.thinking || 'off';
+      }
+      $('#chatInner').innerHTML = '';
+      const pendingEvents = [];
+      let bufferingEvents = Boolean(session.running);
+      if (session.running) {
+        await connectSession(session.id, value => {
+          if (bufferingEvents) pendingEvents.push(value);
+          else renderEvent(value);
+        }).catch(() => {});
+      }
+      const history = await api(`/api/sessions/${session.id}/segments/${session.current_segment}`);
+      history.entries.forEach(renderEntry);
+      bufferingEvents = false;
+      pendingEvents.forEach(renderEvent);
+      document.querySelectorAll('.session').forEach(element => element.classList.toggle('active', element.dataset.id === session.id));
+      $('#chat').scrollTop = $('#chat').scrollHeight;
+    }
+
+    function beginNewSession() {
+      current = null;
+      source?.close();
+      source = null;
+      pendingFiles = [];
+      renderAttachments();
+      pendingCwd = config?.default_cwd || '';
+      $('#title').textContent = 'New chat';
+      $('#folderLabel').textContent = pendingCwd || 'Set folder';
+      $('#folderBtn').disabled = false;
+      $('#folderBtn').title = 'Set working folder';
+      $('#stopBtn').classList.add('hidden');
+      $('#delivery').classList.add('hidden');
+      $('#usage').textContent = '';
+      if (config) {
+        $('#model').value = config.default_model;
+        setThinking($('#model'));
+        $('#thinking').value = config.default_thinking;
+      }
+      document.querySelectorAll('.session').forEach(element => element.classList.remove('active'));
+      showWelcome();
+      $('#prompt').focus();
+    }
+
+    function addImages(files) {
+      for (const file of files) if (file.type.startsWith('image/')) pendingFiles.push(file);
+      renderAttachments();
+    }
+
+    function renderAttachments() {
+      const tray = $('#attachmentTray');
+      tray.innerHTML = '';
+      tray.classList.toggle('hidden', !pendingFiles.length);
+      pendingFiles.forEach((file, index) => {
+        const item = document.createElement('div');
+        item.className = 'attachment';
+        item.title = file.name;
+        const image = document.createElement('img');
+        image.src = URL.createObjectURL(file);
+        image.alt = file.name;
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.onclick = () => { pendingFiles.splice(index, 1); renderAttachments(); };
+        item.append(image, remove);
+        tray.append(item);
+      });
+    }
+
+    function optimisticUser(text, files) {
+      const body = messageRow('user');
+      if (text) { const content = document.createElement('div'); content.className = 'markdown'; content.innerHTML = markdown(text); body.append(content); }
+      if (files.length) {
+        const holder = document.createElement('div');
+        holder.className = 'message-images';
+        for (const file of files) { const image = document.createElement('img'); image.src = URL.createObjectURL(file); image.alt = file.name; holder.append(image); }
+        body.append(holder);
+      }
+      $('#chat').scrollTop = $('#chat').scrollHeight;
+    }
+
+    async function applyCurrentModel() {
+      if (!current) return;
+      await api(`/api/sessions/${current.id}/model`, {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({model: $('#model').value, thinking: $('#thinking').value})
+      });
+      current.model = $('#model').value;
+      current.thinking = $('#thinking').value;
+      $('#composerHint').textContent = `Switching to ${models.find(model => `${model.provider}/${model.id}` === current.model)?.name || current.model}`;
+      loadSessions().catch(() => {});
+    }
+
+    function authScreen(signup) {
+      hasUser = !signup;
+      $('#app').classList.add('hidden');
+      $('#auth').classList.remove('hidden');
+      $('#authHint').textContent = signup ? 'Create the one local Web UI account.' : 'Sign in to the local Web UI.';
+    }
+
+    async function boot() {
+      const value = await api('/api/bootstrap');
+      if (!value.hasUser) return authScreen(true);
+      if (!value.authenticated) return authScreen(false);
+      csrf = value.csrf;
+      $('#auth').classList.add('hidden');
+      $('#app').classList.remove('hidden');
+      await loadSettings();
+      await loadModels();
+      const sessions = await loadSessions();
+      if (sessions.length) await openSession(sessions[0]);
+      else beginNewSession();
+    }
+
+    $('#authForm').onsubmit = async event => {
+      event.preventDefault();
+      try {
+        const value = await api(hasUser ? '/api/login' : '/api/signup', {
+          method: 'POST', headers: {'content-type': 'application/json'},
+          body: JSON.stringify({username: $('#username').value, password: $('#password').value})
+        });
+        csrf = value.csrf;
+        await boot();
+      } catch (error) { $('#authError').textContent = error.message; }
+    };
+
+    $('#newBtn').onclick = beginNewSession;
+    $('#folderBtn').onclick = () => {
+      if (current) return;
+      $('#folderPath').value = pendingCwd;
+      $('#folderDialog').showModal();
+      $('#folderPath').focus();
+    };
+    $('#folderForm').onsubmit = event => {
+      event.preventDefault();
+      pendingCwd = $('#folderPath').value.trim();
+      $('#folderLabel').textContent = pendingCwd || 'Set folder';
+      $('#folderDialog').close();
+      $('#prompt').focus();
+    };
+    document.querySelectorAll('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
+
+    $('#attachBtn').onclick = () => $('#files').click();
+    $('#files').onchange = event => { addImages(event.target.files); event.target.value = ''; };
+    $('#prompt').addEventListener('paste', event => {
+      const images = [...(event.clipboardData?.files || [])].filter(file => file.type.startsWith('image/'));
+      if (images.length) { event.preventDefault(); addImages(images); }
+    });
+    $('#workspace').addEventListener('dragover', event => { event.preventDefault(); $('#workspace').classList.add('dragging'); });
+    $('#workspace').addEventListener('dragleave', event => { if (!event.relatedTarget || !$('#workspace').contains(event.relatedTarget)) $('#workspace').classList.remove('dragging'); });
+    $('#workspace').addEventListener('drop', event => { event.preventDefault(); $('#workspace').classList.remove('dragging'); addImages(event.dataTransfer.files); });
+    $('#prompt').addEventListener('input', event => { event.target.style.height = 'auto'; event.target.style.height = `${Math.min(event.target.scrollHeight, 190)}px`; });
+    $('#prompt').addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); $('#composer').requestSubmit(); } });
+
+    $('#model').onchange = async () => { setThinking($('#model')); try { await applyCurrentModel(); } catch (error) { alert(error.message); } };
+    $('#thinking').onchange = async () => { try { await applyCurrentModel(); } catch (error) { alert(error.message); } };
+    $('#defaultModel').onchange = () => setThinking($('#defaultModel'), $('#defaultThinking'));
+
+    $('#composer').onsubmit = async event => {
+      event.preventDefault();
+      const text = $('#prompt').value.trim();
+      if (!text && !pendingFiles.length) return;
+      const files = [...pendingFiles];
+      $('#prompt').value = '';
+      $('#prompt').style.height = 'auto';
+      pendingFiles = [];
+      renderAttachments();
+      if ($('#chatInner .welcome')) $('#chatInner').innerHTML = '';
+      optimisticUser(text, files);
+      $('#sendBtn').disabled = true;
+      try {
+        if (!current) {
+          const createForm = new FormData();
+          createForm.append('prompt', text);
+          createForm.append('cwd', pendingCwd);
+          createForm.append('model', $('#model').value);
+          createForm.append('thinking', $('#thinking').value);
+          const result = await api('/api/sessions', {method: 'POST', body: createForm});
+          const sessions = await loadSessions();
+          current = sessions.find(session => session.id === result.id) || {id: result.id, title: text || 'Image session', cwd: pendingCwd, model: $('#model').value, thinking: $('#thinking').value, running: true};
+          $('#title').textContent = current.title;
+          $('#folderLabel').textContent = current.cwd;
+          $('#folderBtn').disabled = true;
+          $('#delivery').classList.remove('hidden');
+        }
+        await connectSession(current.id);
+        const messageForm = new FormData();
+        messageForm.append('content', text);
+        messageForm.append('delivery', $('#delivery').value);
+        for (const file of files) messageForm.append('file', file);
+        await api(`/api/sessions/${current.id}/messages`, {method: 'POST', body: messageForm});
+        $('#stopBtn').classList.remove('hidden');
+      } catch (error) {
+        const body = messageRow('assistant', 'error');
+        body.textContent = error.message;
+      } finally { $('#sendBtn').disabled = false; }
+    };
+
+    $('#stopBtn').onclick = async () => {
+      if (!current) return;
+      await api(`/api/sessions/${current.id}/stop`, {method: 'POST'});
+      source?.close();
+      source = null;
+      $('#stopBtn').classList.add('hidden');
+      await loadSessions();
+    };
+
+    $('#settingsBtn').onclick = () => $('#settingsDialog').showModal();
+    $('#settingsForm').onsubmit = async event => {
+      event.preventDefault();
+      config.web_port = Number($('#webPort').value);
+      config.default_cwd = $('#defaultCwd').value;
+      config.default_model = $('#defaultModel').value;
+      config.default_thinking = $('#defaultThinking').value;
+      config.llama.enabled = $('#llamaEnabled').checked;
+      config.llama.port = Number($('#llamaPort').value);
+      config.llama.context_size = Number($('#llamaContext').value);
+      await api('/api/settings', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(config)});
+      $('#settingsDialog').close();
+      if (!current) beginNewSession();
+    };
+    $('#importPi').onclick = async () => {
+      try { await api('/api/provider/import-pi', {method: 'POST'}); await loadModels(); alert('Pi OpenAI login imported.'); }
+      catch (error) { alert(error.message); }
+    };
+    $('#restartLlama').onclick = async () => {
+      try { await api('/api/llama/restart', {method: 'POST'}); alert('llama.cpp restarted.'); }
+      catch (error) { alert(error.message); }
+    };
+
+    boot();
+    setInterval(() => { if (csrf) loadSessions().catch(() => {}); }, 5000);
+  </script>
+</body>
+</html>

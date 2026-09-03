@@ -201,12 +201,18 @@ async fn listen(path: PathBuf, shared: Arc<Shared>) -> Result<()> {
 async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()> {
     let (read, mut write) = stream.into_split();
     let mut lines = BufReader::new(read).lines();
-    let line = lines.next_line().await?.context("empty control request")?;
+    let Some(line) = lines.next_line().await? else {
+        // Liveness probes connect and immediately close. They are expected and
+        // must not turn into noisy worker errors.
+        return Ok(());
+    };
     let request: ControlRequest = serde_json::from_str(&line)?;
     match request {
         ControlRequest::Subscribe => {
-            write_reply(&mut write, true, "subscribed", json!({})).await?;
+            // Subscribe first, then acknowledge. Once the Web client receives
+            // this reply it can safely dispatch work without losing an event.
             let mut events = shared.events.subscribe();
+            write_reply(&mut write, true, "subscribed", json!({})).await?;
             while let Ok(event) = events.recv().await {
                 write
                     .write_all(serde_json::to_string(&event)?.as_bytes())
@@ -623,6 +629,16 @@ impl Runtime {
                 .session_environment
                 .insert("BASHKITTEN_PARENT_ID".into(), parent.clone());
         }
+        for call in &calls {
+            let arguments =
+                serde_json::from_str::<Value>(&call.arguments).unwrap_or_else(|_| json!({}));
+            self.shared.emit(json!({
+                "type":"tool_start",
+                "id":call.id,
+                "name":call.name,
+                "arguments":arguments
+            }));
+        }
         let futures = calls.into_iter().map(|call| {
             let context = context.clone();
             async move {
@@ -633,8 +649,6 @@ impl Runtime {
         });
         let results = join_all(futures).await;
         for (call, result) in results {
-            self.shared
-                .emit(json!({"type":"tool_start","id":call.id,"name":call.name}));
             let (content, details, is_error, provider_output) = match result {
                 Ok(result) => {
                     let mut blocks = Vec::new();
