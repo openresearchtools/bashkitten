@@ -1,5 +1,44 @@
 # BashKitten Agent Instructions
 
+## Governing Pi parity rule
+
+Pi at one pinned upstream commit is BashKitten's default behavioral specification. Record that exact commit before implementation begins and use the same commit for every parity requirement in this document.
+
+Unless this document explicitly defines a BashKitten difference, reproduce Pi's observable behavior exactly. An unanswered implementation or product question must first be answered by inspecting the pinned Pi source, tests, prompts, schemas, defaults, fixtures, documentation, and actual runtime behavior. Do not invent a new behavior, choose a different default, simplify an edge case, or silently fix a Pi quirk merely because this document does not repeat the relevant Pi rule.
+
+This governing parity requirement includes every in-scope behavior Pi supplies, including:
+
+- Agent-loop sequencing and continuation.
+- System-prompt construction and all model-visible wording.
+- Message conversion, ordering, serialization, and provider payloads.
+- Tool-call and tool-result ordering and validation.
+- Steering, follow-up, and queued-message boundary behavior.
+- Model and thinking-level selection and changes.
+- Retry, backoff, overflow, timeout, cancellation, interruption, and error behavior.
+- Image input conversion and provider capability handling.
+- Context construction, token estimation, compaction, usage, caching, and cost accounting.
+- Session events and persisted logical state, except for the explicitly different numbered-file layout.
+- Authentication, model catalogs, and supported provider behavior for the three providers retained by BashKitten.
+
+Parity means observable functional behavior, not implementation language or internal architecture. The implementation remains native Rust and uses BashKitten's explicitly specified process, Web UI, storage, and Debian integration design.
+
+The intentional BashKitten differences are limited to those expressly documented here:
+
+- A standalone native Rust implementation with no Pi, Node.js, or npm runtime.
+- Exactly seven built-in tools and exactly three built-in provider modes.
+- Separate agent-session processes, Web UI server, GTK controller, and the systemd lifecycle described below.
+- A separately installed and supervised Debian `llama-server` provider process.
+- The minimal embedded Web UI, local authentication, and authenticated SSE transport.
+- One passive flat Markdown skills directory instead of Pi's skill-loading framework.
+- Independent persistent subagent sessions and Unix-socket steer and queue communication.
+- Per-session directories, deterministic title files, and numbered JSONLs split at compaction instead of Pi's physical session-file layout.
+- The documented pre-switch compaction trigger for moving to a smaller-context model.
+- The strict no-telemetry and explicit-network policy.
+
+These differences must remain as narrow as possible. Reuse Pi's logical formats and behavior inside them wherever this document requires parity. Keep a parity fixture or source citation for each ported behavior and a documented rationale for each intentional divergence.
+
+If pinned Pi has no analogous behavior and the feature is not required by an explicit BashKitten requirement, omit it. If BashKitten's required architecture needs behavior for which Pi has no analogue, implement the smallest mechanism that satisfies the requirement, document it as an intentional difference before coding it, and do not use that gap to add adjacent features.
+
 ## Fixed built-in tool surface
 
 BashKitten must expose exactly these seven built-in tools:
