@@ -65,13 +65,15 @@ This passive flat-folder skill design is an intentional BashKitten difference fr
 
 ## System components and lifecycle
 
-BashKitten consists of three distinct components with separate process lifetimes:
+BashKitten consists of exactly three BashKitten-owned components with separate process lifetimes:
 
 1. Agent session processes.
 2. The Web UI server.
 3. The GTK system controller and optional tray.
 
 The GTK system controller is the lifecycle authority for one BashKitten instance. The Web UI and agent sessions remain independent sibling processes rather than running inside the controller or inside one another. Use systemd user services and a shared BashKitten target to track those processes; do not build a second process supervisor.
+
+`llama-server` is not a fourth BashKitten component and does not run inside any of these three components. It is a separately installed, separately executing external provider process. When BashKitten launches it, systemd tracks it as its own user service under the same BashKitten target so its lifetime remains independent of the Web UI and individual agent sessions.
 
 ### Agent session processes
 
@@ -127,6 +129,25 @@ Web authentication is local implementation plumbing, not a collection of user-fa
 
 The default Web UI remains bound exclusively to `127.0.0.1`. Localhost binding does not remove the authentication or CSRF requirements, because an unrelated browser page can still attempt requests to a local service.
 
+### No telemetry and explicit network traffic
+
+BashKitten must contain no telemetry, analytics, usage reporting, tracking identifiers, crash reporting, remote logging, advertising, CDN-hosted assets, automatic update checks, version checks, popularity counters, provider attribution added by BashKitten, or unexplained background network requests. Do not contact a BashKitten project server because no such service is part of the architecture.
+
+All HTML, CSS, JavaScript, fonts, icons, and other Web UI assets must be embedded in the installed Rust Web UI binary or served from local package files. The Web UI must not load code or presentation assets from a CDN or other remote origin.
+
+BashKitten-owned network traffic is limited to:
+
+- Requests to model-provider endpoints explicitly configured or selected by the user.
+- The OpenAI OAuth authorization, token-exchange, credential-refresh, model, and inference endpoints required by the pinned Pi-compatible OpenAI subscription implementation.
+- Requests initiated by an explicit user or agent action to search, inspect, load, or download Hugging Face models through the pinned Pi-compatible llama.cpp workflow.
+- Connections among BashKitten's own loopback HTTP endpoints and Unix-domain control sockets.
+
+Do not perform Hugging Face searches or downloads merely because the llama.cpp settings page was opened. Do not probe arbitrary public provider endpoints, discover services on the local network, or contact an external model catalog. A configured provider may perform only the requests needed for authentication, model listing, inference, and provider-defined error or retry behavior that BashKitten is explicitly implementing with Pi parity.
+
+Commands and programs deliberately invoked by an agent through the `bash` tool are ordinary child processes and may make their own network requests when the operating system permits them. Those requests are attributable to the invoked command, not hidden BashKitten application traffic. BashKitten must not silently inject telemetry, proxy endpoints, tracking headers, or unrelated destinations into those commands.
+
+Keep the application network surface auditable: each BashKitten-owned outbound call site must identify which allowed category above authorizes it. Adding any other outbound destination or background call requires an explicit documented project decision.
+
 The Web UI must not contain a sophisticated file browser, worktree manager, plugin marketplace, MCP interface, npm package system, or unrelated dashboard features. Its provider and model interface must remain limited to the three explicitly supported provider modes below.
 
 ## Providers, authentication, and models
@@ -167,14 +188,14 @@ Port Pi's complete llama.cpp router integration with exact 1:1 behavioral parity
 
 Use Pi's OpenAI-compatible request path for inference exactly where pinned Pi does. Preserve the provider compatibility settings, model metadata, context-window reporting, streaming, tools, reasoning, image support, usage values, and errors that Pi applies to llama.cpp.
 
-BashKitten additionally owns a small Debian-specific llama.cpp launcher. Detect the installed backend from Debian's package database:
+BashKitten additionally owns a small Debian-specific launcher for the separate external `llama-server` process. Detect the installed backend from Debian's package database:
 
 - Installed `llama-cpp-cuda` means the CUDA build.
 - Otherwise, installed `llama-cpp` means the CPU/Vulkan build.
 - Both packages expose `/usr/bin/llama-server`.
 - If neither package or the executable is present, report that llama.cpp is unavailable rather than guessing from GPU hardware or silently installing a package.
 
-Run `llama-server` in router mode without `--model`, `-m`, or `-hf`. Bind it to `127.0.0.1` by default. Its lifecycle must be tracked by the BashKitten systemd user target so a Web UI crash cannot stop it or leave it orphaned.
+Run `llama-server` as its own process in router mode without `--model`, `-m`, or `-hf`. Bind it to `127.0.0.1` by default. Its lifecycle must be tracked by its own systemd user service under the BashKitten target so a Web UI crash cannot stop it or leave it orphaned. The Web UI configures and controls that service but must never host llama.cpp inference inside the Web UI process.
 
 The Web UI must provide an ordinary llama.cpp settings and model-management interface. Users must not be required to edit a configuration file or type a launch command for normal configuration. At minimum expose:
 
