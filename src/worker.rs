@@ -14,7 +14,7 @@ use crate::providers::{
     ProviderRequest, StopReason as ProviderStopReason, ThinkingLevel,
     ToolDefinition as ProviderToolDefinition,
 };
-use crate::session::{self, ControlReply, ControlRequest, Delivery, SessionHeader};
+use crate::session::{self, ControlReply, ControlRequest, Delivery, QueueAction, SessionHeader};
 use crate::tools::{self, ToolContext};
 use anyhow::{Context, Result, bail};
 use base64::Engine;
@@ -37,6 +37,7 @@ use tokio::sync::{Mutex, Notify, broadcast};
 
 #[derive(Clone, Debug)]
 struct QueuedMessage {
+    id: String,
     content: String,
     attachments: Vec<PathBuf>,
     source_session: Option<String>,
@@ -74,6 +75,25 @@ impl Shared {
     fn emit(&self, event: Value) {
         let _ = self.events.send(event);
     }
+}
+
+fn queued_message_value(message: &QueuedMessage) -> Value {
+    json!({
+        "id": message.id,
+        "content": message.content,
+        "delivery": message.delivery,
+        "attachments": message.attachments.iter().filter_map(|path| path.file_name()).map(|name| name.to_string_lossy()).collect::<Vec<_>>()
+    })
+}
+
+fn queue_state_value(queues: &AgentQueues<QueuedMessage>, busy: bool) -> Value {
+    json!({
+        "busy": busy,
+        "steering": queues.steering.len(),
+        "queued": queues.follow_up.len(),
+        "steeringMessages": queues.steering.iter().map(queued_message_value).collect::<Vec<_>>(),
+        "queuedMessages": queues.follow_up.iter().map(queued_message_value).collect::<Vec<_>>()
+    })
 }
 
 struct Runtime {
@@ -227,6 +247,7 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             source_session,
         } => {
             let message = QueuedMessage {
+                id: uuid::Uuid::now_v7().to_string(),
                 content,
                 attachments,
                 source_session,
@@ -240,23 +261,16 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
                 Delivery::Steer => queues.steering.enqueue(message),
                 Delivery::Queue => queues.follow_up.enqueue(message),
             }
+            let state = queue_state_value(&queues, shared.busy.load(Ordering::SeqCst));
             drop(queues);
+            shared.emit(json!({"type":"queue_state","data":state}));
             shared.notify.notify_one();
-            write_reply(&mut write, true, "message queued", json!({})).await?;
+            write_reply(&mut write, true, "message queued", state).await?;
         }
         ControlRequest::Status => {
             let queues = shared.queues.lock().await;
-            write_reply(
-                &mut write,
-                true,
-                "status",
-                json!({
-                    "busy": shared.busy.load(Ordering::SeqCst),
-                    "steering": queues.steering.len(),
-                    "queued": queues.follow_up.len()
-                }),
-            )
-            .await?;
+            let state = queue_state_value(&queues, shared.busy.load(Ordering::SeqCst));
+            write_reply(&mut write, true, "status", state).await?;
         }
         ControlRequest::Stop => {
             shared.stop.store(true, Ordering::SeqCst);
@@ -267,6 +281,60 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             *shared.model_change.lock().await = Some(PendingModel { model, thinking });
             shared.notify.notify_one();
             write_reply(&mut write, true, "model change queued", json!({})).await?;
+        }
+        ControlRequest::QueueAction {
+            id,
+            action,
+            content,
+        } => {
+            let mut queues = shared.queues.lock().await;
+            let message = match action {
+                QueueAction::Edit => {
+                    let value = content.context("edited queue content is required")?;
+                    let mut found = false;
+                    if let Some(queued) = queues.follow_up.find_mut(|message| message.id == id) {
+                        queued.content = value.clone();
+                        found = true;
+                    }
+                    if !found
+                        && let Some(queued) = queues.steering.find_mut(|message| message.id == id)
+                    {
+                        queued.content = value;
+                        found = true;
+                    }
+                    if !found {
+                        bail!("queued message no longer exists");
+                    }
+                    "queued message edited"
+                }
+                QueueAction::Promote => {
+                    let mut queued = queues
+                        .follow_up
+                        .remove_first(|message| message.id == id)
+                        .context("queued message no longer exists")?;
+                    queued.delivery = DeliveryKind::Steer;
+                    queues.steering.enqueue(queued);
+                    "queued message promoted to steering"
+                }
+                QueueAction::Remove => {
+                    let removed = queues
+                        .follow_up
+                        .remove_first(|message| message.id == id)
+                        .is_some()
+                        || queues
+                            .steering
+                            .remove_first(|message| message.id == id)
+                            .is_some();
+                    if !removed {
+                        bail!("queued message no longer exists");
+                    }
+                    "queued message removed"
+                }
+            };
+            let state = queue_state_value(&queues, shared.busy.load(Ordering::SeqCst));
+            drop(queues);
+            shared.emit(json!({"type":"queue_state","data":state}));
+            write_reply(&mut write, true, message, state).await?;
         }
     }
     Ok(())
@@ -304,6 +372,7 @@ impl Runtime {
             did_work = true;
         }
         let drained = self.shared.queues.lock().await.drain_at_boundary(true);
+        self.emit_queue_state().await;
         let Some(drained) = drained else {
             return Ok(did_work);
         };
@@ -370,6 +439,12 @@ impl Runtime {
         Ok(())
     }
 
+    async fn emit_queue_state(&self) {
+        let queues = self.shared.queues.lock().await;
+        let state = queue_state_value(&queues, self.shared.busy.load(Ordering::SeqCst));
+        self.shared.emit(json!({"type":"queue_state","data":state}));
+    }
+
     fn push_user_message(&mut self, queued: QueuedMessage) -> Result<()> {
         let mut blocks = Vec::new();
         if !queued.content.is_empty() {
@@ -397,8 +472,12 @@ impl Runtime {
         if let Some(provider) = to_provider_message(&message) {
             self.messages.push(provider);
         }
-        let entry = self.entry(SessionEntryKind::Message { message });
+        let entry = self.entry(SessionEntryKind::Message {
+            message: message.clone(),
+        });
         self.pending_entries.push(entry);
+        self.shared
+            .emit(json!({"type":"message","message":message}));
         Ok(())
     }
 
@@ -559,6 +638,7 @@ impl Runtime {
             }
             if calls.is_empty() {
                 let steering = self.shared.queues.lock().await.drain_at_boundary(false);
+                self.emit_queue_state().await;
                 if let Some(steering) = steering {
                     for message in steering.messages {
                         self.push_user_message(message)?;
@@ -570,6 +650,7 @@ impl Runtime {
 
             self.execute_tools(calls.into_values().collect()).await?;
             let steering = self.shared.queues.lock().await.drain_at_boundary(false);
+            self.emit_queue_state().await;
             if let Some(steering) = steering {
                 for message in steering.messages {
                     self.push_user_message(message)?;

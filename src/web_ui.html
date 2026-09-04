@@ -5,21 +5,70 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>BashKitten</title>
   <style>
-    :root {
+    :root, :root[data-theme="dark"] {
       color-scheme: dark;
-      --bg: #11100f;
-      --sidebar: #171614;
-      --surface: #1c1a18;
-      --surface-2: #24211e;
-      --line: #332f2b;
-      --line-soft: #26231f;
-      --text: #eee9e2;
-      --muted: #978f86;
-      --accent: #ee984f;
-      --accent-hover: #f5a760;
-      --danger: #e06a67;
-      --ok: #67bd80;
+      --bg: #1e1e1e;
+      --sidebar: #252526;
+      --surface: #2b2b2b;
+      --surface-2: #333337;
+      --line: #48484d;
+      --line-soft: #343438;
+      --text: #e8e8e8;
+      --muted: #a6a6aa;
+      --accent: #5680c2;
+      --accent-hover: #6792d2;
+      --accent-text: #ffffff;
+      --danger: #e07171;
+      --ok: #6fbd86;
+      --code: #181818;
+      --activity: #232323;
+      --overlay: #1e1e1eeb;
+      --shadow: #0006;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f3f3f3;
+      --sidebar: #e8e8e8;
+      --surface: #ffffff;
+      --surface-2: #e5e5e7;
+      --line: #c8c8cc;
+      --line-soft: #dcdcdf;
+      --text: #242426;
+      --muted: #66666b;
+      --accent: #4776b9;
+      --accent-hover: #3968aa;
+      --accent-text: #ffffff;
+      --danger: #b84444;
+      --ok: #34804e;
+      --code: #ededf0;
+      --activity: #f7f7f8;
+      --overlay: #f3f3f3eb;
+      --shadow: #0002;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        color-scheme: light;
+        --bg: #f3f3f3;
+        --sidebar: #e8e8e8;
+        --surface: #ffffff;
+        --surface-2: #e5e5e7;
+        --line: #c8c8cc;
+        --line-soft: #dcdcdf;
+        --text: #242426;
+        --muted: #66666b;
+        --accent: #4776b9;
+        --accent-hover: #3968aa;
+        --accent-text: #ffffff;
+        --danger: #b84444;
+        --ok: #34804e;
+        --code: #ededf0;
+        --activity: #f7f7f8;
+        --overlay: #f3f3f3eb;
+        --shadow: #0002;
+      }
     }
 
     * { box-sizing: border-box; }
@@ -42,7 +91,7 @@
       color: var(--muted);
     }
     .icon-button:hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
-    .primary { border: 0; background: var(--accent); color: #201208; font-weight: 700; }
+    .primary { border: 0; background: var(--accent); color: var(--accent-text); font-weight: 650; }
     .primary:hover { background: var(--accent-hover); }
 
     #auth {
@@ -52,7 +101,7 @@
       border: 1px solid var(--line);
       border-radius: 18px;
       background: var(--surface);
-      box-shadow: 0 24px 70px #0007;
+      box-shadow: 0 24px 70px var(--shadow);
     }
     #auth h1 { margin: 0 0 8px; font-size: 24px; }
     #auth p { color: var(--muted); }
@@ -81,8 +130,8 @@
       border-radius: 9px;
       cursor: pointer;
     }
-    .session:hover { background: #211f1c; }
-    .session.active { background: #292622; }
+    .session:hover { background: var(--surface); }
+    .session.active { background: var(--surface-2); }
     .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
     .session small { display: flex; align-items: center; gap: 5px; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
     .running-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--ok); }
@@ -113,75 +162,86 @@
     #folderBtn:not(:disabled):hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
     #folderBtn span { overflow: hidden; text-overflow: ellipsis; }
     #usage { flex: 0 0 auto; color: var(--muted); font-size: 11px; white-space: nowrap; }
-    #stopBtn { padding: 6px 10px; border: 1px solid #5f3734; border-radius: 8px; background: transparent; color: var(--danger); font-size: 12px; }
+    #stopBtn { padding: 5px 9px; border: 1px solid var(--danger); border-radius: 6px; background: transparent; color: var(--danger); font-size: 11px; }
 
     #chat {
       overflow: auto;
       overscroll-behavior: contain;
       scrollbar-gutter: stable;
     }
-    .chat-inner { width: min(820px, calc(100% - 36px)); min-height: 100%; margin: 0 auto; padding: 28px 0 40px; }
+    .chat-inner { width: min(880px, calc(100% - 32px)); min-height: 100%; margin: 0 auto; padding: 18px 0 24px; }
     .welcome { display: grid; min-height: calc(100dvh - 260px); place-content: center; color: var(--muted); text-align: center; }
     .welcome .cat { margin-bottom: 8px; font-size: 30px; filter: grayscale(.15); }
     .welcome strong { color: var(--text); font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
     .welcome p { margin: 7px 0 0; font-size: 13px; }
-    .message { display: flex; margin: 18px 0; }
+    .message { display: flex; margin: 11px 0; }
+    .message.activity-message { margin: 2px 0; }
     .message.user { justify-content: flex-end; }
     .message-content { min-width: 0; max-width: 100%; line-height: 1.58; overflow-wrap: anywhere; }
-    .message.user .message-content { max-width: 78%; padding: 9px 13px; border-radius: 15px 15px 4px 15px; background: var(--surface-2); }
+    .message.user .message-content { max-width: 78%; padding: 7px 11px; border-radius: 10px 10px 3px 10px; background: var(--surface-2); }
     .message.assistant .message-content { width: 100%; }
-    .message.error .message-content { padding-left: 12px; border-left: 2px solid var(--danger); color: #f0aaa7; }
-    .markdown p { margin: 0 0 10px; }
+    .message.error .message-content { padding-left: 10px; border-left: 2px solid var(--danger); color: var(--danger); }
+    .markdown p { margin: 0 0 8px; }
     .markdown p:last-child { margin-bottom: 0; }
     .markdown ul, .markdown ol { margin: 5px 0 10px; padding-left: 24px; }
     .markdown h1, .markdown h2, .markdown h3 { margin: 14px 0 7px; line-height: 1.25; }
     .markdown h1 { font-size: 20px; } .markdown h2 { font-size: 17px; } .markdown h3 { font-size: 15px; }
-    .markdown code { padding: 2px 5px; border-radius: 5px; background: var(--surface-2); color: #f1c49e; font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
-    .markdown pre, .tool-body pre { margin: 8px 0 0; padding: 10px 12px; overflow: auto; border: 1px solid var(--line-soft); border-radius: 8px; background: #0d0c0b; color: #d9d2ca; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    .markdown code { padding: 2px 5px; border-radius: 4px; background: var(--code); color: var(--text); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .markdown pre, .tool-body pre { margin: 6px 0 0; padding: 9px 10px; overflow: auto; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--code); color: var(--text); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
     .message-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
     .message-images img { max-width: 300px; max-height: 240px; border-radius: 10px; object-fit: contain; }
 
     .activity {
-      margin: 7px 0;
+      margin: 2px 0;
       overflow: hidden;
       border: 1px solid var(--line-soft);
-      border-radius: 9px;
-      background: #151412;
+      border-radius: 6px;
+      background: var(--activity);
       color: var(--muted);
     }
     .activity[open] { border-color: var(--line); }
-    .activity summary { display: flex; min-height: 34px; align-items: center; gap: 8px; padding: 7px 10px; cursor: pointer; list-style: none; font-size: 12px; }
+    .activity summary { display: flex; min-height: 29px; align-items: center; gap: 7px; padding: 4px 8px; cursor: pointer; list-style: none; font-size: 11px; }
     .activity summary::-webkit-details-marker { display: none; }
-    .activity summary::before { width: 15px; color: #bcb3a9; content: "›"; font-size: 18px; line-height: 1; transform: rotate(0deg); transition: transform .12s; }
+    .activity summary::before { width: 13px; color: var(--muted); content: "›"; font-size: 16px; line-height: 1; transform: rotate(0deg); transition: transform .12s; }
     .activity[open] summary::before { transform: rotate(90deg); }
-    .activity .tool-name { color: #ddd5cd; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 650; }
+    .activity .tool-name { color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 650; }
     .activity .tool-focus { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .activity .tool-state { margin-left: auto; color: var(--ok); }
     .activity.error .tool-state { color: var(--danger); }
-    .tool-body { padding: 0 10px 10px 33px; }
+    .tool-body { padding: 0 8px 8px 28px; }
     .tool-body pre { max-height: 330px; }
-    .thought summary { color: #8f8a84; font-style: italic; }
+    .thought summary { color: var(--muted); font-style: italic; }
 
-    #composerWrap { padding: 0 18px 18px; background: linear-gradient(180deg, transparent, var(--bg) 16px); }
-    #composer { width: min(840px, 100%); margin: 0 auto; }
+    #composerWrap { padding: 0 16px 10px; background: linear-gradient(180deg, transparent, var(--bg) 12px); }
+    #composer { width: min(880px, 100%); margin: 0 auto; }
     #attachmentTray { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 6px 8px; }
     .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
     .attachment img { width: 100%; height: 100%; object-fit: cover; }
     .attachment button { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: #000c; color: white; font-size: 12px; }
-    .compose-box { overflow: hidden; border: 1px solid #403a35; border-radius: 15px; background: var(--surface); box-shadow: 0 10px 38px #0004; }
-    .compose-box:focus-within { border-color: #66574a; }
-    #prompt { display: block; width: 100%; min-height: 58px; max-height: 190px; padding: 13px 14px 5px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.45; }
-    .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 5px; padding: 7px 8px 8px; }
-    .composer-toolbar select { height: 30px; min-width: 0; padding: 0 24px 0 8px; overflow: hidden; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font-size: 11px; text-overflow: ellipsis; }
+    .compose-box { overflow: visible; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 6px 22px var(--shadow); }
+    .compose-box:focus-within { border-color: var(--accent); }
+    #prompt { display: block; width: 100%; min-height: 42px; max-height: 160px; padding: 10px 11px 2px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.4; }
+    .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 2px; padding: 4px 5px 5px; }
+    .composer-toolbar select { height: 27px; min-width: 0; padding: 0 22px 0 6px; overflow: hidden; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; text-overflow: ellipsis; cursor: pointer; }
     .composer-toolbar select:hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
-    #delivery { width: 86px; } #model { width: 190px; } #thinking { width: 92px; }
+    #model { width: 150px; } #thinking { width: 82px; }
     .toolbar-spacer { flex: 1; }
-    #attachBtn { width: 30px; height: 30px; }
-    #sendBtn { width: 31px; height: 31px; border-radius: 9px; font-size: 17px; }
-    #composerHint { min-height: 16px; padding-top: 5px; color: var(--muted); font-size: 10px; text-align: center; }
-    #workspace.dragging::after { position: fixed; z-index: 20; inset: 70px 30px 110px 294px; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 18px; background: #11100fe8; color: var(--text); content: "Drop images into this chat"; font-size: 16px; }
+    #attachBtn { width: 27px; height: 27px; }
+    #sendBtn { width: 28px; height: 28px; border-radius: 6px; font-size: 15px; }
+    #composerHint { min-height: 14px; padding-top: 3px; color: var(--muted); font-size: 10px; text-align: center; }
+    #workspace.dragging::after { position: fixed; z-index: 20; inset: 70px 30px 100px 294px; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 12px; background: var(--overlay); color: var(--text); content: "Drop images into this chat"; font-size: 15px; }
 
-    dialog { width: min(560px, calc(100vw - 28px)); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px #000a; }
+    #queuePanel { display: flex; max-height: 140px; flex-direction: column; gap: 2px; margin: 0 3px 5px; overflow: auto; }
+    .queue-item { display: grid; min-height: 28px; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 5px; padding: 3px 4px 3px 8px; border-left: 2px solid var(--line); border-radius: 4px; background: var(--activity); font-size: 11px; }
+    .queue-item.steer { border-left-color: var(--accent); }
+    .queue-kind { color: var(--muted); font-size: 10px; text-transform: uppercase; }
+    .queue-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .queue-item button { height: 22px; padding: 0 6px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--muted); font-size: 10px; }
+    .queue-item button:hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
+    .queue-item button.queue-steer { color: var(--accent); }
+    .queue-item.editing { outline: 1px solid var(--accent); }
+
+    dialog { width: min(560px, calc(100vw - 28px)); padding: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); box-shadow: 0 24px 80px var(--shadow); }
     dialog::backdrop { background: #0008; }
     .dialog-body { padding: 20px; }
     .dialog-body h2 { margin: 0 0 16px; font-size: 18px; }
@@ -190,7 +250,16 @@
     .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
     .dialog-actions button { padding: 8px 13px; border: 1px solid var(--line); border-radius: 8px; background: transparent; }
     .dialog-actions .primary { border: 0; }
-    #folderDialog { width: min(480px, calc(100vw - 28px)); }
+    #folderDialog { width: min(620px, calc(100vw - 28px)); }
+    .folder-toolbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; }
+    .folder-toolbar button, .folder-create button { padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); }
+    #folderPath { width: 100%; padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+    #folderList { height: 280px; margin-top: 8px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
+    .folder-row { display: flex; width: 100%; align-items: center; gap: 8px; padding: 7px 9px; border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0; background: transparent; color: var(--text); text-align: left; }
+    .folder-row:hover { background: var(--surface-2); }
+    .folder-empty { padding: 18px; color: var(--muted); text-align: center; }
+    .folder-create { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px; margin-top: 8px; }
+    .folder-create input { padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
     .settings-grid .wide { grid-column: 1 / -1; }
     .check { display: flex !important; align-items: center; gap: 8px; }
@@ -243,13 +312,13 @@
       <div id="chat"><div id="chatInner" class="chat-inner"></div></div>
       <div id="composerWrap">
         <form id="composer">
+          <div id="queuePanel" class="hidden" aria-label="Queued messages"></div>
           <div id="attachmentTray" class="hidden"></div>
           <div class="compose-box">
             <textarea id="prompt" rows="2" placeholder="Message BashKitten…" aria-label="Message BashKitten"></textarea>
             <div class="composer-toolbar">
               <input id="files" class="hidden" type="file" accept="image/*" multiple>
               <button id="attachBtn" class="icon-button" type="button" title="Attach images" aria-label="Attach images">＋</button>
-              <select id="delivery" title="Message delivery"><option value="queue">Queue</option><option value="steer">Steer</option></select>
               <select id="model" title="Model"></select>
               <select id="thinking" title="Thinking level"></select>
               <span class="toolbar-spacer"></span>
@@ -265,9 +334,18 @@
   <dialog id="folderDialog">
     <form id="folderForm" class="dialog-body">
       <h2>Working folder</h2>
-      <label>Absolute path<input id="folderPath" required placeholder="/home/user/project"></label>
+      <div class="folder-toolbar">
+        <button id="folderUp" type="button" title="Parent folder">↑</button>
+        <input id="folderPath" required aria-label="Current folder" placeholder="/home/user/project">
+        <button id="folderGo" type="button">Go</button>
+      </div>
+      <div id="folderList" aria-label="Folders"></div>
+      <div class="folder-create">
+        <input id="newFolderName" aria-label="New folder name" placeholder="New folder name">
+        <button id="createFolder" type="button">Create</button>
+      </div>
       <p class="meta">Each session keeps the folder it starts with.</p>
-      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button class="primary">Use folder</button></div>
+      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button class="primary">Use this folder</button></div>
     </form>
   </dialog>
 
@@ -276,6 +354,7 @@
       <h2>Settings</h2>
       <div class="settings-grid">
         <label>Web port<input id="webPort" type="number" min="1024" max="65535"></label>
+        <label>Appearance<select id="theme"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label>
         <label class="wide">Default working folder<input id="defaultCwd"></label>
         <label>Default model<select id="defaultModel"></select></label>
         <label>Default thinking<select id="defaultThinking"></select></label>
@@ -301,6 +380,9 @@
     let config = null;
     let pendingCwd = '';
     let pendingFiles = [];
+    let folderView = {path: '', parent: null};
+    let queueState = {busy: false, steeringMessages: [], queuedMessages: []};
+    let editingQueueId = null;
     const $ = selector => document.querySelector(selector);
 
     async function api(url, options = {}) {
@@ -314,6 +396,10 @@
 
     function escapeHtml(value) {
       return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.dataset.theme = ['light', 'dark'].includes(theme) ? theme : 'system';
     }
 
     function inlineMarkdown(value) {
@@ -417,6 +503,7 @@
       toolBody.append(input);
       details.append(summary, toolBody);
       body.append(details);
+      body.parentElement.classList.add('activity-message');
       return details;
     }
 
@@ -496,6 +583,7 @@
           content.append(pre);
           thought.append(summary, content);
           body.append(thought);
+          body.parentElement.classList.add('activity-message');
         } else if (block.type === 'toolCall') {
           renderToolCall(block, body);
         }
@@ -524,6 +612,7 @@
           details.open = true;
           details.innerHTML = '<summary>Thinking…</summary><div class="tool-body"><pre></pre></div>';
           body.append(details);
+          body.parentElement.classList.add('activity-message');
         }
         details.querySelector('pre').textContent += event.delta;
       } else if (event.type === 'message') {
@@ -533,14 +622,23 @@
         const details = findTool(event.id);
         if (details) details.querySelector('.tool-state').textContent = 'running';
       } else if (event.type === 'agent_start') {
+        queueState.busy = true;
         $('#stopBtn').classList.remove('hidden');
         $('#composerHint').textContent = 'Agent is working';
       } else if (event.type === 'agent_end') {
+        queueState.busy = false;
         $('#stopBtn').classList.add('hidden');
         $('#composerHint').textContent = 'Paste, drag, or attach screenshots';
-        source?.close();
-        source = null;
         loadSessions().catch(() => {});
+        setTimeout(async () => {
+          await refreshQueue().catch(() => {});
+          if (!queueState.busy && !queuedItems().length) {
+            source?.close();
+            source = null;
+          }
+        }, 120);
+      } else if (event.type === 'queue_state') {
+        renderQueueState(event.data);
       } else if (event.type === 'model_change') {
         $('#composerHint').textContent = `Using ${event.model}`;
       } else if (event.type === 'compaction_start') {
@@ -557,6 +655,7 @@
         details.className = 'activity';
         details.innerHTML = `<summary><span class="tool-name">compaction</span><span class="tool-focus">${escapeHtml(formatTokens(entry.tokensBefore || 0))} tokens summarized</span><span class="tool-state">done</span></summary><div class="tool-body"><pre>${escapeHtml(entry.summary || '')}</pre></div>`;
         body.append(details);
+        body.parentElement.classList.add('activity-message');
       }
     }
 
@@ -590,12 +689,110 @@
     async function loadSettings() {
       const value = await api('/api/settings');
       config = value.config;
+      applyTheme(config.theme);
       pendingCwd = config.default_cwd;
       $('#webPort').value = config.web_port;
+      $('#theme').value = config.theme || 'system';
       $('#defaultCwd').value = config.default_cwd;
       $('#llamaEnabled').checked = config.llama.enabled;
       $('#llamaPort').value = config.llama.port;
       $('#llamaContext').value = config.llama.context_size;
+    }
+
+    function queuedItems() {
+      return [
+        ...(queueState.steeringMessages || []).map(item => ({...item, kind: 'steer'})),
+        ...(queueState.queuedMessages || []).map(item => ({...item, kind: 'queued'}))
+      ];
+    }
+
+    function renderQueueState(value = {}) {
+      queueState = {
+        busy: Boolean(value.busy),
+        steeringMessages: value.steeringMessages || [],
+        queuedMessages: value.queuedMessages || []
+      };
+      const panel = $('#queuePanel');
+      panel.innerHTML = '';
+      const items = queuedItems();
+      panel.classList.toggle('hidden', !items.length);
+      for (const item of items) {
+        const row = document.createElement('div');
+        row.className = `queue-item ${item.kind === 'steer' ? 'steer' : ''} ${editingQueueId === item.id ? 'editing' : ''}`.trim();
+        const kind = document.createElement('span');
+        kind.className = 'queue-kind';
+        kind.textContent = item.kind;
+        const text = document.createElement('span');
+        text.className = 'queue-text';
+        text.textContent = item.content || (item.attachments?.length ? `${item.attachments.length} image attachment(s)` : '(empty message)');
+        text.title = item.content || '';
+        row.append(kind, text);
+        if (item.kind !== 'steer') {
+          const steer = document.createElement('button');
+          steer.type = 'button';
+          steer.className = 'queue-steer';
+          steer.textContent = 'Steer';
+          steer.title = 'Deliver at the next safe agent boundary';
+          steer.onclick = () => mutateQueued(item.id, 'promote');
+          row.append(steer);
+        } else {
+          row.append(document.createElement('span'));
+        }
+        const edit = document.createElement('button');
+        edit.type = 'button';
+        edit.textContent = 'Edit';
+        edit.onclick = () => beginQueueEdit(item);
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.textContent = '×';
+        remove.title = 'Remove queued message';
+        remove.onclick = () => mutateQueued(item.id, 'remove');
+        row.append(edit, remove);
+        panel.append(row);
+      }
+    }
+
+    async function refreshQueue() {
+      if (!current) return renderQueueState();
+      const value = await api(`/api/sessions/${current.id}/status`);
+      renderQueueState(value.data);
+    }
+
+    async function mutateQueued(id, action, content = null) {
+      if (!current) return;
+      try {
+        const value = await api(`/api/sessions/${current.id}/queue`, {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({id, action, content})
+        });
+        if (editingQueueId === id) cancelQueueEdit();
+        renderQueueState(value.data);
+      } catch (error) {
+        await refreshQueue().catch(() => {});
+        alert(error.message);
+      }
+    }
+
+    function beginQueueEdit(item) {
+      editingQueueId = item.id;
+      pendingFiles = [];
+      renderAttachments();
+      $('#prompt').value = item.content || '';
+      $('#prompt').dispatchEvent(new Event('input'));
+      $('#composerHint').textContent = 'Editing queued message · Esc to cancel';
+      $('#attachBtn').disabled = true;
+      renderQueueState(queueState);
+      $('#prompt').focus();
+    }
+
+    function cancelQueueEdit() {
+      editingQueueId = null;
+      $('#prompt').value = '';
+      $('#prompt').style.height = 'auto';
+      $('#composerHint').textContent = queueState.busy ? 'Agent is working' : 'Paste, drag, or attach screenshots';
+      $('#attachBtn').disabled = false;
+      renderQueueState(queueState);
     }
 
     async function loadSessions() {
@@ -651,7 +848,6 @@
       $('#folderBtn').disabled = true;
       $('#folderBtn').title = 'The working folder is fixed for this session';
       $('#stopBtn').classList.toggle('hidden', !session.running);
-      $('#delivery').classList.remove('hidden');
       if (session.model) {
         $('#model').value = session.model;
         setThinking($('#model'));
@@ -670,6 +866,7 @@
       history.entries.forEach(renderEntry);
       bufferingEvents = false;
       pendingEvents.forEach(renderEvent);
+      await refreshQueue().catch(() => renderQueueState());
       document.querySelectorAll('.session').forEach(element => element.classList.toggle('active', element.dataset.id === session.id));
       $('#chat').scrollTop = $('#chat').scrollHeight;
     }
@@ -679,14 +876,15 @@
       source?.close();
       source = null;
       pendingFiles = [];
+      editingQueueId = null;
       renderAttachments();
+      renderQueueState();
       pendingCwd = config?.default_cwd || '';
       $('#title').textContent = 'New chat';
       $('#folderLabel').textContent = pendingCwd || 'Set folder';
       $('#folderBtn').disabled = false;
       $('#folderBtn').title = 'Set working folder';
       $('#stopBtn').classList.add('hidden');
-      $('#delivery').classList.add('hidden');
       $('#usage').textContent = '';
       if (config) {
         $('#model').value = config.default_model;
@@ -721,18 +919,6 @@
         item.append(image, remove);
         tray.append(item);
       });
-    }
-
-    function optimisticUser(text, files) {
-      const body = messageRow('user');
-      if (text) { const content = document.createElement('div'); content.className = 'markdown'; content.innerHTML = markdown(text); body.append(content); }
-      if (files.length) {
-        const holder = document.createElement('div');
-        holder.className = 'message-images';
-        for (const file of files) { const image = document.createElement('img'); image.src = URL.createObjectURL(file); image.alt = file.name; holder.append(image); }
-        body.append(holder);
-      }
-      $('#chat').scrollTop = $('#chat').scrollHeight;
     }
 
     async function applyCurrentModel() {
@@ -782,15 +968,57 @@
     };
 
     $('#newBtn').onclick = beginNewSession;
-    $('#folderBtn').onclick = () => {
+    async function loadFolder(path) {
+      const value = await api(`/api/folders?path=${encodeURIComponent(path || pendingCwd)}`);
+      folderView = value;
+      $('#folderPath').value = value.path;
+      $('#folderUp').disabled = !value.parent;
+      const list = $('#folderList');
+      list.innerHTML = '';
+      if (!value.folders.length) {
+        list.innerHTML = '<div class="folder-empty">No subfolders</div>';
+        return;
+      }
+      for (const folder of value.folders) {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'folder-row';
+        row.innerHTML = `<span aria-hidden="true">▸</span><span>${escapeHtml(folder.name)}</span>`;
+        row.onclick = () => loadFolder(folder.path).catch(error => alert(error.message));
+        list.append(row);
+      }
+    }
+
+    $('#folderBtn').onclick = async () => {
       if (current) return;
-      $('#folderPath').value = pendingCwd;
       $('#folderDialog').showModal();
-      $('#folderPath').focus();
+      try { await loadFolder(pendingCwd); }
+      catch (error) { alert(error.message); }
     };
-    $('#folderForm').onsubmit = event => {
+    $('#folderGo').onclick = () => loadFolder($('#folderPath').value.trim()).catch(error => alert(error.message));
+    $('#folderUp').onclick = () => folderView.parent && loadFolder(folderView.parent).catch(error => alert(error.message));
+    $('#createFolder').onclick = async () => {
+      const name = $('#newFolderName').value.trim();
+      if (!name) return;
+      try {
+        const value = await api('/api/folders', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({parent: folderView.path, name})
+        });
+        $('#newFolderName').value = '';
+        await loadFolder(value.path);
+      } catch (error) { alert(error.message); }
+    };
+    $('#folderForm').onsubmit = async event => {
       event.preventDefault();
-      pendingCwd = $('#folderPath').value.trim();
+      try {
+        if ($('#folderPath').value.trim() !== folderView.path) await loadFolder($('#folderPath').value.trim());
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+      pendingCwd = folderView.path;
       $('#folderLabel').textContent = pendingCwd || 'Set folder';
       $('#folderDialog').close();
       $('#prompt').focus();
@@ -807,7 +1035,10 @@
     $('#workspace').addEventListener('dragleave', event => { if (!event.relatedTarget || !$('#workspace').contains(event.relatedTarget)) $('#workspace').classList.remove('dragging'); });
     $('#workspace').addEventListener('drop', event => { event.preventDefault(); $('#workspace').classList.remove('dragging'); addImages(event.dataTransfer.files); });
     $('#prompt').addEventListener('input', event => { event.target.style.height = 'auto'; event.target.style.height = `${Math.min(event.target.scrollHeight, 190)}px`; });
-    $('#prompt').addEventListener('keydown', event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); $('#composer').requestSubmit(); } });
+    $('#prompt').addEventListener('keydown', event => {
+      if (event.key === 'Escape' && editingQueueId) { event.preventDefault(); cancelQueueEdit(); }
+      else if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); $('#composer').requestSubmit(); }
+    });
 
     $('#model').onchange = async () => { setThinking($('#model')); try { await applyCurrentModel(); } catch (error) { alert(error.message); } };
     $('#thinking').onchange = async () => { try { await applyCurrentModel(); } catch (error) { alert(error.message); } };
@@ -817,13 +1048,19 @@
       event.preventDefault();
       const text = $('#prompt').value.trim();
       if (!text && !pendingFiles.length) return;
+      if (editingQueueId) {
+        if (!text) return;
+        $('#sendBtn').disabled = true;
+        await mutateQueued(editingQueueId, 'edit', text);
+        $('#sendBtn').disabled = false;
+        return;
+      }
       const files = [...pendingFiles];
       $('#prompt').value = '';
       $('#prompt').style.height = 'auto';
       pendingFiles = [];
       renderAttachments();
       if ($('#chatInner .welcome')) $('#chatInner').innerHTML = '';
-      optimisticUser(text, files);
       $('#sendBtn').disabled = true;
       try {
         if (!current) {
@@ -838,14 +1075,15 @@
           $('#title').textContent = current.title;
           $('#folderLabel').textContent = current.cwd;
           $('#folderBtn').disabled = true;
-          $('#delivery').classList.remove('hidden');
         }
-        await connectSession(current.id);
+        if (!source) await connectSession(current.id);
         const messageForm = new FormData();
         messageForm.append('content', text);
-        messageForm.append('delivery', $('#delivery').value);
+        messageForm.append('delivery', 'queue');
         for (const file of files) messageForm.append('file', file);
-        await api(`/api/sessions/${current.id}/messages`, {method: 'POST', body: messageForm});
+        const result = await api(`/api/sessions/${current.id}/messages`, {method: 'POST', body: messageForm});
+        renderQueueState(result.data);
+        setTimeout(() => refreshQueue().catch(() => {}), 100);
         $('#stopBtn').classList.remove('hidden');
       } catch (error) {
         const body = messageRow('assistant', 'error');
@@ -866,6 +1104,7 @@
     $('#settingsForm').onsubmit = async event => {
       event.preventDefault();
       config.web_port = Number($('#webPort').value);
+      config.theme = $('#theme').value;
       config.default_cwd = $('#defaultCwd').value;
       config.default_model = $('#defaultModel').value;
       config.default_thinking = $('#defaultThinking').value;
@@ -873,6 +1112,7 @@
       config.llama.port = Number($('#llamaPort').value);
       config.llama.context_size = Number($('#llamaContext').value);
       await api('/api/settings', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(config)});
+      applyTheme(config.theme);
       $('#settingsDialog').close();
       if (!current) beginNewSession();
     };
@@ -886,7 +1126,11 @@
     };
 
     boot();
-    setInterval(() => { if (csrf) loadSessions().catch(() => {}); }, 5000);
+    setInterval(() => {
+      if (!csrf) return;
+      loadSessions().catch(() => {});
+      if (current) refreshQueue().catch(() => {});
+    }, 5000);
   </script>
 </body>
 </html>

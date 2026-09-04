@@ -72,6 +72,20 @@ pub enum ControlRequest {
         model: String,
         thinking: String,
     },
+    QueueAction {
+        id: String,
+        action: QueueAction,
+        #[serde(default)]
+        content: Option<String>,
+    },
+}
+
+#[derive(Clone, Copy, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum QueueAction {
+    Edit,
+    Promote,
+    Remove,
 }
 
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]

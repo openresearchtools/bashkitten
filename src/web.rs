@@ -2,7 +2,7 @@ use crate::auth;
 use crate::config::AppConfig;
 use crate::models;
 use crate::paths::{AppPaths, set_private_file};
-use crate::session::{self, ControlRequest, Delivery, NewSession};
+use crate::session::{self, ControlRequest, Delivery, NewSession, QueueAction};
 use anyhow::{Context, Result};
 use async_stream::stream;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State};
@@ -17,7 +17,7 @@ use serde_json::{Value, json};
 use std::convert::Infallible;
 use std::fs;
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -67,6 +67,24 @@ struct ModelChange {
     thinking: String,
 }
 
+#[derive(Deserialize)]
+struct QueueMutation {
+    id: String,
+    action: QueueAction,
+    content: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct FolderQuery {
+    path: Option<PathBuf>,
+}
+
+#[derive(Deserialize)]
+struct CreateFolder {
+    parent: PathBuf,
+    name: String,
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct Bootstrap {
@@ -92,8 +110,11 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
         .route("/api/sessions/{id}/segments/{segment}", get(read_segment))
         .route("/api/sessions/{id}/events", get(events))
         .route("/api/sessions/{id}/messages", post(send_message))
+        .route("/api/sessions/{id}/status", get(session_status))
+        .route("/api/sessions/{id}/queue", post(mutate_queue))
         .route("/api/sessions/{id}/stop", post(stop_session))
         .route("/api/sessions/{id}/model", post(change_model))
+        .route("/api/folders", get(list_folders).post(create_folder))
         .route("/api/settings", get(get_settings).post(save_settings))
         .route("/api/provider/import-pi", post(import_pi_auth))
         .route("/api/llama/restart", post(restart_llama))
@@ -446,6 +467,135 @@ async fn send_message(
         },
     )?;
     Ok(Json(serde_json::to_value(reply).expect("reply")))
+}
+
+async fn session_status(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+) -> ApiResult<Json<Value>> {
+    authenticated(&state, &headers)?;
+    let socket = session::control_socket(&state.paths, &id)?;
+    if !session::socket_is_live(&socket) {
+        return Ok(Json(json!({
+            "ok": true,
+            "message": "offline",
+            "data": {
+                "busy": false,
+                "steering": 0,
+                "queued": 0,
+                "steeringMessages": [],
+                "queuedMessages": []
+            }
+        })));
+    }
+    let reply = session::send(&state.paths, &id, &ControlRequest::Status)?;
+    Ok(Json(serde_json::to_value(reply).expect("reply")))
+}
+
+async fn mutate_queue(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+    Json(body): Json<QueueMutation>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let socket = session::control_socket(&state.paths, &id)?;
+    if !session::socket_is_live(&socket) {
+        return Err(ApiError(
+            StatusCode::CONFLICT,
+            "Agent session is no longer running".into(),
+        ));
+    }
+    let reply = session::send(
+        &state.paths,
+        &id,
+        &ControlRequest::QueueAction {
+            id: body.id,
+            action: body.action,
+            content: body.content,
+        },
+    )?;
+    Ok(Json(serde_json::to_value(reply).expect("reply")))
+}
+
+async fn list_folders(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    Query(query): Query<FolderQuery>,
+) -> ApiResult<Json<Value>> {
+    authenticated(&state, &headers)?;
+    let requested = query.path.unwrap_or_else(|| {
+        state
+            .config
+            .read()
+            .expect("config lock")
+            .default_cwd
+            .clone()
+    });
+    let current = fs::canonicalize(&requested)
+        .with_context(|| format!("open folder {}", requested.display()))?;
+    if !current.is_dir() {
+        return Err(ApiError(
+            StatusCode::BAD_REQUEST,
+            format!("Not a folder: {}", current.display()),
+        ));
+    }
+    let mut folders = fs::read_dir(&current)
+        .with_context(|| format!("read folder {}", current.display()))?
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
+        .map(|entry| {
+            json!({
+                "name": entry.file_name().to_string_lossy(),
+                "path": entry.path()
+            })
+        })
+        .collect::<Vec<_>>();
+    folders.sort_by_key(|entry| {
+        entry
+            .get("name")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_lowercase()
+    });
+    folders.truncate(500);
+    Ok(Json(json!({
+        "path": current,
+        "parent": current.parent(),
+        "folders": folders
+    })))
+}
+
+async fn create_folder(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    Json(body): Json<CreateFolder>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let name = body.name.trim();
+    let mut components = Path::new(name).components();
+    if name.is_empty()
+        || !matches!(components.next(), Some(Component::Normal(_)))
+        || components.next().is_some()
+    {
+        return Err(ApiError(
+            StatusCode::BAD_REQUEST,
+            "Folder name must be one ordinary path component".into(),
+        ));
+    }
+    let parent = fs::canonicalize(&body.parent)
+        .with_context(|| format!("open folder {}", body.parent.display()))?;
+    if !parent.is_dir() {
+        return Err(ApiError(
+            StatusCode::BAD_REQUEST,
+            "Parent is not a folder".into(),
+        ));
+    }
+    let created = parent.join(name);
+    fs::create_dir(&created).with_context(|| format!("create folder {}", created.display()))?;
+    let created = fs::canonicalize(created).context("resolve newly created folder")?;
+    Ok(Json(json!({"ok": true, "path": created})))
 }
 
 async fn stop_session(

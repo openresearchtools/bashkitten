@@ -12,11 +12,21 @@ pub struct AppConfig {
     pub web_port: u16,
     pub web_restart_on_failure: bool,
     pub start_at_login: bool,
+    pub theme: UiTheme,
     pub default_cwd: PathBuf,
     pub default_model: String,
     pub default_thinking: String,
     pub compatible_providers: Vec<CompatibleProvider>,
     pub llama: LlamaConfig,
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum UiTheme {
+    #[default]
+    System,
+    Light,
+    Dark,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -97,6 +107,7 @@ impl Default for AppConfig {
             web_port: 3939,
             web_restart_on_failure: true,
             start_at_login: false,
+            theme: UiTheme::System,
             default_cwd: home.clone(),
             default_model: "openai-codex/gpt-5.5".into(),
             default_thinking: "medium".into(),

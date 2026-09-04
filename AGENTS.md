@@ -131,16 +131,19 @@ Its responsibilities are limited to:
 - First-time signup and subsequent login for one local Web UI user.
 - Listing running and finished sessions.
 - Creating, opening, resuming, viewing, steering, queueing, and stopping sessions.
+- Showing every pending steering and follow-up message as a compact row immediately above the composer. Each follow-up row can be promoted to steering, removed, or loaded back into the composer for editing without losing its position or attachments. The default Pi-compatible queue mode is one-at-a-time, so multiple follow-ups remain FIFO and are delivered as separate turns.
 - Presenting each session primarily as a chat view.
 - Loading the newest numbered JSONL immediately.
 - Loading older JSONLs incrementally when the user scrolls upward.
 - Reading completed session history directly from the numbered JSONLs.
 - Connecting to a running session's control socket and combining completed JSONL history with its live in-memory stream.
 - Sending text messages and attached photos or screenshots to sessions.
+- Choosing a new session's working directory with a small local folder-only picker that lists subfolders, moves to the parent, accepts an absolute path, and can create one new subfolder. It must not grow into a general file manager.
 - Displaying normal assistant output and calls and results from the seven built-in tools.
 - Displaying Pi-equivalent token consumption, context percentage, input and output tokens, cache usage, cache statistics, and cost values supplied by the agent process.
 - Configuring, authenticating, listing, and selecting models and model-supported thinking levels from the three provider modes defined below.
 - Managing the local llama.cpp router and its models through an ordinary settings interface.
+- Offering `System`, `Dark`, and `Light` appearance modes. `System` follows the browser/desktop color preference automatically. Both palettes use neutral application greys and restrained blue accents; transcript and tool activity remain compact rather than card-heavy.
 
 The Web UI must bind to `127.0.0.1` by default. Its port comes from BashKitten's local configuration. Changing the port restarts only the Web UI server and must not interrupt agent sessions.
 

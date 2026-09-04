@@ -1629,6 +1629,19 @@ impl<T> PendingMessageQueue<T> {
         self.messages.len()
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.messages.iter()
+    }
+
+    pub fn find_mut(&mut self, mut predicate: impl FnMut(&T) -> bool) -> Option<&mut T> {
+        self.messages.iter_mut().find(|message| predicate(message))
+    }
+
+    pub fn remove_first(&mut self, predicate: impl FnMut(&T) -> bool) -> Option<T> {
+        let position = self.messages.iter().position(predicate)?;
+        self.messages.remove(position)
+    }
+
     pub fn clear(&mut self) {
         self.messages.clear();
     }
@@ -2139,6 +2152,23 @@ mod tests {
         let third = queues.drain_at_boundary(true).unwrap();
         assert_eq!(third.queue, DrainedQueue::FollowUp);
         assert_eq!(third.messages, vec!["follow"]);
+
+        queues.follow_up.enqueue("edit-me");
+        assert_eq!(
+            queues.follow_up.iter().copied().collect::<Vec<_>>(),
+            vec!["edit-me"]
+        );
+        *queues
+            .follow_up
+            .find_mut(|message| *message == "edit-me")
+            .unwrap() = "edited";
+        assert_eq!(
+            queues
+                .follow_up
+                .remove_first(|message| *message == "edited"),
+            Some("edited")
+        );
+        assert!(queues.follow_up.is_empty());
 
         queues.steering.set_mode(QueueMode::All);
         queues.steering.enqueue("a");
