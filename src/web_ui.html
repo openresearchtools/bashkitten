@@ -15,9 +15,9 @@
       --line-soft: #343438;
       --text: #e8e8e8;
       --muted: #a6a6aa;
-      --accent: #5680c2;
-      --accent-hover: #6792d2;
-      --accent-text: #ffffff;
+      --accent: #a0a0a5;
+      --accent-hover: #b8b8bd;
+      --accent-text: #1e1e1e;
       --danger: #e07171;
       --ok: #6fbd86;
       --code: #181818;
@@ -37,8 +37,8 @@
       --line-soft: #dcdcdf;
       --text: #242426;
       --muted: #66666b;
-      --accent: #4776b9;
-      --accent-hover: #3968aa;
+      --accent: #5f5f65;
+      --accent-hover: #444449;
       --accent-text: #ffffff;
       --danger: #b84444;
       --ok: #34804e;
@@ -59,8 +59,8 @@
         --line-soft: #dcdcdf;
         --text: #242426;
         --muted: #66666b;
-        --accent: #4776b9;
-        --accent-hover: #3968aa;
+        --accent: #5f5f65;
+        --accent-hover: #444449;
         --accent-text: #ffffff;
         --danger: #b84444;
         --ok: #34804e;
@@ -120,11 +120,11 @@
 
     #app { display: grid; grid-template-columns: 280px minmax(0, 1fr); height: 100dvh; }
     #sidebar { display: flex; min-width: 0; flex-direction: column; border-right: 1px solid var(--line-soft); background: var(--sidebar); }
-    .sidebar-header { height: 52px; padding: 6px 8px; border-bottom: 1px solid var(--line-soft); }
+    .sidebar-header { height: 58px; padding: 8px; border-bottom: 1px solid var(--line-soft); }
     .new-chat {
       display: flex;
       width: 100%;
-      height: 39px;
+      height: 41px;
       align-items: center;
       gap: 10px;
       padding: 0 10px;
@@ -220,6 +220,39 @@
     .message-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
     .message-images img { max-width: 300px; max-height: 240px; border-radius: 10px; object-fit: contain; }
 
+    .turn-work {
+      margin: 5px 0 14px;
+      border: 0;
+      border-bottom: 1px solid var(--line-soft);
+      color: var(--muted);
+    }
+    .turn-work > summary {
+      display: flex;
+      min-height: 35px;
+      align-items: center;
+      gap: 7px;
+      padding: 2px 0 6px;
+      cursor: pointer;
+      list-style: none;
+      font-size: 13px;
+    }
+    .turn-work > summary::-webkit-details-marker { display: none; }
+    .turn-work > summary::after { color: var(--muted); content: "›"; font-size: 17px; transition: transform .12s; }
+    .turn-work[open] > summary::after { transform: rotate(90deg); }
+    .turn-work-body { padding: 2px 0 9px; }
+    .thinking-block { margin: 2px 0 7px; color: var(--muted); }
+    .thinking-label { display: block; margin-bottom: 2px; font-size: 12px; font-weight: 570; }
+    .thinking-block pre {
+      margin: 0;
+      padding: 1px 0 4px;
+      overflow: visible;
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      font: italic 13px/1.55 ui-sans-serif, system-ui, sans-serif;
+      white-space: pre-wrap;
+    }
+
     .activity {
       margin: 0;
       overflow: visible;
@@ -249,16 +282,18 @@
     .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
     .attachment img { width: 100%; height: 100%; object-fit: cover; }
     .attachment button { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: #000c; color: white; font-size: 12px; }
-    .compose-box { overflow: visible; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 6px 22px var(--shadow); }
-    .compose-box:focus-within { border-color: var(--accent); }
+    .compose-box { overflow: visible; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: none; }
+    .compose-box:focus-within { border-color: var(--line); }
     #prompt { display: block; width: 100%; min-height: 42px; max-height: 160px; padding: 10px 11px 2px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.4; }
     .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 2px; padding: 4px 5px 5px; }
     .composer-toolbar select { height: 27px; min-width: 0; padding: 0 22px 0 6px; overflow: hidden; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; text-overflow: ellipsis; cursor: pointer; }
     .composer-toolbar select:hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
-    #model { width: 150px; } #thinking { width: 82px; }
+    .composer-toolbar select:focus { border-color: var(--line); outline: 0; box-shadow: none; }
+    #model { width: 100px; } #thinking { width: 82px; }
     .toolbar-spacer { flex: 1; }
     #attachBtn { width: 27px; height: 27px; }
-    #sendBtn { width: 29px; height: 29px; border-radius: 50%; font-size: 15px; }
+    #sendBtn { width: 29px; height: 29px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 15px; }
+    #sendBtn:hover { background: var(--muted); }
     #composerHint { min-height: 14px; padding-top: 3px; color: var(--muted); font-size: 10px; text-align: center; }
     #workspace.dragging::after { position: fixed; z-index: 20; inset: 70px 30px 100px 294px; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 12px; background: var(--overlay); color: var(--text); content: "Drop images into this chat"; font-size: 15px; }
 
@@ -416,6 +451,7 @@
     let folderView = {path: '', parent: null};
     let queueState = {busy: false, steeringMessages: [], queuedMessages: []};
     let editingQueueId = null;
+    let renderedTurn = null;
     const $ = selector => document.querySelector(selector);
 
     async function api(url, options = {}) {
@@ -487,6 +523,88 @@
       return body;
     }
 
+    function messageTime(value) {
+      const time = Number(value);
+      return Number.isFinite(time) && time > 0 ? time : Date.now();
+    }
+
+    function elapsedLabel(milliseconds) {
+      let seconds = Math.max(1, Math.round(milliseconds / 1000));
+      const hours = Math.floor(seconds / 3600);
+      seconds -= hours * 3600;
+      const minutes = Math.floor(seconds / 60);
+      seconds -= minutes * 60;
+      const parts = [];
+      if (hours) parts.push(`${hours}h`);
+      if (minutes) parts.push(`${minutes}m`);
+      if (seconds || !parts.length) parts.push(`${seconds}s`);
+      return parts.join(' ');
+    }
+
+    function beginRenderedTurn(timestamp) {
+      finishRenderedTurn(timestamp);
+      const startedAt = messageTime(timestamp);
+      renderedTurn = {startedAt, lastAt: startedAt, work: null, label: null, body: null};
+    }
+
+    function touchRenderedTurn(timestamp) {
+      if (!renderedTurn) return;
+      renderedTurn.lastAt = Math.max(renderedTurn.lastAt, messageTime(timestamp));
+    }
+
+    function ensureTurnWork() {
+      if (!renderedTurn) beginRenderedTurn(Date.now());
+      if (renderedTurn.work) {
+        renderedTurn.work.open = true;
+        return renderedTurn.body;
+      }
+      const work = document.createElement('details');
+      work.className = 'turn-work';
+      work.open = true;
+      const summary = document.createElement('summary');
+      const label = document.createElement('span');
+      label.textContent = 'Working…';
+      summary.append(label);
+      const body = document.createElement('div');
+      body.className = 'turn-work-body';
+      work.append(summary, body);
+      $('#chatInner').append(work);
+      renderedTurn.work = work;
+      renderedTurn.label = label;
+      renderedTurn.body = body;
+      return body;
+    }
+
+    function finishRenderedTurn(timestamp) {
+      if (!renderedTurn) return;
+      touchRenderedTurn(timestamp);
+      if (renderedTurn.work) {
+        renderedTurn.label.textContent = `Worked for ${elapsedLabel(renderedTurn.lastAt - renderedTurn.startedAt)}`;
+        renderedTurn.work.open = false;
+      }
+      renderedTurn = null;
+    }
+
+    function renderThinking(value, live = false) {
+      if (!value && !live) return;
+      const work = ensureTurnWork();
+      let block = live ? $('#liveThinking') : null;
+      if (!block) {
+        block = document.createElement('div');
+        block.className = 'thinking-block';
+        if (live) block.id = 'liveThinking';
+        const label = document.createElement('span');
+        label.className = 'thinking-label';
+        label.textContent = live ? 'Thinking…' : 'Thinking';
+        const text = document.createElement('pre');
+        block.append(label, text);
+        work.append(block);
+      }
+      const text = block.querySelector('pre');
+      if (live) text.textContent += value;
+      else text.textContent = value;
+    }
+
     function renderImages(content, body) {
       const images = (Array.isArray(content) ? content : []).filter(block => block.type === 'image');
       if (!images.length) return;
@@ -549,14 +667,14 @@
       toolBody.append(state);
       details.append(summary, toolBody);
       body.append(details);
-      body.parentElement.classList.add('activity-message');
       return details;
     }
 
     function renderToolResult(message) {
+      touchRenderedTurn(message.timestamp);
       let details = findTool(message.toolCallId);
       if (!details) {
-        const body = messageRow('assistant');
+        const body = ensureTurnWork();
         details = renderToolCall({id: message.toolCallId, name: message.toolName, arguments: {}}, body);
       }
       details.classList.toggle('error', Boolean(message.isError));
@@ -598,6 +716,7 @@
       if (!message) return;
       if (message.role === 'toolResult') return renderToolResult(message);
       if (message.role === 'user') {
+        beginRenderedTurn(message.timestamp);
         const body = messageRow('user');
         const text = textBlocks(message.content);
         if (text) { const content = document.createElement('div'); content.className = 'markdown'; content.innerHTML = markdown(text); body.append(content); }
@@ -605,34 +724,33 @@
         return;
       }
       if (message.role !== 'assistant') return;
-      const body = messageRow('assistant', message.errorMessage ? 'error' : '');
+      touchRenderedTurn(message.timestamp);
       if (message.errorMessage) {
+        finishRenderedTurn(message.timestamp);
+        const body = messageRow('assistant', 'error');
         body.textContent = message.errorMessage;
         updateUsage(message.usage);
         return;
       }
+      const text = [];
+      let hasToolCall = false;
       for (const block of message.content || []) {
         if (block.type === 'text' && block.text) {
-          const content = document.createElement('div');
-          content.className = 'markdown';
-          content.innerHTML = markdown(block.text);
-          body.append(content);
+          text.push(block.text);
         } else if (block.type === 'thinking' && block.thinking) {
-          const thought = document.createElement('details');
-          thought.className = 'activity thought';
-          const summary = document.createElement('summary');
-          summary.textContent = 'Thinking';
-          const content = document.createElement('div');
-          content.className = 'tool-body';
-          const pre = document.createElement('pre');
-          pre.textContent = block.thinking;
-          content.append(pre);
-          thought.append(summary, content);
-          body.append(thought);
-          body.parentElement.classList.add('activity-message');
+          renderThinking(block.thinking);
         } else if (block.type === 'toolCall') {
-          renderToolCall(block, body);
+          hasToolCall = true;
+          renderToolCall(block, ensureTurnWork());
         }
+      }
+      if (text.length) {
+        if (!hasToolCall) finishRenderedTurn(message.timestamp);
+        const body = messageRow('assistant');
+        const content = document.createElement('div');
+        content.className = 'markdown';
+        content.innerHTML = markdown(text.join('\n'));
+        body.append(content);
       }
       updateUsage(message.usage);
     }
@@ -649,29 +767,26 @@
         if (!body) { body = messageRow('assistant'); body.parentElement.id = 'liveAssistant'; }
         body.textContent += event.delta;
       } else if (event.type === 'thinking_delta') {
-        let details = $('#liveThinking');
-        if (!details) {
-          const body = messageRow('assistant');
-          details = document.createElement('details');
-          details.id = 'liveThinking';
-          details.className = 'activity thought';
-          details.open = true;
-          details.innerHTML = '<summary>Thinking…</summary><div class="tool-body"><pre></pre></div>';
-          body.append(details);
-          body.parentElement.classList.add('activity-message');
-        }
-        details.querySelector('pre').textContent += event.delta;
+        renderThinking(event.delta, true);
       } else if (event.type === 'message') {
         clearLive();
         renderMessage(event.message);
       } else if (event.type === 'tool_start') {
         const details = findTool(event.id);
-        if (details) details.querySelector('.tool-state').textContent = 'Running';
+        if (details) {
+          details.closest('.turn-work-body')?.querySelectorAll('.activity[open]').forEach(item => { if (item !== details) item.open = false; });
+          details.open = true;
+          details.querySelector('.tool-state').textContent = 'Running';
+        }
       } else if (event.type === 'agent_start') {
         queueState.busy = true;
+        if (renderedTurn?.work) renderedTurn.work.open = true;
         $('#stopBtn').classList.remove('hidden');
         $('#composerHint').textContent = 'Agent is working';
+      } else if (event.type === 'turn_end') {
+        finishRenderedTurn(Date.now());
       } else if (event.type === 'agent_end') {
+        finishRenderedTurn(Date.now());
         queueState.busy = false;
         $('#stopBtn').classList.add('hidden');
         $('#composerHint').textContent = 'Paste, drag, or attach screenshots';
@@ -696,12 +811,10 @@
     function renderEntry(entry) {
       if (entry.type === 'message') renderMessage(entry.message);
       else if (entry.type === 'compaction') {
-        const body = messageRow('assistant');
         const details = document.createElement('details');
-        details.className = 'activity';
-        details.innerHTML = `<summary><span class="tool-name">compaction</span><span class="tool-focus">${escapeHtml(formatTokens(entry.tokensBefore || 0))} tokens summarized</span><span class="tool-state">done</span></summary><div class="tool-body"><pre>${escapeHtml(entry.summary || '')}</pre></div>`;
-        body.append(details);
-        body.parentElement.classList.add('activity-message');
+        details.className = 'turn-work';
+        details.innerHTML = `<summary><span>Compacted ${escapeHtml(formatTokens(entry.tokensBefore || 0))} tokens</span></summary><div class="turn-work-body"><div class="thinking-block"><pre>${escapeHtml(entry.summary || '')}</pre></div></div>`;
+        $('#chatInner').append(details);
       }
     }
 
@@ -945,6 +1058,7 @@
         setThinking($('#model'));
         $('#thinking').value = session.thinking || 'off';
       }
+      renderedTurn = null;
       $('#chatInner').innerHTML = '';
       const pendingEvents = [];
       let bufferingEvents = Boolean(session.running);
@@ -956,6 +1070,7 @@
       }
       const history = await api(`/api/sessions/${session.id}/segments/${session.current_segment}`);
       history.entries.forEach(renderEntry);
+      if (renderedTurn) finishRenderedTurn(renderedTurn.lastAt);
       bufferingEvents = false;
       pendingEvents.forEach(renderEvent);
       await refreshQueue().catch(() => renderQueueState());
@@ -969,6 +1084,7 @@
       source = null;
       pendingFiles = [];
       editingQueueId = null;
+      renderedTurn = null;
       renderAttachments();
       renderQueueState();
       pendingCwd = config?.default_cwd || '';

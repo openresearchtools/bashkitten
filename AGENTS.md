@@ -140,11 +140,11 @@ Its responsibilities are limited to:
 - Connecting to a running session's control socket and combining completed JSONL history with its live in-memory stream.
 - Sending text messages and attached photos or screenshots to sessions.
 - Choosing a new session's working directory with a small local folder-only picker that lists subfolders, moves to the parent, accepts an absolute path, and can create one new subfolder. It must not grow into a general file manager.
-- Displaying assistant output as an uncluttered prose transcript, right-aligned user bubbles, and compact expandable activity rows for calls and results from the seven built-in tools. Expanded tool activity shows output and success or failure without exposing a separate permissions interface.
+- Displaying assistant output as an uncluttered prose transcript, right-aligned user bubbles, and compact activity for calls and results from the seven built-in tools without exposing a separate permissions interface. During a live turn, the work area stays open, streams the actual thinking text, and opens the active tool output. When the turn finishes, all thinking and tool activity collapses under one `Worked for …` summary above the still-visible final answer; expanding that summary restores the complete work trace.
 - Displaying Pi-equivalent token consumption, context percentage, input and output tokens, cache usage, cache statistics, and cost values supplied by the agent process.
 - Configuring, authenticating, listing, and selecting models and model-supported thinking levels from the three provider modes defined below.
 - Managing the local llama.cpp router and its models through an ordinary settings interface.
-- Offering `System`, `Dark`, and `Light` appearance modes. `System` follows the browser/desktop color preference automatically. Both palettes use neutral application greys and restrained blue accents; transcript and tool activity remain compact rather than card-heavy.
+- Offering `System`, `Dark`, and `Light` appearance modes. `System` follows the browser/desktop color preference automatically. Both palettes use neutral application greys without colored composer glows; transcript and tool activity remain compact rather than card-heavy.
 
 The Web UI must bind to `127.0.0.1` by default. Its port comes from BashKitten's local configuration. Changing the port restarts only the Web UI server and must not interrupt agent sessions.
 
