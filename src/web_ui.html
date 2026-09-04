@@ -208,7 +208,7 @@
     .welcome .cat { margin-bottom: 8px; font-size: 30px; filter: grayscale(.15); }
     .welcome strong { color: var(--text); font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
     .welcome p { margin: 7px 0 0; font-size: 13px; }
-    .message { display: flex; margin: 16px 0; }
+    .message { position: relative; display: flex; margin: 14px 0 24px; }
     .message.activity-message { margin: 1px 0; }
     .message.user { justify-content: flex-end; }
     .message-content { min-width: 0; max-width: 100%; font-size: 15px; line-height: 1.62; overflow-wrap: anywhere; }
@@ -222,10 +222,25 @@
     .markdown h1 { font-size: 20px; } .markdown h2 { font-size: 17px; } .markdown h3 { font-size: 15px; }
     .markdown code { padding: 2px 5px; border-radius: 4px; background: var(--code); color: var(--text); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
     .markdown pre, .tool-body pre { margin: 6px 0 0; padding: 9px 10px; overflow: auto; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--code); color: var(--text); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
-    .message-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
-    .message-images img { max-width: 300px; max-height: 240px; border-radius: 10px; cursor: zoom-in; object-fit: contain; }
+    .message-images { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 9px; }
+    .inline-image { position: relative; display: inline-flex; overflow: hidden; border: 1px solid var(--line-soft); border-radius: 10px; background: var(--activity); }
+    .message-images img { display: block; max-width: 300px; max-height: 240px; cursor: zoom-in; object-fit: contain; }
+    .image-download { position: absolute; right: 5px; bottom: 5px; display: grid; width: 25px; height: 25px; place-items: center; border: 1px solid #fff4; border-radius: 6px; background: #111c; color: #fff; text-decoration: none; }
+    .image-download:hover { background: #111; }
     .tool-body .message-images { margin: 0; padding: 10px 12px; border-top: 1px solid var(--line-soft); }
     .tool-body .message-images img { max-width: 260px; max-height: 220px; }
+    .sent-attachments { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 8px; }
+    .sent-attachments img { display: block; max-width: 170px; max-height: 132px; cursor: zoom-in; object-fit: contain; }
+    .sent-file { display: flex; min-width: 0; max-width: 290px; height: 37px; align-items: center; gap: 8px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--activity); color: var(--text); text-decoration: none; }
+    .sent-file:hover { background: var(--surface); }
+    .sent-file .attachment-name { font-size: 12px; }
+    .sent-file-download { margin-left: auto; color: var(--muted); font-size: 14px; }
+    .message-actions { position: absolute; bottom: -21px; display: flex; gap: 2px; opacity: .42; transition: opacity .12s; }
+    .message.assistant .message-actions { left: 0; }
+    .message.user .message-actions { right: 0; }
+    .message:hover .message-actions, .message:focus-within .message-actions { opacity: 1; }
+    .message-actions button { height: 20px; padding: 0 5px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 10px; }
+    .message-actions button:hover { background: var(--surface-2); color: var(--text); }
 
     #imageViewer { position: absolute; z-index: 60; inset: 0; display: grid; min-width: 0; min-height: 0; grid-template-rows: 49px minmax(0, 1fr); background: var(--overlay); }
     .image-viewer-toolbar { display: flex; min-width: 0; align-items: center; gap: 4px; padding: 7px 10px 7px 14px; border-bottom: 1px solid var(--line-soft); background: var(--surface); }
@@ -294,7 +309,7 @@
 
     #composerWrap { padding: 0 16px 10px; background: linear-gradient(180deg, transparent, var(--bg) 12px); }
     #composer { width: min(790px, 100%); margin: 0 auto; }
-    #attachmentTray { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 6px 8px; }
+    #attachmentTray { display: flex; flex-wrap: wrap; gap: 7px; padding: 8px 8px 0; }
     .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
     .attachment img { width: 100%; height: 100%; cursor: zoom-in; object-fit: cover; }
     .attachment.file { display: flex; width: min(220px, 100%); height: 40px; align-items: center; gap: 8px; padding: 6px 27px 6px 9px; }
@@ -422,8 +437,8 @@
       <div id="composerWrap">
         <form id="composer">
           <div id="queuePanel" class="hidden" aria-label="Queued messages"></div>
-          <div id="attachmentTray" class="hidden"></div>
           <div class="compose-box">
+            <div id="attachmentTray" class="hidden"></div>
             <textarea id="prompt" rows="2" placeholder="Message BashKitten…" aria-label="Message BashKitten"></textarea>
             <div class="composer-toolbar">
               <input id="files" class="hidden" type="file" multiple>
@@ -552,6 +567,140 @@
       row.append(body);
       $('#chatInner').append(row);
       return body;
+    }
+
+    function attachmentUrl(block, download = false) {
+      if (!current?.id || block?.type !== 'attachment' || !block.path) return null;
+      const marker = '/attachments/';
+      const markerAt = block.path.lastIndexOf(marker);
+      if (markerAt < 0) return null;
+      const parts = block.path.slice(markerAt + marker.length).split('/');
+      if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
+      const url = `/api/sessions/${encodeURIComponent(current.id)}/attachments/${encodeURIComponent(parts[0])}/${encodeURIComponent(parts[1])}`;
+      return download ? `${url}?download=true` : url;
+    }
+
+    function renderStoredAttachments(content, body) {
+      const attachments = (Array.isArray(content) ? content : []).filter(block => block.type === 'attachment');
+      if (!attachments.length) return false;
+      const holder = document.createElement('div');
+      holder.className = 'sent-attachments';
+      for (const block of attachments) {
+        const source = attachmentUrl(block);
+        const download = attachmentUrl(block, true);
+        if (!source || !download) continue;
+        if (String(block.mimeType || '').startsWith('image/')) {
+          const wrapper = document.createElement('span');
+          wrapper.className = 'inline-image';
+          const image = document.createElement('img');
+          image.src = source;
+          image.alt = block.name || 'Attached image';
+          image.tabIndex = 0;
+          image.setAttribute('role', 'button');
+          image.onclick = () => openImageViewer(source, image.alt);
+          image.onkeydown = event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              openImageViewer(source, image.alt);
+            }
+          };
+          const save = document.createElement('a');
+          save.className = 'image-download';
+          save.href = download;
+          save.download = block.name || 'image';
+          save.title = `Download ${block.name || 'image'}`;
+          save.setAttribute('aria-label', save.title);
+          save.textContent = '↓';
+          wrapper.append(image, save);
+          holder.append(wrapper);
+        } else {
+          const save = document.createElement('a');
+          save.className = 'sent-file';
+          save.href = download;
+          save.download = block.name || 'attachment';
+          save.title = block.path;
+          const kind = document.createElement('span');
+          kind.className = 'attachment-kind';
+          kind.textContent = (String(block.name || '').split('.').pop() || 'FILE').slice(0, 5).toUpperCase();
+          const name = document.createElement('span');
+          name.className = 'attachment-name';
+          name.textContent = block.name || 'attachment';
+          const icon = document.createElement('span');
+          icon.className = 'sent-file-download';
+          icon.textContent = '↓';
+          save.append(kind, name, icon);
+          holder.append(save);
+        }
+      }
+      if (!holder.childElementCount) return false;
+      body.append(holder);
+      return true;
+    }
+
+    function messageCopyText(message) {
+      const text = textBlocks(message?.content) || message?.errorMessage || '';
+      const files = (Array.isArray(message?.content) ? message.content : [])
+        .filter(block => block.type === 'attachment')
+        .map(block => `${block.name || 'attachment'} — ${block.path || ''}`);
+      return [text, ...files].filter(Boolean).join('\n');
+    }
+
+    async function copyText(value, button) {
+      try {
+        await navigator.clipboard.writeText(value);
+      } catch {
+        const field = document.createElement('textarea');
+        field.value = value;
+        field.style.position = 'fixed';
+        field.style.opacity = '0';
+        document.body.append(field);
+        field.select();
+        document.execCommand('copy');
+        field.remove();
+      }
+      const label = button.textContent;
+      button.textContent = 'Copied';
+      setTimeout(() => { button.textContent = label; }, 900);
+    }
+
+    function addMessageActions(body, message, entryId) {
+      const actions = document.createElement('div');
+      actions.className = 'message-actions';
+      const copy = document.createElement('button');
+      copy.type = 'button';
+      copy.textContent = 'Copy';
+      copy.title = 'Copy message';
+      copy.onclick = () => copyText(messageCopyText(message), copy);
+      actions.append(copy);
+      if (entryId && current?.id) {
+        const fork = document.createElement('button');
+        fork.type = 'button';
+        fork.textContent = 'Fork';
+        fork.title = 'Create a new chat through this message';
+        fork.onclick = async () => {
+          const sourceId = current?.id;
+          if (!sourceId) return;
+          fork.disabled = true;
+          fork.textContent = 'Forking…';
+          try {
+            const result = await api(`/api/sessions/${encodeURIComponent(sourceId)}/fork`, {
+              method: 'POST',
+              headers: {'content-type': 'application/json'},
+              body: JSON.stringify({entryId})
+            });
+            const sessions = await loadSessions();
+            const created = sessions.find(session => session.id === result.id);
+            if (!created) throw new Error('Fork was created but could not be opened');
+            await openSession(created);
+          } catch (error) {
+            fork.disabled = false;
+            fork.textContent = 'Fork';
+            alert(error.message);
+          }
+        };
+        actions.append(fork);
+      }
+      body.parentElement.append(actions);
     }
 
     function messageTime(value) {
@@ -687,7 +836,9 @@
       if (!images.length) return;
       const holder = document.createElement('div');
       holder.className = 'message-images';
-      for (const block of images) {
+      images.forEach((block, index) => {
+        const wrapper = document.createElement('span');
+        wrapper.className = 'inline-image';
         const image = document.createElement('img');
         image.alt = label;
         image.src = `data:${block.mimeType};base64,${block.data}`;
@@ -700,8 +851,16 @@
             openImageViewer(image.src, image.alt);
           }
         };
-        holder.append(image);
-      }
+        const save = document.createElement('a');
+        save.className = 'image-download';
+        save.href = image.src;
+        save.download = `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'image'}-${index + 1}.${String(block.mimeType || '').split('/')[1] || 'png'}`;
+        save.title = 'Download image';
+        save.setAttribute('aria-label', 'Download image');
+        save.textContent = '↓';
+        wrapper.append(image, save);
+        holder.append(wrapper);
+      });
       body.insertBefore(holder, before);
       return holder;
     }
@@ -878,15 +1037,17 @@
       return `${(value / 1000000).toFixed(value < 10000000 ? 1 : 0)}M`;
     }
 
-    function renderMessage(message) {
+    function renderMessage(message, entryId = null) {
       if (!message) return;
       if (message.role === 'toolResult') return renderToolResult(message);
       if (message.role === 'user') {
         beginRenderedTurn(message.timestamp);
         const body = messageRow('user');
+        const hasStoredAttachments = renderStoredAttachments(message.content, body);
+        if (!hasStoredAttachments) renderImages(message.content, body, 'Attached image');
         const text = textBlocks(message.content);
         if (text) { const content = document.createElement('div'); content.className = 'markdown'; content.innerHTML = markdown(text); body.append(content); }
-        renderImages(message.content, body, 'Attached image');
+        addMessageActions(body, message, entryId);
         return;
       }
       if (message.role !== 'assistant') return;
@@ -896,6 +1057,7 @@
         finishRenderedTurn(message.timestamp);
         const body = messageRow('assistant', 'error');
         body.textContent = message.errorMessage;
+        addMessageActions(body, message, entryId);
         updateUsage(message.usage, modelId);
         return;
       }
@@ -917,13 +1079,14 @@
       if (text.length || imageBlocks.length) {
         if (!hasToolCall) finishRenderedTurn(message.timestamp);
         const body = messageRow('assistant');
+        renderImages(imageBlocks, body, 'Assistant image');
         if (text.length) {
           const content = document.createElement('div');
           content.className = 'markdown';
           content.innerHTML = markdown(text.join('\n'));
           body.append(content);
         }
-        renderImages(imageBlocks, body, 'Assistant image');
+        addMessageActions(body, message, entryId);
       }
       updateUsage(message.usage, modelId);
     }
@@ -943,7 +1106,7 @@
         renderThinking(event.delta, true);
       } else if (event.type === 'message') {
         clearLive();
-        renderMessage(event.message);
+        renderMessage(event.message, event.entryId);
       } else if (event.type === 'tool_start') {
         const details = findTool(event.id);
         if (details) {
@@ -982,7 +1145,7 @@
     }
 
     function renderEntry(entry) {
-      if (entry.type === 'message') renderMessage(entry.message);
+      if (entry.type === 'message') renderMessage(entry.message, entry.id);
       else if (entry.type === 'compaction') {
         updateUsage(entry.usage);
         const details = document.createElement('details');

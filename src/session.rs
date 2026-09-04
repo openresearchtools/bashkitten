@@ -341,6 +341,175 @@ pub fn copy_attachments(paths: &AppPaths, id: &str, sources: &[PathBuf]) -> Resu
     Ok(copied)
 }
 
+fn rewrite_attachment_paths(value: &mut Value, source: &str, destination: &str) {
+    match value {
+        Value::String(text) => {
+            if text.contains(source) {
+                *text = text.replace(source, destination);
+            }
+        }
+        Value::Array(values) => {
+            for value in values {
+                rewrite_attachment_paths(value, source, destination);
+            }
+        }
+        Value::Object(values) => {
+            for value in values.values_mut() {
+                rewrite_attachment_paths(value, source, destination);
+            }
+        }
+        _ => {}
+    }
+}
+
+fn copy_referenced_attachments(
+    source_dir: &Path,
+    destination_dir: &Path,
+    retained_json: &str,
+) -> Result<()> {
+    let source_attachments = source_dir.join("attachments");
+    let destination_attachments = destination_dir.join("attachments");
+    ensure_private_dir(&destination_attachments)?;
+    if !source_attachments.is_dir() {
+        return Ok(());
+    }
+    for entry in walkdir::WalkDir::new(&source_attachments)
+        .min_depth(1)
+        .follow_links(false)
+    {
+        let entry = entry?;
+        let relative = entry.path().strip_prefix(&source_attachments)?;
+        let destination = destination_attachments.join(relative);
+        if entry.file_type().is_dir() {
+            ensure_private_dir(&destination)?;
+        } else if entry.file_type().is_file()
+            && retained_json.contains(&entry.path().to_string_lossy().to_string())
+        {
+            if let Some(parent) = destination.parent() {
+                ensure_private_dir(parent)?;
+            }
+            fs::copy(entry.path(), &destination).with_context(|| {
+                format!(
+                    "copy fork attachment {} to {}",
+                    entry.path().display(),
+                    destination.display()
+                )
+            })?;
+            set_private_file(&destination)?;
+        }
+    }
+    Ok(())
+}
+
+/// Clone a session through one exact persisted entry. The browser supplies only
+/// the entry ID; all history and attachment copying happens here in Rust.
+pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Result<String> {
+    validate_id(source_id)?;
+    if target_entry_id.is_empty()
+        || target_entry_id.len() > 64
+        || !target_entry_id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+    {
+        bail!("Invalid fork entry ID");
+    }
+
+    let source_dir = paths.session_dir(source_id);
+    if !source_dir.is_dir() {
+        bail!("Session does not exist");
+    }
+    let source_dir = fs::canonicalize(&source_dir)?;
+    let new_id = Uuid::now_v7().to_string();
+    let final_dir = paths.session_dir(&new_id);
+    let temporary_dir = paths.sessions_dir().join(format!(".{new_id}.forking"));
+    if final_dir.exists() || temporary_dir.exists() {
+        bail!("Fork destination already exists");
+    }
+    ensure_private_dir(&temporary_dir)?;
+
+    let result = (|| -> Result<String> {
+        let mut segments = fs::read_dir(&source_dir)?
+            .filter_map(|entry| entry.ok())
+            .filter_map(|entry| {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                (name.len() == 12
+                    && name.ends_with(".jsonl")
+                    && name[..6].bytes().all(|byte| byte.is_ascii_digit()))
+                .then_some((name, entry.path()))
+            })
+            .collect::<Vec<_>>();
+        segments.sort_by(|left, right| left.0.cmp(&right.0));
+
+        let source_attachment_prefix = source_dir.join("attachments");
+        let destination_attachment_prefix = final_dir.join("attachments");
+        let source_attachment_prefix = source_attachment_prefix.to_string_lossy().into_owned();
+        let destination_attachment_prefix =
+            destination_attachment_prefix.to_string_lossy().into_owned();
+        let mut retained_json = String::new();
+        let mut found = false;
+
+        'segments: for (name, source_segment) in segments {
+            let destination_segment = temporary_dir.join(name);
+            let mut output = OpenOptions::new()
+                .create_new(true)
+                .write(true)
+                .open(&destination_segment)?;
+            set_private_file(&destination_segment)?;
+            for line in BufReader::new(fs::File::open(&source_segment)?).lines() {
+                let mut value: Value = serde_json::from_str(&line?)?;
+                let is_header = value.get("type").and_then(Value::as_str) == Some("session");
+                let is_target = value.get("id").and_then(Value::as_str) == Some(target_entry_id);
+                if is_target && value.get("type").and_then(Value::as_str) != Some("message") {
+                    bail!("Fork target is not a message");
+                }
+                retained_json.push_str(&serde_json::to_string(&value)?);
+                retained_json.push('\n');
+                if is_header {
+                    let object = value.as_object_mut().context("Invalid session header")?;
+                    object.insert("id".into(), Value::String(new_id.clone()));
+                    object.insert(
+                        "timestamp".into(),
+                        Value::String(
+                            Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+                        ),
+                    );
+                    object.insert("parentSession".into(), Value::String(source_id.to_owned()));
+                }
+                rewrite_attachment_paths(
+                    &mut value,
+                    &source_attachment_prefix,
+                    &destination_attachment_prefix,
+                );
+                serde_json::to_writer(&mut output, &value)?;
+                output.write_all(b"\n")?;
+                if is_target {
+                    found = true;
+                    output.sync_all()?;
+                    break 'segments;
+                }
+            }
+            output.sync_all()?;
+        }
+        if !found {
+            bail!("Fork message is not yet available in session history");
+        }
+
+        let title_path = temporary_dir.join("title");
+        let title = fs::read_to_string(source_dir.join("title"))
+            .unwrap_or_else(|_| "Untitled session\n".into());
+        fs::write(&title_path, title)?;
+        set_private_file(&title_path)?;
+        copy_referenced_attachments(&source_dir, &temporary_dir, &retained_json)?;
+        fs::rename(&temporary_dir, &final_dir)?;
+        Ok(new_id.clone())
+    })();
+
+    if result.is_err() {
+        let _ = fs::remove_dir_all(&temporary_dir);
+    }
+    result
+}
+
 pub fn append_values(paths: &AppPaths, id: &str, values: &[Value]) -> Result<()> {
     validate_id(id)?;
     let dir = paths.session_dir(id);
@@ -491,6 +660,86 @@ mod tests {
         assert_eq!(fs::read_to_string(&copied[0]).unwrap(), "attachment body");
         assert_eq!(
             copied[0].metadata().unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+    }
+
+    #[test]
+    fn fork_copies_history_only_through_target_and_rewrites_attachments() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: temp.path().join("c"),
+            data: temp.path().join("d"),
+            runtime: temp.path().join("r"),
+        };
+        paths.ensure().unwrap();
+        let source_id = create(
+            &paths,
+            &NewSession {
+                cwd: temp.path().to_owned(),
+                model: "p/m".into(),
+                thinking: "off".into(),
+                prompt: "fork source".into(),
+                attachments: vec![],
+                parent: None,
+            },
+        )
+        .unwrap();
+        let upload = Uuid::new_v4().to_string();
+        let attachment_dir = paths
+            .session_dir(&source_id)
+            .join("attachments")
+            .join(&upload);
+        ensure_private_dir(&attachment_dir).unwrap();
+        let attachment = attachment_dir.join("example.txt");
+        fs::write(&attachment, "kept attachment").unwrap();
+        set_private_file(&attachment).unwrap();
+        append_values(
+            &paths,
+            &source_id,
+            &[
+                json!({
+                    "type": "message",
+                    "id": "first-entry",
+                    "parentId": null,
+                    "timestamp": "2026-01-01T00:00:00.000Z",
+                    "message": {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "first"},
+                            {"type": "attachment", "name": "example.txt", "path": attachment, "mimeType": "text/plain"}
+                        ],
+                        "timestamp": 1
+                    }
+                }),
+                json!({
+                    "type": "message",
+                    "id": "second-entry",
+                    "parentId": "first-entry",
+                    "timestamp": "2026-01-01T00:00:01.000Z",
+                    "message": {"role": "user", "content": [{"type": "text", "text": "second"}], "timestamp": 2}
+                }),
+            ],
+        )
+        .unwrap();
+
+        let fork_id = fork_at(&paths, &source_id, "first-entry").unwrap();
+        let entries = read_segment(&paths, &fork_id, 1).unwrap();
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0]["id"], fork_id);
+        assert_eq!(entries[0]["parentSession"], source_id);
+        assert_eq!(entries[1]["id"], "first-entry");
+        let fork_attachment = entries[1]["message"]["content"][1]["path"]
+            .as_str()
+            .unwrap();
+        assert!(fork_attachment.contains(&fork_id));
+        assert!(!fork_attachment.contains(&source_id));
+        assert_eq!(
+            fs::read_to_string(fork_attachment).unwrap(),
+            "kept attachment"
+        );
+        assert_eq!(
+            fs::metadata(fork_attachment).unwrap().permissions().mode() & 0o777,
             0o600
         );
     }

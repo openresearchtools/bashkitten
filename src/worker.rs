@@ -450,7 +450,6 @@ impl Runtime {
         if !queued.content.is_empty() {
             blocks.push(ContentBlock::text(queued.content));
         }
-        let mut attachment_notes = Vec::new();
         let mut images = Vec::new();
         for attachment in queued.attachments {
             let attachment = if attachment.is_absolute() {
@@ -471,9 +470,10 @@ impl Runtime {
                 .first_or_octet_stream()
                 .essence_str()
                 .to_owned();
-            attachment_notes.push(format!(
-                "- name: {name}\n  path: {}\n  media type: {mime_type}",
-                attachment.display()
+            blocks.push(ContentBlock::attachment(
+                &name,
+                attachment.to_string_lossy(),
+                &mime_type,
             ));
             let supported_image = matches!(
                 mime_type.as_str(),
@@ -487,12 +487,6 @@ impl Runtime {
                     mime_type,
                 });
             }
-        }
-        if !attachment_notes.is_empty() {
-            blocks.push(ContentBlock::text(format!(
-                "Attached files saved on disk:\n{}",
-                attachment_notes.join("\n")
-            )));
         }
         blocks.extend(images);
         let message = AgentMessage::User {
@@ -508,9 +502,10 @@ impl Runtime {
         let entry = self.entry(SessionEntryKind::Message {
             message: message.clone(),
         });
+        let entry_id = entry.id.clone();
         self.pending_entries.push(entry);
         self.shared
-            .emit(json!({"type":"message","message":message}));
+            .emit(json!({"type":"message","message":message,"entryId":entry_id}));
         Ok(())
     }
 
@@ -543,6 +538,7 @@ impl Runtime {
             let mut thinking = String::new();
             let mut thinking_signature = None;
             let mut response_id = None;
+            let mut text_signature = None;
             let mut usage = NormalizedUsage::default();
             let mut calls: BTreeMap<u64, PendingToolCall> = BTreeMap::new();
             let mut stop_reason = ProviderStopReason::Stop;
@@ -555,6 +551,15 @@ impl Runtime {
                         text.push_str(&delta);
                         self.shared
                             .emit(json!({"type":"assistant_delta","delta":delta}));
+                    }
+                    Ok(ProviderEvent::TextDone {
+                        text: final_text,
+                        text_signature: signature,
+                    }) => {
+                        if let Some(final_text) = final_text {
+                            text = final_text;
+                        }
+                        text_signature = signature;
                     }
                     Ok(ProviderEvent::ThinkingDelta { delta }) => {
                         thinking.push_str(&delta);
@@ -618,7 +623,10 @@ impl Runtime {
                 });
             }
             if !text.is_empty() {
-                content.push(ContentBlock::text(text));
+                content.push(ContentBlock::Text {
+                    text,
+                    text_signature,
+                });
             }
             for call in calls.values() {
                 let arguments =
@@ -659,9 +667,10 @@ impl Runtime {
             let entry = self.entry(SessionEntryKind::Message {
                 message: message.clone(),
             });
+            let entry_id = entry.id.clone();
             self.pending_entries.push(entry);
             self.shared
-                .emit(json!({"type":"message","message":message}));
+                .emit(json!({"type":"message","message":message,"entryId":entry_id}));
 
             if matches!(
                 stop_reason,
@@ -715,9 +724,10 @@ impl Runtime {
         let entry = self.entry(SessionEntryKind::Message {
             message: message.clone(),
         });
+        let entry_id = entry.id.clone();
         self.pending_entries.push(entry);
         self.shared
-            .emit(json!({"type":"message","message":message,"error":error}));
+            .emit(json!({"type":"message","message":message,"entryId":entry_id,"error":error}));
     }
 
     async fn execute_tools(&mut self, calls: Vec<PendingToolCall>) -> Result<()> {
@@ -763,32 +773,24 @@ impl Runtime {
         });
         let results = join_all(futures).await;
         for (call, result) in results {
-            let (content, details, is_error, provider_output) = match result {
+            let (content, details, is_error) = match result {
                 Ok(result) => {
                     let mut blocks = Vec::new();
-                    let mut output = Vec::new();
                     for block in result.content {
                         match block {
                             tools::ContentBlock::Text { text } => {
-                                output.push(text.clone());
                                 blocks.push(ContentBlock::text(text));
                             }
                             tools::ContentBlock::Image { data, mime_type } => {
-                                output.push(format!("[image: {mime_type}]"));
                                 blocks.push(ContentBlock::Image { data, mime_type });
                             }
                         }
                     }
-                    (
-                        MessageContent::Blocks(blocks),
-                        result.details,
-                        false,
-                        output.join("\n"),
-                    )
+                    (MessageContent::Blocks(blocks), result.details, false)
                 }
                 Err(error) => {
                     let text = error.to_string();
-                    (MessageContent::text(&text), None, true, text)
+                    (MessageContent::text(&text), None, true)
                 }
             };
             let message = AgentMessage::ToolResult {
@@ -802,20 +804,16 @@ impl Runtime {
                 timestamp: Utc::now().timestamp_millis(),
             };
             self.logical_messages.push(message.clone());
-            self.messages.push(ProviderMessage {
-                role: MessageRole::Tool,
-                content: vec![ProviderContent::ToolResult {
-                    tool_call_id: call.id,
-                    output: provider_output,
-                    is_error,
-                }],
-            });
+            if let Some(provider) = to_provider_message(&message) {
+                self.messages.push(provider);
+            }
             let entry = self.entry(SessionEntryKind::Message {
                 message: message.clone(),
             });
+            let entry_id = entry.id.clone();
             self.pending_entries.push(entry);
             self.shared
-                .emit(json!({"type":"message","message":message}));
+                .emit(json!({"type":"message","message":message,"entryId":entry_id}));
         }
         Ok(())
     }
@@ -982,33 +980,73 @@ fn load_current_entries(dir: &Path) -> Result<Vec<SessionEntry>> {
         .collect())
 }
 
-fn message_content_text(content: &MessageContent) -> String {
+fn provider_tool_result_output(content: &MessageContent) -> Value {
     match content {
-        MessageContent::Text(text) => text.clone(),
-        MessageContent::Blocks(blocks) => blocks
-            .iter()
-            .filter_map(|block| match block {
-                ContentBlock::Text { text, .. } => Some(text.clone()),
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-            .join("\n"),
+        MessageContent::Text(text) => Value::String(text.clone()),
+        MessageContent::Blocks(blocks) => {
+            let mut text = Vec::new();
+            let mut rich = Vec::new();
+            let mut has_image = false;
+            for block in blocks {
+                match block {
+                    ContentBlock::Text { text: value, .. } => {
+                        text.push(value.clone());
+                        rich.push(json!({ "type": "input_text", "text": value }));
+                    }
+                    ContentBlock::Image { data, mime_type } => {
+                        has_image = true;
+                        rich.push(json!({
+                            "type": "input_image",
+                            "detail": "auto",
+                            "image_url": format!("data:{mime_type};base64,{data}"),
+                        }));
+                    }
+                    _ => {}
+                }
+            }
+            if has_image {
+                Value::Array(rich)
+            } else if text.is_empty() {
+                Value::String("(no tool output)".into())
+            } else {
+                Value::String(text.join("\n"))
+            }
+        }
     }
 }
 
 fn provider_blocks(content: &MessageContent) -> Vec<ProviderContent> {
     match content {
-        MessageContent::Text(text) => vec![ProviderContent::Text { text: text.clone() }],
+        MessageContent::Text(text) => vec![ProviderContent::Text {
+            text: text.clone(),
+            text_signature: None,
+        }],
         MessageContent::Blocks(blocks) => blocks
             .iter()
             .map(|block| match block {
-                ContentBlock::Text { text, .. } => ProviderContent::Text { text: text.clone() },
+                ContentBlock::Text {
+                    text,
+                    text_signature,
+                } => ProviderContent::Text {
+                    text: text.clone(),
+                    text_signature: text_signature.clone(),
+                },
                 ContentBlock::Image { data, mime_type } => ProviderContent::Image {
                     source: crate::providers::ImageSource::Base64 {
                         media_type: mime_type.clone(),
                         data: data.clone(),
                         detail: None,
                     },
+                },
+                ContentBlock::Attachment {
+                    name,
+                    path,
+                    mime_type,
+                } => ProviderContent::Text {
+                    text: format!(
+                        "Attached file:\n- name: {name}\n- path: {path}\n- media type: {mime_type}"
+                    ),
+                    text_signature: None,
                 },
                 ContentBlock::Thinking {
                     thinking,
@@ -1053,14 +1091,17 @@ fn to_provider_message(message: &AgentMessage) -> Option<ProviderMessage> {
             role: MessageRole::Tool,
             content: vec![ProviderContent::ToolResult {
                 tool_call_id: tool_call_id.clone(),
-                output: message_content_text(content),
+                output: provider_tool_result_output(content),
                 is_error: *is_error,
             }],
         }),
         AgentMessage::BashExecution { .. } => {
             crate::agent::bash_execution_to_text(message).map(|text| ProviderMessage {
                 role: MessageRole::User,
-                content: vec![ProviderContent::Text { text }],
+                content: vec![ProviderContent::Text {
+                    text,
+                    text_signature: None,
+                }],
             })
         }
         AgentMessage::Custom { content, .. } => Some(ProviderMessage {
@@ -1076,6 +1117,7 @@ fn to_provider_message(message: &AgentMessage) -> Option<ProviderMessage> {
                     summary,
                     crate::agent::BRANCH_SUMMARY_SUFFIX
                 ),
+                text_signature: None,
             }],
         }),
         AgentMessage::CompactionSummary { summary, .. } => Some(ProviderMessage {
@@ -1087,6 +1129,7 @@ fn to_provider_message(message: &AgentMessage) -> Option<ProviderMessage> {
                     summary,
                     crate::agent::COMPACTION_SUMMARY_SUFFIX
                 ),
+                text_signature: None,
             }],
         }),
     }

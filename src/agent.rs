@@ -589,6 +589,13 @@ pub enum ContentBlock {
         #[serde(rename = "mimeType")]
         mime_type: String,
     },
+    #[serde(rename = "attachment")]
+    Attachment {
+        name: String,
+        path: String,
+        #[serde(rename = "mimeType")]
+        mime_type: String,
+    },
     #[serde(rename = "thinking")]
     Thinking {
         thinking: String,
@@ -623,6 +630,22 @@ impl ContentBlock {
             mime_type: mime_type.into(),
         }
     }
+
+    pub fn attachment(
+        name: impl Into<String>,
+        path: impl Into<String>,
+        mime_type: impl Into<String>,
+    ) -> Self {
+        Self::Attachment {
+            name: name.into(),
+            path: path.into(),
+            mime_type: mime_type.into(),
+        }
+    }
+}
+
+fn attachment_text(name: &str, path: &str, mime_type: &str) -> String {
+    format!("Attached file:\n- name: {name}\n- path: {path}\n- media type: {mime_type}")
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -971,6 +994,11 @@ fn content_chars(content: &MessageContent) -> u64 {
             total.saturating_add(match block {
                 ContentBlock::Text { text, .. } => utf16_len(text),
                 ContentBlock::Image { .. } => ESTIMATED_IMAGE_CHARS,
+                ContentBlock::Attachment {
+                    name,
+                    path,
+                    mime_type,
+                } => utf16_len(&attachment_text(name, path, mime_type)),
                 _ => 0,
             })
         }),
@@ -996,6 +1024,11 @@ pub fn estimate_tokens(message: &AgentMessage) -> u64 {
                     name, arguments, ..
                 } => utf16_len(name).saturating_add(json_stringify_len(arguments)),
                 ContentBlock::Image { .. } => 0,
+                ContentBlock::Attachment {
+                    name,
+                    path,
+                    mime_type,
+                } => utf16_len(&attachment_text(name, path, mime_type)),
             })
         }),
         AgentMessage::BashExecution {
@@ -1366,7 +1399,12 @@ fn content_text(content: &MessageContent, separator: &str) -> String {
         MessageContent::Blocks(blocks) => blocks
             .iter()
             .filter_map(|block| match block {
-                ContentBlock::Text { text, .. } => Some(text.as_str()),
+                ContentBlock::Text { text, .. } => Some(text.clone()),
+                ContentBlock::Attachment {
+                    name,
+                    path,
+                    mime_type,
+                } => Some(attachment_text(name, path, mime_type)),
                 _ => None,
             })
             .collect::<Vec<_>>()
@@ -1460,7 +1498,7 @@ pub fn serialize_conversation(messages: &[AgentMessage]) -> String {
                         ContentBlock::ToolCall {
                             name, arguments, ..
                         } => tool_calls.push(format!("{name}({})", json_argument_pairs(arguments))),
-                        ContentBlock::Image { .. } => {}
+                        ContentBlock::Image { .. } | ContentBlock::Attachment { .. } => {}
                     }
                 }
                 if !thinking.is_empty() {

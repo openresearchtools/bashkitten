@@ -5,6 +5,7 @@ use crate::paths::{AppPaths, ensure_private_dir, set_private_file};
 use crate::session::{self, ControlRequest, Delivery, NewSession, QueueAction};
 use anyhow::{Context, Result};
 use async_stream::stream;
+use axum::body::Body;
 use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State};
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::sse::{Event, KeepAlive};
@@ -75,6 +76,17 @@ struct QueueMutation {
 }
 
 #[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ForkRequest {
+    entry_id: String,
+}
+
+#[derive(Default, Deserialize)]
+struct AttachmentQuery {
+    download: Option<bool>,
+}
+
+#[derive(Deserialize)]
 struct FolderQuery {
     path: Option<PathBuf>,
 }
@@ -110,6 +122,11 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
         .route("/api/sessions/{id}/segments/{segment}", get(read_segment))
         .route("/api/sessions/{id}/events", get(events))
         .route("/api/sessions/{id}/messages", post(send_message))
+        .route("/api/sessions/{id}/fork", post(fork_session))
+        .route(
+            "/api/sessions/{id}/attachments/{upload}/{name}",
+            get(download_attachment),
+        )
         .route("/api/sessions/{id}/status", get(session_status))
         .route("/api/sessions/{id}/queue", post(mutate_queue))
         .route("/api/sessions/{id}/stop", post(stop_session))
@@ -469,6 +486,93 @@ async fn send_message(
         },
     )?;
     Ok(Json(serde_json::to_value(reply).expect("reply")))
+}
+
+async fn fork_session(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+    Json(body): Json<ForkRequest>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let paths = state.paths.clone();
+    let entry_id = body.entry_id;
+    let fork_id = tokio::task::spawn_blocking(move || {
+        let mut last_error = None;
+        for attempt in 0..20 {
+            match session::fork_at(&paths, &id, &entry_id) {
+                Ok(id) => return Ok(id),
+                Err(error)
+                    if attempt < 19
+                        && error
+                            .to_string()
+                            .contains("not yet available in session history") =>
+                {
+                    last_error = Some(error);
+                    std::thread::sleep(Duration::from_millis(50));
+                }
+                Err(error) => return Err(error),
+            }
+        }
+        Err(last_error.context("Fork message is not available")?)
+    })
+    .await
+    .map_err(|error| ApiError(StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))??;
+    Ok(Json(json!({"ok": true, "id": fork_id})))
+}
+
+async fn download_attachment(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath((id, upload, name)): AxumPath<(String, String, String)>,
+    Query(query): Query<AttachmentQuery>,
+) -> ApiResult<Response> {
+    authenticated(&state, &headers)?;
+    session::validate_id(&id)?;
+    uuid::Uuid::parse_str(&upload)
+        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "Invalid attachment ID".into()))?;
+    if name != safe_filename(&name) {
+        return Err(ApiError(
+            StatusCode::BAD_REQUEST,
+            "Invalid attachment filename".into(),
+        ));
+    }
+
+    let attachment_root = fs::canonicalize(state.paths.session_dir(&id).join("attachments"))
+        .map_err(|_| ApiError(StatusCode::NOT_FOUND, "Attachment not found".into()))?;
+    let path = attachment_root.join(&upload).join(&name);
+    let path = fs::canonicalize(path)
+        .map_err(|_| ApiError(StatusCode::NOT_FOUND, "Attachment not found".into()))?;
+    if !path.starts_with(&attachment_root) || !path.is_file() {
+        return Err(ApiError(
+            StatusCode::NOT_FOUND,
+            "Attachment not found".into(),
+        ));
+    }
+
+    let bytes = fs::read(&path).with_context(|| format!("read attachment {}", path.display()))?;
+    let mime = mime_guess::from_path(&path).first_or_octet_stream();
+    let mut response = Response::new(Body::from(bytes));
+    response.headers_mut().insert(
+        header::CONTENT_TYPE,
+        HeaderValue::from_str(mime.essence_str()).expect("valid MIME type"),
+    );
+    response.headers_mut().insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("private, no-store"),
+    );
+    response.headers_mut().insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    if query.download.unwrap_or(false) {
+        response.headers_mut().insert(
+            header::CONTENT_DISPOSITION,
+            HeaderValue::from_str(&format!("attachment; filename=\"{name}\""))
+                .expect("sanitized filename"),
+        );
+    }
+    Ok(response)
 }
 
 async fn session_status(

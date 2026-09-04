@@ -160,6 +160,8 @@ impl ImageSource {
 pub enum ContentPart {
     Text {
         text: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text_signature: Option<String>,
     },
     Image {
         source: ImageSource,
@@ -181,7 +183,7 @@ pub enum ContentPart {
     },
     ToolResult {
         tool_call_id: String,
-        output: String,
+        output: Value,
         #[serde(default)]
         is_error: bool,
     },
@@ -296,6 +298,12 @@ pub enum ProviderEvent {
     },
     TextDelta {
         delta: String,
+    },
+    TextDone {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        text_signature: Option<String>,
     },
     ThinkingDelta {
         delta: String,
@@ -1001,7 +1009,7 @@ fn codex_headers(
     insert_headers(&mut headers, &request.headers)?;
     headers.insert(
         USER_AGENT,
-        HeaderValue::from_static(concat!("bashkitten/", env!("CARGO_PKG_VERSION"))),
+        HeaderValue::from_str(&pi_user_agent()).context("invalid Pi-compatible user agent")?,
     );
     headers.insert(ACCEPT, HeaderValue::from_static("text/event-stream"));
     headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
@@ -1025,6 +1033,22 @@ fn codex_headers(
     Ok(headers)
 }
 
+fn pi_user_agent() -> String {
+    let platform = match std::env::consts::OS {
+        "macos" => "darwin",
+        other => other,
+    };
+    let arch = match std::env::consts::ARCH {
+        "x86_64" => "x64",
+        "aarch64" => "arm64",
+        other => other,
+    };
+    let release = fs::read_to_string("/proc/sys/kernel/osrelease")
+        .map(|value| value.trim().to_owned())
+        .unwrap_or_else(|_| "unknown".into());
+    format!("pi ({platform} {release}; {arch})")
+}
+
 async fn ensure_success(
     response: Response,
     parser: fn(Response) -> ProviderStream,
@@ -1036,9 +1060,28 @@ async fn ensure_success(
     if status == StatusCode::TOO_MANY_REQUESTS {
         bail!("provider usage or rate limit reached (HTTP 429)");
     }
-    // Do not include arbitrary response bodies: a broken proxy can reflect
-    // authorization material into them.
+    let body = response.text().await.unwrap_or_default();
+    if let Some(detail) = provider_error_detail(&body) {
+        bail!("provider request failed with HTTP {status}: {detail}");
+    }
     bail!("provider request failed with HTTP {status}")
+}
+
+fn provider_error_detail(body: &str) -> Option<String> {
+    let value: Value = serde_json::from_str(body).ok()?;
+    let message = value
+        .pointer("/error/message")
+        .or_else(|| value.get("message"))
+        .or_else(|| value.get("detail"))?
+        .as_str()?;
+    let clean = message.split_whitespace().collect::<Vec<_>>().join(" ");
+    if clean.is_empty() {
+        None
+    } else if clean.chars().count() > 500 {
+        Some(format!("{}…", clean.chars().take(499).collect::<String>()))
+    } else {
+        Some(clean)
+    }
 }
 
 fn build_chat_completions_body(
@@ -1222,7 +1265,7 @@ fn convert_chat_messages(
                 messages.push(json!({
                     "role": "tool",
                     "tool_call_id": tool_call_id,
-                    "content": output,
+                    "content": chat_tool_result_text(output),
                 }));
             }
             continue;
@@ -1235,7 +1278,7 @@ fn convert_chat_messages(
         let mut has_image = false;
         for part in &message.content {
             match part {
-                ContentPart::Text { text: value } => {
+                ContentPart::Text { text: value, .. } => {
                     text.push_str(value);
                     rich_content.push(json!({ "type": "text", "text": value }));
                 }
@@ -1291,6 +1334,35 @@ fn convert_chat_messages(
         messages.push(Value::Object(object));
     }
     Ok(messages)
+}
+
+fn chat_tool_result_text(output: &Value) -> String {
+    match output {
+        Value::String(text) => text.clone(),
+        Value::Array(parts) => {
+            let mut text = parts
+                .iter()
+                .filter_map(|part| {
+                    (part.get("type").and_then(Value::as_str) == Some("input_text"))
+                        .then(|| part.get("text").and_then(Value::as_str))
+                        .flatten()
+                })
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            if parts
+                .iter()
+                .any(|part| part.get("type").and_then(Value::as_str) == Some("input_image"))
+            {
+                text.push("(see attached image)".into());
+            }
+            if text.is_empty() {
+                "(no tool output)".into()
+            } else {
+                text.join("\n")
+            }
+        }
+        other => other.to_string(),
+    }
 }
 
 fn chat_tool(tool: &ToolDefinition, supports_strict: bool) -> Value {
@@ -1379,7 +1451,7 @@ fn codex_instructions(request: &ProviderRequest) -> String {
                 .content
                 .iter()
                 .filter_map(|part| match part {
-                    ContentPart::Text { text } => Some(text.as_str()),
+                    ContentPart::Text { text, .. } => Some(text.as_str()),
                     _ => None,
                 })
                 .collect::<Vec<_>>()
@@ -1398,7 +1470,7 @@ fn codex_instructions(request: &ProviderRequest) -> String {
 
 fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
     let mut input = Vec::new();
-    for message in &request.messages {
+    for (message_index, message) in request.messages.iter().enumerate() {
         if matches!(message.role, MessageRole::System | MessageRole::Developer) {
             continue;
         }
@@ -1408,15 +1480,29 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
             "user"
         };
         let mut content = Vec::new();
+        let mut text_block_index = 0_u64;
         for part in &message.content {
             match part {
-                ContentPart::Text { text } => {
-                    let kind = if message.role == MessageRole::Assistant {
-                        "output_text"
+                ContentPart::Text {
+                    text,
+                    text_signature,
+                } => {
+                    if message.role == MessageRole::Assistant {
+                        flush_codex_message(&mut input, role, &mut content);
+                        let fallback = if text_block_index == 0 {
+                            format!("msg_pi_{message_index}")
+                        } else {
+                            format!("msg_pi_{message_index}_{text_block_index}")
+                        };
+                        text_block_index += 1;
+                        input.push(codex_assistant_text_item(
+                            text,
+                            text_signature.as_deref(),
+                            &fallback,
+                        ));
                     } else {
-                        "input_text"
-                    };
-                    content.push(json!({ "type": kind, "text": text }));
+                        content.push(json!({ "type": "input_text", "text": text }));
+                    }
                 }
                 ContentPart::Image { source } => {
                     let mut image = Map::new();
@@ -1428,30 +1514,14 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
                     content.push(Value::Object(image));
                 }
                 ContentPart::Thinking {
-                    text,
-                    id,
-                    encrypted_content,
+                    encrypted_content, ..
                 } => {
-                    flush_codex_message(&mut input, role, &mut content);
-                    if encrypted_content.is_some() || !text.is_empty() {
-                        let mut reasoning = Map::new();
-                        reasoning.insert("type".into(), Value::String("reasoning".into()));
-                        if let Some(id) = id {
-                            reasoning.insert("id".into(), Value::String(id.clone()));
-                        }
-                        if !text.is_empty() {
-                            reasoning.insert(
-                                "summary".into(),
-                                json!([{ "type": "summary_text", "text": text }]),
-                            );
-                        }
-                        if let Some(encrypted_content) = encrypted_content {
-                            reasoning.insert(
-                                "encrypted_content".into(),
-                                Value::String(encrypted_content.clone()),
-                            );
-                        }
-                        input.push(Value::Object(reasoning));
+                    if let Some(signature) = encrypted_content
+                        && let Ok(item) = serde_json::from_str::<Value>(signature)
+                        && item.get("type").and_then(Value::as_str) == Some("reasoning")
+                    {
+                        flush_codex_message(&mut input, role, &mut content);
+                        input.push(item);
                     }
                 }
                 ContentPart::ToolCall {
@@ -1460,12 +1530,21 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
                     arguments,
                 } => {
                     flush_codex_message(&mut input, role, &mut content);
-                    input.push(json!({
+                    let (call_id, item_id) = id
+                        .split_once('|')
+                        .map_or((id.as_str(), None), |(call_id, item_id)| {
+                            (call_id, (!item_id.is_empty()).then_some(item_id))
+                        });
+                    let mut tool_call = json!({
                         "type": "function_call",
-                        "call_id": id,
+                        "call_id": call_id,
                         "name": name,
                         "arguments": arguments_to_string(arguments),
-                    }));
+                    });
+                    if let Some(item_id) = item_id {
+                        tool_call["id"] = Value::String(item_id.to_owned());
+                    }
+                    input.push(tool_call);
                 }
                 ContentPart::ToolResult {
                     tool_call_id,
@@ -1473,9 +1552,12 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
                     ..
                 } => {
                     flush_codex_message(&mut input, role, &mut content);
+                    let call_id = tool_call_id
+                        .split_once('|')
+                        .map_or(tool_call_id.as_str(), |(call_id, _)| call_id);
                     input.push(json!({
                         "type": "function_call_output",
-                        "call_id": tool_call_id,
+                        "call_id": call_id,
                         "output": output,
                     }));
                 }
@@ -1484,6 +1566,70 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
         flush_codex_message(&mut input, role, &mut content);
     }
     Ok(input)
+}
+
+fn codex_assistant_text_item(text: &str, signature: Option<&str>, fallback_id: &str) -> Value {
+    let mut id = fallback_id.to_owned();
+    let mut phase = None;
+    if let Some(signature) = signature {
+        if signature.starts_with('{') {
+            if let Ok(value) = serde_json::from_str::<Value>(signature)
+                && value.get("v").and_then(Value::as_u64) == Some(1)
+                && let Some(value_id) = value.get("id").and_then(Value::as_str)
+            {
+                id = value_id.to_owned();
+                phase = value
+                    .get("phase")
+                    .and_then(Value::as_str)
+                    .filter(|phase| matches!(*phase, "commentary" | "final_answer"))
+                    .map(str::to_owned);
+            }
+        } else {
+            id = signature.to_owned();
+        }
+    }
+    if id.chars().count() > 64 {
+        id = format!("msg_{}", pi_short_hash(&id));
+    }
+    let mut item = json!({
+        "type": "message",
+        "role": "assistant",
+        "content": [{ "type": "output_text", "text": text, "annotations": [] }],
+        "status": "completed",
+        "id": id,
+    });
+    if let Some(phase) = phase {
+        item["phase"] = Value::String(phase);
+    }
+    item
+}
+
+fn pi_short_hash(value: &str) -> String {
+    let mut h1 = 0xdead_beefu32;
+    let mut h2 = 0x41c6_ce57u32;
+    for code_unit in value.encode_utf16() {
+        h1 = (h1 ^ u32::from(code_unit)).wrapping_mul(2_654_435_761);
+        h2 = (h2 ^ u32::from(code_unit)).wrapping_mul(1_597_334_677);
+    }
+    h1 = (h1 ^ (h1 >> 16)).wrapping_mul(2_246_822_507)
+        ^ (h2 ^ (h2 >> 13)).wrapping_mul(3_266_489_909);
+    h2 = (h2 ^ (h2 >> 16)).wrapping_mul(2_246_822_507)
+        ^ (h1 ^ (h1 >> 13)).wrapping_mul(3_266_489_909);
+    format!("{}{}", base36(h2), base36(h1))
+}
+
+fn base36(mut value: u32) -> String {
+    if value == 0 {
+        return "0".into();
+    }
+    const DIGITS: &[u8; 36] = b"0123456789abcdefghijklmnopqrstuvwxyz";
+    let mut output = Vec::new();
+    while value > 0 {
+        output.push(DIGITS[(value % 36) as usize]);
+        value /= 36;
+    }
+    output.reverse();
+    String::from_utf8(output).expect("base36 is ASCII")
 }
 
 fn flush_codex_message(input: &mut Vec<Value>, role: &str, content: &mut Vec<Value>) {
@@ -1935,11 +2081,27 @@ fn codex_frame_events(
                 match item.get("type").and_then(Value::as_str) {
                     Some("reasoning") => events.push(ProviderEvent::ThinkingDone {
                         id: item.get("id").and_then(Value::as_str).map(str::to_owned),
-                        encrypted_content: item
-                            .get("encrypted_content")
-                            .and_then(Value::as_str)
-                            .map(str::to_owned),
+                        encrypted_content: Some(serde_json::to_string(item)?),
                     }),
+                    Some("message") => {
+                        let text = item
+                            .get("content")
+                            .and_then(Value::as_array)
+                            .map(|content| {
+                                content
+                                    .iter()
+                                    .filter_map(|part| {
+                                        part.get("text")
+                                            .or_else(|| part.get("refusal"))
+                                            .and_then(Value::as_str)
+                                    })
+                                    .collect::<String>()
+                            });
+                        events.push(ProviderEvent::TextDone {
+                            text,
+                            text_signature: codex_text_signature(item),
+                        });
+                    }
                     Some("function_call") | Some("custom_tool_call") => {
                         codex_tool_done(index, item, state, &mut events);
                     }
@@ -1949,6 +2111,18 @@ fn codex_frame_events(
         }
         "response.done" | "response.completed" | "response.incomplete" => {
             let response = value.get("response").unwrap_or(&value);
+            if let Some(output) = response.get("output").and_then(Value::as_array) {
+                for item in output {
+                    if item.get("type").and_then(Value::as_str) == Some("reasoning")
+                        && item.get("encrypted_content").is_some()
+                    {
+                        events.push(ProviderEvent::ThinkingDone {
+                            id: item.get("id").and_then(Value::as_str).map(str::to_owned),
+                            encrypted_content: Some(serde_json::to_string(item)?),
+                        });
+                    }
+                }
+            }
             if let Some(usage) = response.get("usage") {
                 events.push(ProviderEvent::Usage {
                     usage: normalize_usage(usage),
@@ -1986,6 +2160,16 @@ fn codex_frame_events(
     Ok((events, false))
 }
 
+fn codex_text_signature(item: &Value) -> Option<String> {
+    let id = item.get("id").and_then(Value::as_str)?;
+    let mut signature = json!({ "v": 1, "id": id });
+    if let Some(phase @ ("commentary" | "final_answer")) = item.get("phase").and_then(Value::as_str)
+    {
+        signature["phase"] = Value::String(phase.to_owned());
+    }
+    Some(signature.to_string())
+}
+
 fn codex_tool_start(
     index: u64,
     item: &Value,
@@ -1999,12 +2183,18 @@ fn codex_tool_start(
         return;
     }
     let tool = state.tools.entry(index).or_default();
-    tool.id = item
+    let call_id = item
         .get("call_id")
         .or_else(|| item.get("id"))
         .and_then(Value::as_str)
-        .unwrap_or_default()
-        .into();
+        .unwrap_or_default();
+    let item_id = item.get("id").and_then(Value::as_str);
+    tool.id = match item_id {
+        Some(item_id) if !call_id.is_empty() && item_id != call_id => {
+            format!("{call_id}|{item_id}")
+        }
+        _ => call_id.to_owned(),
+    };
     tool.name = item
         .get("name")
         .and_then(Value::as_str)
@@ -2350,26 +2540,51 @@ mod tests {
 
     #[test]
     fn codex_body_enforces_stateless_stream_and_preserves_item_order() {
+        let reasoning = json!({
+            "type": "reasoning",
+            "id": "rs_1",
+            "summary": [],
+            "encrypted_content": "secret",
+        });
         let mut request = ProviderRequest::new(
             "gpt-5.5",
-            vec![ProviderMessage {
-                role: MessageRole::Assistant,
-                content: vec![
-                    ContentPart::Text {
-                        text: "before".into(),
-                    },
-                    ContentPart::ToolCall {
-                        id: "call-1".into(),
-                        name: "read".into(),
-                        arguments: json!({ "path": "a" }),
-                    },
-                    ContentPart::Text {
-                        text: "after".into(),
-                    },
-                ],
-            }],
+            vec![
+                ProviderMessage {
+                    role: MessageRole::Assistant,
+                    content: vec![
+                        ContentPart::Thinking {
+                            text: String::new(),
+                            id: Some("rs_1".into()),
+                            encrypted_content: Some(reasoning.to_string()),
+                        },
+                        ContentPart::Text {
+                            text: "before".into(),
+                            text_signature: Some(
+                                json!({"v":1,"id":"msg_1","phase":"commentary"}).to_string(),
+                            ),
+                        },
+                        ContentPart::ToolCall {
+                            id: "call_1|fc_1".into(),
+                            name: "read".into(),
+                            arguments: json!({ "path": "a" }),
+                        },
+                    ],
+                },
+                ProviderMessage {
+                    role: MessageRole::Tool,
+                    content: vec![ContentPart::ToolResult {
+                        tool_call_id: "call_1|fc_1".into(),
+                        output: json!([
+                            {"type":"input_text","text":"image"},
+                            {"type":"input_image","detail":"auto","image_url":"data:image/png;base64,AA=="}
+                        ]),
+                        is_error: false,
+                    }],
+                },
+            ],
         );
         request.thinking = ThinkingLevel::Minimal;
+        request.session_id = Some("session-cache-key".into());
         request
             .request_parameters
             .insert("store".into(), Value::Bool(true));
@@ -2379,10 +2594,18 @@ mod tests {
         let body = build_codex_responses_body(&request).unwrap();
         assert_eq!(body["store"], false);
         assert_eq!(body["stream"], true);
+        assert_eq!(body["prompt_cache_key"], "session-cache-key");
         assert_eq!(body["reasoning"]["effort"], "low");
-        assert_eq!(body["input"][0]["type"], "message");
-        assert_eq!(body["input"][1]["type"], "function_call");
-        assert_eq!(body["input"][2]["type"], "message");
+        assert_eq!(body["input"][0], reasoning);
+        assert_eq!(body["input"][1]["type"], "message");
+        assert_eq!(body["input"][1]["id"], "msg_1");
+        assert_eq!(body["input"][1]["phase"], "commentary");
+        assert_eq!(body["input"][2]["type"], "function_call");
+        assert_eq!(body["input"][2]["id"], "fc_1");
+        assert_eq!(body["input"][2]["call_id"], "call_1");
+        assert_eq!(body["input"][3]["type"], "function_call_output");
+        assert_eq!(body["input"][3]["call_id"], "call_1");
+        assert_eq!(body["input"][3]["output"][1]["type"], "input_image");
     }
 
     #[test]
