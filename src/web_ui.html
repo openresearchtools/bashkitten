@@ -91,6 +91,7 @@
       color: var(--muted);
     }
     .icon-button:hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
+    .icon-button.active { background: var(--surface-2); color: var(--text); }
     .primary { border: 0; background: var(--accent); color: var(--accent-text); font-weight: 650; }
     .primary:hover { background: var(--accent-hover); }
 
@@ -120,10 +121,11 @@
 
     #app { display: grid; grid-template-columns: 280px minmax(0, 1fr); height: 100dvh; }
     #sidebar { display: flex; min-width: 0; flex-direction: column; border-right: 1px solid var(--line-soft); background: var(--sidebar); }
-    .sidebar-header { height: 58px; padding: 8px; border-bottom: 1px solid var(--line-soft); }
+    .sidebar-header { display: flex; height: 58px; align-items: center; gap: 2px; padding: 8px; border-bottom: 1px solid var(--line-soft); }
     .new-chat {
       display: flex;
-      width: 100%;
+      min-width: 0;
+      flex: 1;
       height: 41px;
       align-items: center;
       gap: 10px;
@@ -137,6 +139,8 @@
     }
     .new-chat:hover { background: var(--surface-2); }
     .new-chat svg { width: 18px; height: 18px; flex: 0 0 auto; }
+    #settingsBtn { flex: 0 0 auto; color: var(--text); }
+    .settings-glyph { font-size: 18px; line-height: 1; }
     #sessions { flex: 1; overflow: auto; padding: 7px 8px 16px; }
     .folder-group { margin: 5px 0 12px; }
     .folder-heading {
@@ -164,10 +168,6 @@
     .session.active { background: var(--surface-2); }
     .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 430; text-overflow: ellipsis; white-space: nowrap; }
     .running-dot { position: absolute; top: 12px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
-    .sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--line-soft); }
-    .sidebar-footer button { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; }
-    .sidebar-footer button:hover { background: var(--surface-2); color: var(--text); }
-
     #workspace { display: grid; min-width: 0; height: 100dvh; grid-template-rows: 58px minmax(0, 1fr) auto; }
     .topbar { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line-soft); }
     .chat-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
@@ -198,6 +198,11 @@
       overscroll-behavior: contain;
       scrollbar-gutter: stable;
     }
+    #settingsView { overflow: auto; }
+    .settings-page { width: min(680px, calc(100% - 44px)); margin: 0 auto; padding: 28px 0 42px; }
+    .settings-page h2 { margin: 0 0 18px; font-size: 20px; }
+    .settings-page label { display: block; margin: 11px 0; color: var(--muted); font-size: 12px; }
+    .settings-page input, .settings-page select { display: block; width: 100%; margin-top: 5px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
     .chat-inner { width: min(790px, calc(100% - 44px)); min-height: 100%; margin: 0 auto; padding: 24px 0 28px; }
     .welcome { display: grid; min-height: calc(100dvh - 260px); place-content: center; color: var(--muted); text-align: center; }
     .welcome .cat { margin-bottom: 8px; font-size: 30px; filter: grayscale(.15); }
@@ -282,8 +287,9 @@
     .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
     .attachment img { width: 100%; height: 100%; object-fit: cover; }
     .attachment button { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: #000c; color: white; font-size: 12px; }
-    .compose-box { overflow: visible; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: none; }
+    .compose-box { position: relative; overflow: visible; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: none; }
     .compose-box:focus-within { border-color: var(--line); }
+    .compose-box.dragging::after { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; border: 1px dashed var(--muted); border-radius: 18px; background: var(--overlay); color: var(--text); content: "Drop images"; pointer-events: none; }
     #prompt { display: block; width: 100%; min-height: 42px; max-height: 160px; padding: 10px 11px 2px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.4; }
     .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 2px; padding: 4px 5px 5px; }
     .composer-toolbar select { height: 27px; min-width: 0; padding: 0 22px 0 6px; overflow: hidden; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; text-overflow: ellipsis; cursor: pointer; }
@@ -295,7 +301,6 @@
     #sendBtn { width: 29px; height: 29px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 15px; }
     #sendBtn:hover { background: var(--muted); }
     #composerHint { min-height: 14px; padding-top: 3px; color: var(--muted); font-size: 10px; text-align: center; }
-    #workspace.dragging::after { position: fixed; z-index: 20; inset: 70px 30px 100px 294px; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 12px; background: var(--overlay); color: var(--text); content: "Drop images into this chat"; font-size: 15px; }
 
     #queuePanel { display: flex; max-height: 140px; flex-direction: column; gap: 2px; margin: 0 3px 5px; overflow: auto; }
     .queue-item { display: grid; min-height: 28px; grid-template-columns: auto minmax(0, 1fr) auto auto auto; align-items: center; gap: 5px; padding: 3px 4px 3px 8px; border-left: 2px solid var(--line); border-radius: 4px; background: var(--activity); font-size: 11px; }
@@ -340,7 +345,6 @@
       .chat-inner { width: min(100% - 24px, 790px); }
       #composerWrap { padding: 0 10px 10px; }
       #model { width: 145px; }
-      #workspace.dragging::after { inset: 65px 12px 100px; }
     }
   </style>
 </head>
@@ -363,9 +367,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h7"/><path d="m16.5 3.5 4 4L11 17H7v-4z"/></svg>
           <span>New chat</span>
         </button>
+        <button id="settingsBtn" class="icon-button" type="button" title="Settings" aria-label="Settings">
+          <span class="settings-glyph" aria-hidden="true">&#9881;&#xfe0e;</span>
+        </button>
       </div>
       <div id="sessions"></div>
-      <div class="sidebar-footer"><button id="settingsBtn" type="button"><span>⚙</span> Settings</button></div>
     </aside>
 
     <main id="workspace">
@@ -378,6 +384,27 @@
         <button id="stopBtn" class="hidden" type="button">Stop</button>
       </header>
       <div id="chat"><div id="chatInner" class="chat-inner"></div></div>
+      <section id="settingsView" class="hidden">
+        <form id="settingsForm" class="settings-page">
+          <h2>Settings</h2>
+          <div class="settings-grid">
+            <label>Web port<input id="webPort" type="number" min="1024" max="65535"></label>
+            <label>Appearance<select id="theme"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label>
+            <label class="wide">Default working folder<input id="defaultCwd"></label>
+            <label>Default model<select id="defaultModel"></select></label>
+            <label>Default thinking<select id="defaultThinking"></select></label>
+            <label class="check wide"><input id="llamaEnabled" type="checkbox"> Enable managed llama.cpp router</label>
+            <label>llama.cpp port<input id="llamaPort" type="number"></label>
+            <label>Context size<input id="llamaContext" type="number"></label>
+          </div>
+          <div class="dialog-actions">
+            <button id="importPi" type="button">Import Pi login</button>
+            <button id="restartLlama" type="button">Restart llama.cpp</button>
+          </div>
+          <div class="dialog-actions"><button id="settingsDone" type="button">Done</button><button class="primary">Save</button></div>
+          <p class="meta">Port changes apply when the Web service restarts. BashKitten performs no telemetry or update checks.</p>
+        </form>
+      </section>
       <div id="composerWrap">
         <form id="composer">
           <div id="queuePanel" class="hidden" aria-label="Queued messages"></div>
@@ -417,28 +444,6 @@
     </form>
   </dialog>
 
-  <dialog id="settingsDialog">
-    <form id="settingsForm" class="dialog-body">
-      <h2>Settings</h2>
-      <div class="settings-grid">
-        <label>Web port<input id="webPort" type="number" min="1024" max="65535"></label>
-        <label>Appearance<select id="theme"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label>
-        <label class="wide">Default working folder<input id="defaultCwd"></label>
-        <label>Default model<select id="defaultModel"></select></label>
-        <label>Default thinking<select id="defaultThinking"></select></label>
-        <label class="check wide"><input id="llamaEnabled" type="checkbox"> Enable managed llama.cpp router</label>
-        <label>llama.cpp port<input id="llamaPort" type="number"></label>
-        <label>Context size<input id="llamaContext" type="number"></label>
-      </div>
-      <div class="dialog-actions">
-        <button id="importPi" type="button">Import Pi login</button>
-        <button id="restartLlama" type="button">Restart llama.cpp</button>
-      </div>
-      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button class="primary">Save</button></div>
-      <p class="meta">Port changes apply when the Web service restarts. BashKitten performs no telemetry or update checks.</p>
-    </form>
-  </dialog>
-
   <script>
     let csrf = '';
     let hasUser = false;
@@ -452,6 +457,7 @@
     let queueState = {busy: false, steeringMessages: [], queuedMessages: []};
     let editingQueueId = null;
     let renderedTurn = null;
+    let displayedUsage = null;
     const $ = selector => document.querySelector(selector);
 
     async function api(url, options = {}) {
@@ -689,20 +695,90 @@
         diff.textContent = message.details.diff;
         toolBody.insertBefore(diff, state);
       }
+      updateUsage(message.usage);
     }
 
-    function updateUsage(usage) {
-      if (!usage) return;
-      const selected = models.find(model => `${model.provider}/${model.id}` === $('#model').value);
-      const context = selected?.context_window || 0;
-      const percent = context ? `${(usage.totalTokens / context * 100).toFixed(1)}%` : '';
+    function resetUsage() {
+      displayedUsage = {
+        input: 0,
+        output: 0,
+        cacheRead: 0,
+        cacheWrite: 0,
+        cost: 0,
+        latestCacheHitRate: null,
+        contextTokens: null,
+        contextModel: null,
+        subscription: false
+      };
+      $('#usage').textContent = '';
+    }
+
+    function usageModel(modelId) {
+      return models.find(model => `${model.provider}/${model.id}` === modelId);
+    }
+
+    function calculatedUsageCost(usage, model) {
+      if (!model?.cost) return 0;
+      const promptTokens = (usage.input || 0) + (usage.cacheRead || 0) + (usage.cacheWrite || 0);
+      let rates = model.cost;
+      let threshold = -1;
+      for (const tier of model.cost.tiers || []) {
+        if (promptTokens > tier.inputTokensAbove && tier.inputTokensAbove > threshold) {
+          rates = tier;
+          threshold = tier.inputTokensAbove;
+        }
+      }
+      const longWrite = usage.cacheWrite1h || 0;
+      const shortWrite = Math.max(0, (usage.cacheWrite || 0) - longWrite);
+      return (
+        (rates.input || 0) * (usage.input || 0) +
+        (rates.output || 0) * (usage.output || 0) +
+        (rates.cacheRead || 0) * (usage.cacheRead || 0) +
+        (rates.cacheWrite || 0) * shortWrite +
+        (rates.input || 0) * 2 * longWrite
+      ) / 1_000_000;
+    }
+
+    function renderUsage() {
+      if (!displayedUsage) return;
+      const model = usageModel(displayedUsage.contextModel || $('#model').value);
+      const context = model?.context_window || 0;
       const parts = [];
-      if (usage.input) parts.push(`↑${formatTokens(usage.input)}`);
-      if (usage.output) parts.push(`↓${formatTokens(usage.output)}`);
-      if (usage.cacheRead) parts.push(`R${formatTokens(usage.cacheRead)}`);
-      if (usage.cacheWrite) parts.push(`W${formatTokens(usage.cacheWrite)}`);
-      if (context) parts.push(`${percent}/${formatTokens(context)}`);
+      if (displayedUsage.input) parts.push(`↑${formatTokens(displayedUsage.input)}`);
+      if (displayedUsage.output) parts.push(`↓${formatTokens(displayedUsage.output)}`);
+      if (displayedUsage.cacheRead) parts.push(`R${formatTokens(displayedUsage.cacheRead)}`);
+      if (displayedUsage.cacheWrite) parts.push(`W${formatTokens(displayedUsage.cacheWrite)}`);
+      if ((displayedUsage.cacheRead || displayedUsage.cacheWrite) && displayedUsage.latestCacheHitRate !== null) {
+        parts.push(`CH${displayedUsage.latestCacheHitRate.toFixed(1)}%`);
+      }
+      if (displayedUsage.cost || displayedUsage.subscription) {
+        parts.push(`$${displayedUsage.cost.toFixed(3)}${displayedUsage.subscription ? ' (sub)' : ''}`);
+      }
+      if (context) {
+        const contextLabel = displayedUsage.contextTokens === null
+          ? `?/${formatTokens(context)}`
+          : `${(displayedUsage.contextTokens / context * 100).toFixed(1)}%/${formatTokens(context)}`;
+        parts.push(contextLabel);
+      }
       $('#usage').textContent = parts.join('  ');
+    }
+
+    function updateUsage(usage, modelId = null) {
+      if (!usage) return;
+      if (!displayedUsage) resetUsage();
+      const model = usageModel(modelId || $('#model').value);
+      displayedUsage.input += usage.input || 0;
+      displayedUsage.output += usage.output || 0;
+      displayedUsage.cacheRead += usage.cacheRead || 0;
+      displayedUsage.cacheWrite += usage.cacheWrite || 0;
+      const promptTokens = (usage.input || 0) + (usage.cacheRead || 0) + (usage.cacheWrite || 0);
+      if (promptTokens > 0) displayedUsage.latestCacheHitRate = (usage.cacheRead || 0) / promptTokens * 100;
+      if ((usage.totalTokens || 0) > 0) displayedUsage.contextTokens = usage.totalTokens;
+      if (modelId) displayedUsage.contextModel = modelId;
+      if (model?.provider === 'openai-codex') displayedUsage.subscription = true;
+      const recordedCost = Number(usage.cost?.total || 0);
+      displayedUsage.cost += recordedCost || calculatedUsageCost(usage, model);
+      renderUsage();
     }
 
     function formatTokens(value) {
@@ -725,11 +801,12 @@
       }
       if (message.role !== 'assistant') return;
       touchRenderedTurn(message.timestamp);
+      const modelId = `${message.provider}/${message.responseModel || message.model}`;
       if (message.errorMessage) {
         finishRenderedTurn(message.timestamp);
         const body = messageRow('assistant', 'error');
         body.textContent = message.errorMessage;
-        updateUsage(message.usage);
+        updateUsage(message.usage, modelId);
         return;
       }
       const text = [];
@@ -752,7 +829,7 @@
         content.innerHTML = markdown(text.join('\n'));
         body.append(content);
       }
-      updateUsage(message.usage);
+      updateUsage(message.usage, modelId);
     }
 
     function clearLive() {
@@ -811,6 +888,7 @@
     function renderEntry(entry) {
       if (entry.type === 'message') renderMessage(entry.message);
       else if (entry.type === 'compaction') {
+        updateUsage(entry.usage);
         const details = document.createElement('details');
         details.className = 'turn-work';
         details.innerHTML = `<summary><span>Compacted ${escapeHtml(formatTokens(entry.tokensBefore || 0))} tokens</span></summary><div class="turn-work-body"><div class="thinking-block"><pre>${escapeHtml(entry.summary || '')}</pre></div></div>`;
@@ -1007,6 +1085,32 @@
       return value.sessions;
     }
 
+    function showChatView() {
+      $('#settingsView').classList.add('hidden');
+      $('#chat').classList.remove('hidden');
+      $('#composerWrap').classList.remove('hidden');
+      $('#settingsBtn').classList.remove('active');
+      $('#folderBtn').classList.remove('hidden');
+      $('#usage').classList.remove('hidden');
+      $('#title').textContent = current?.title || 'New chat';
+      $('#folderLabel').textContent = current?.cwd || pendingCwd || 'Set folder';
+      $('#folderBtn').disabled = Boolean(current);
+      $('#stopBtn').classList.toggle('hidden', !current?.running);
+      if (current) renderUsage();
+      else $('#usage').textContent = '';
+    }
+
+    function showSettingsView() {
+      $('#chat').classList.add('hidden');
+      $('#composerWrap').classList.add('hidden');
+      $('#settingsView').classList.remove('hidden');
+      $('#settingsBtn').classList.add('active');
+      $('#title').textContent = 'Settings';
+      $('#folderBtn').classList.add('hidden');
+      $('#usage').classList.add('hidden');
+      $('#stopBtn').classList.add('hidden');
+    }
+
     function connectSession(id, consume = renderEvent) {
       source?.close();
       return new Promise((resolve, reject) => {
@@ -1044,6 +1148,7 @@
     async function openSession(session) {
       if (!session) return;
       current = session;
+      showChatView();
       source?.close();
       source = null;
       pendingFiles = [];
@@ -1059,6 +1164,7 @@
         $('#thinking').value = session.thinking || 'off';
       }
       renderedTurn = null;
+      resetUsage();
       $('#chatInner').innerHTML = '';
       const pendingEvents = [];
       let bufferingEvents = Boolean(session.running);
@@ -1080,11 +1186,13 @@
 
     function beginNewSession() {
       current = null;
+      showChatView();
       source?.close();
       source = null;
       pendingFiles = [];
       editingQueueId = null;
       renderedTurn = null;
+      displayedUsage = null;
       renderAttachments();
       renderQueueState();
       pendingCwd = config?.default_cwd || '';
@@ -1239,9 +1347,11 @@
       const images = [...(event.clipboardData?.files || [])].filter(file => file.type.startsWith('image/'));
       if (images.length) { event.preventDefault(); addImages(images); }
     });
-    $('#workspace').addEventListener('dragover', event => { event.preventDefault(); $('#workspace').classList.add('dragging'); });
-    $('#workspace').addEventListener('dragleave', event => { if (!event.relatedTarget || !$('#workspace').contains(event.relatedTarget)) $('#workspace').classList.remove('dragging'); });
-    $('#workspace').addEventListener('drop', event => { event.preventDefault(); $('#workspace').classList.remove('dragging'); addImages(event.dataTransfer.files); });
+    const composeBox = $('.compose-box');
+    composeBox.addEventListener('dragenter', event => { event.preventDefault(); composeBox.classList.add('dragging'); });
+    composeBox.addEventListener('dragover', event => { event.preventDefault(); composeBox.classList.add('dragging'); });
+    composeBox.addEventListener('dragleave', event => { if (!event.relatedTarget || !composeBox.contains(event.relatedTarget)) composeBox.classList.remove('dragging'); });
+    composeBox.addEventListener('drop', event => { event.preventDefault(); composeBox.classList.remove('dragging'); addImages(event.dataTransfer.files); });
     $('#prompt').addEventListener('input', event => { event.target.style.height = 'auto'; event.target.style.height = `${Math.min(event.target.scrollHeight, 190)}px`; });
     $('#prompt').addEventListener('keydown', event => {
       if (event.key === 'Escape' && editingQueueId) { event.preventDefault(); cancelQueueEdit(); }
@@ -1309,7 +1419,11 @@
       await loadSessions();
     };
 
-    $('#settingsBtn').onclick = () => $('#settingsDialog').showModal();
+    $('#settingsBtn').onclick = () => {
+      if ($('#settingsView').classList.contains('hidden')) showSettingsView();
+      else showChatView();
+    };
+    $('#settingsDone').onclick = showChatView;
     $('#settingsForm').onsubmit = async event => {
       event.preventDefault();
       config.web_port = Number($('#webPort').value);
@@ -1322,8 +1436,12 @@
       config.llama.context_size = Number($('#llamaContext').value);
       await api('/api/settings', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(config)});
       applyTheme(config.theme);
-      $('#settingsDialog').close();
-      if (!current) beginNewSession();
+      if (!current) {
+        pendingCwd = config.default_cwd;
+        $('#model').value = config.default_model;
+        setThinking($('#model'));
+        $('#thinking').value = config.default_thinking;
+      }
     };
     $('#importPi').onclick = async () => {
       try { await api('/api/provider/import-pi', {method: 'POST'}); await loadModels(); alert('Pi OpenAI login imported.'); }

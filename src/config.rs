@@ -1,3 +1,4 @@
+use crate::agent::ModelCost;
 use crate::paths::{AppPaths, set_private_file};
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
@@ -65,6 +66,7 @@ pub struct ModelPreset {
     pub reasoning: bool,
     pub thinking_levels: Vec<String>,
     pub default_thinking: String,
+    pub cost: ModelCost,
     pub request_parameters: Value,
     pub supports_developer_role: bool,
     pub supports_reasoning_effort: bool,
@@ -144,6 +146,7 @@ impl Default for ModelPreset {
             reasoning: false,
             thinking_levels: vec!["off".into()],
             default_thinking: "off".into(),
+            cost: ModelCost::default(),
             request_parameters: Value::Object(Default::default()),
             supports_developer_role: false,
             supports_reasoning_effort: false,

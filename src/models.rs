@@ -1,3 +1,4 @@
+use crate::agent::{CostRates, CostTier, ModelCost};
 use crate::config::{AppConfig, ModelPreset};
 use serde::{Deserialize, Serialize};
 
@@ -12,6 +13,7 @@ pub struct ModelInfo {
     pub reasoning: bool,
     pub thinking_levels: Vec<String>,
     pub default_thinking: String,
+    pub cost: ModelCost,
     pub available: bool,
 }
 
@@ -28,6 +30,7 @@ fn codex_model(
     image: bool,
     xhigh: bool,
     max: bool,
+    cost: ModelCost,
 ) -> ModelInfo {
     let mut levels = vec!["off", "minimal", "low", "medium", "high"];
     if xhigh {
@@ -50,7 +53,41 @@ fn codex_model(
         reasoning: true,
         thinking_levels: levels.into_iter().map(str::to_owned).collect(),
         default_thinking: "medium".into(),
+        cost,
         available: true,
+    }
+}
+
+fn cost(
+    input: f64,
+    output: f64,
+    cache_read: f64,
+    cache_write: f64,
+    tier: Option<CostRates>,
+) -> ModelCost {
+    ModelCost {
+        rates: CostRates {
+            input,
+            output,
+            cache_read,
+            cache_write,
+        },
+        tiers: tier
+            .into_iter()
+            .map(|rates| CostTier {
+                rates,
+                input_tokens_above: 272_000,
+            })
+            .collect(),
+    }
+}
+
+fn tier(input: f64, output: f64, cache_read: f64, cache_write: f64) -> CostRates {
+    CostRates {
+        input,
+        output,
+        cache_read,
+        cache_write,
     }
 }
 
@@ -63,13 +100,62 @@ pub fn codex_models() -> Vec<ModelInfo> {
             false,
             false,
             false,
+            cost(1.75, 14.0, 0.175, 0.0, None),
         ),
-        codex_model("gpt-5.4", "GPT-5.4", 272_000, true, true, false),
-        codex_model("gpt-5.4-mini", "GPT-5.4 mini", 272_000, true, false, false),
-        codex_model("gpt-5.5", "GPT-5.5", 272_000, true, true, false),
-        codex_model("gpt-5.6-luna", "GPT-5.6 Luna", 272_000, true, true, true),
-        codex_model("gpt-5.6-sol", "GPT-5.6 Sol", 272_000, true, true, true),
-        codex_model("gpt-5.6-terra", "GPT-5.6 Terra", 272_000, true, true, true),
+        codex_model(
+            "gpt-5.4",
+            "GPT-5.4",
+            272_000,
+            true,
+            true,
+            false,
+            cost(2.5, 15.0, 0.25, 0.0, Some(tier(5.0, 22.5, 0.5, 0.0))),
+        ),
+        codex_model(
+            "gpt-5.4-mini",
+            "GPT-5.4 mini",
+            272_000,
+            true,
+            false,
+            false,
+            cost(0.75, 4.5, 0.075, 0.0, None),
+        ),
+        codex_model(
+            "gpt-5.5",
+            "GPT-5.5",
+            272_000,
+            true,
+            true,
+            false,
+            cost(5.0, 30.0, 0.5, 0.0, Some(tier(10.0, 45.0, 1.0, 0.0))),
+        ),
+        codex_model(
+            "gpt-5.6-luna",
+            "GPT-5.6 Luna",
+            272_000,
+            true,
+            true,
+            true,
+            cost(0.2, 1.2, 0.02, 0.25, Some(tier(0.4, 1.8, 0.04, 0.5))),
+        ),
+        codex_model(
+            "gpt-5.6-sol",
+            "GPT-5.6 Sol",
+            272_000,
+            true,
+            true,
+            true,
+            cost(5.0, 30.0, 0.5, 6.25, Some(tier(10.0, 45.0, 1.0, 12.5))),
+        ),
+        codex_model(
+            "gpt-5.6-terra",
+            "GPT-5.6 Terra",
+            272_000,
+            true,
+            true,
+            true,
+            cost(2.0, 12.0, 0.2, 2.5, Some(tier(4.0, 18.0, 0.4, 5.0))),
+        ),
     ]
 }
 
@@ -88,6 +174,7 @@ fn from_preset(provider: &str, p: &ModelPreset, available: bool) -> ModelInfo {
         reasoning: p.reasoning,
         thinking_levels: p.thinking_levels.clone(),
         default_thinking: p.default_thinking.clone(),
+        cost: p.cost.clone(),
         available,
     }
 }
@@ -128,4 +215,26 @@ pub fn find_model(
     all_models(config, codex_authenticated, llama_available)
         .into_iter()
         .find(|m| m.full_id() == full_id)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn codex_costs_include_pi_long_context_tiers() {
+        let models = codex_models();
+        let model = models.iter().find(|model| model.id == "gpt-5.5").unwrap();
+        assert_eq!(model.cost.rates.input, 5.0);
+        assert_eq!(model.cost.rates.output, 30.0);
+        assert_eq!(model.cost.tiers[0].input_tokens_above, 272_000);
+        assert_eq!(model.cost.tiers[0].rates.output, 45.0);
+
+        let luna = models
+            .iter()
+            .find(|model| model.id == "gpt-5.6-luna")
+            .unwrap();
+        assert_eq!(luna.cost.rates.cache_write, 0.25);
+        assert_eq!(luna.cost.tiers[0].rates.cache_write, 0.5);
+    }
 }

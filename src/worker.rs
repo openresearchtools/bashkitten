@@ -2,8 +2,8 @@
 //! state; they communicate with it through the session's Unix socket.
 
 use crate::agent::{
-    AgentMessage, AgentQueues, ContentBlock, DeliveryKind, MessageContent, OrderedJsonValue,
-    SessionEntry, SessionEntryKind, StopReason, Usage, UsageCost,
+    AgentMessage, AgentQueues, ContentBlock, DeliveryKind, MessageContent, ModelCost,
+    OrderedJsonValue, SessionEntry, SessionEntryKind, StopReason, Usage, calculate_cost,
 };
 use crate::config::AppConfig;
 use crate::models::{self, ModelInfo};
@@ -611,7 +611,7 @@ impl Runtime {
                 response_model: None,
                 response_id,
                 diagnostics: None,
-                usage: normalized_usage(&usage),
+                usage: normalized_usage(&usage, &self.model.cost),
                 stop_reason: map_stop_reason(&stop_reason),
                 deferred: None,
                 error_message: None,
@@ -902,8 +902,8 @@ struct PendingToolCall {
     arguments: String,
 }
 
-fn normalized_usage(usage: &NormalizedUsage) -> Usage {
-    Usage {
+fn normalized_usage(usage: &NormalizedUsage, model_cost: &ModelCost) -> Usage {
+    let mut normalized = Usage {
         input: usage.input_tokens,
         output: usage.output_tokens,
         cache_read: usage.cache_read_tokens,
@@ -911,8 +911,10 @@ fn normalized_usage(usage: &NormalizedUsage) -> Usage {
         cache_write_1h: None,
         reasoning: (usage.reasoning_tokens > 0).then_some(usage.reasoning_tokens),
         total_tokens: usage.total_tokens,
-        cost: UsageCost::default(),
-    }
+        cost: Default::default(),
+    };
+    calculate_cost(&mut normalized, model_cost);
+    normalized
 }
 
 fn map_stop_reason(reason: &ProviderStopReason) -> StopReason {
