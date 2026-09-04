@@ -130,6 +130,7 @@ Its responsibilities are limited to:
 
 - First-time signup and subsequent login for one local Web UI user.
 - Listing running and finished sessions.
+- Grouping session titles automatically under their exact recorded working directories in the sidebar. Folder groups are derived directly from session headers, require no secondary index, and are ordered by the newest session they contain.
 - Creating, opening, resuming, viewing, steering, queueing, and stopping sessions.
 - Showing every pending steering and follow-up message as a compact row immediately above the composer. Each follow-up row can be promoted to steering, removed, or loaded back into the composer for editing without losing its position or attachments. The default Pi-compatible queue mode is one-at-a-time, so multiple follow-ups remain FIFO and are delivered as separate turns.
 - Presenting each session primarily as a chat view.
@@ -139,7 +140,7 @@ Its responsibilities are limited to:
 - Connecting to a running session's control socket and combining completed JSONL history with its live in-memory stream.
 - Sending text messages and attached photos or screenshots to sessions.
 - Choosing a new session's working directory with a small local folder-only picker that lists subfolders, moves to the parent, accepts an absolute path, and can create one new subfolder. It must not grow into a general file manager.
-- Displaying normal assistant output and calls and results from the seven built-in tools.
+- Displaying assistant output as an uncluttered prose transcript, right-aligned user bubbles, and compact expandable activity rows for calls and results from the seven built-in tools. Expanded tool activity shows output and success or failure without exposing a separate permissions interface.
 - Displaying Pi-equivalent token consumption, context percentage, input and output tokens, cache usage, cache statistics, and cost values supplied by the agent process.
 - Configuring, authenticating, listing, and selecting models and model-supported thinking levels from the three provider modes defined below.
 - Managing the local llama.cpp router and its models through an ordinary settings interface.

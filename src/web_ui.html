@@ -118,23 +118,52 @@
     #auth input:focus { border-color: var(--accent); }
     #auth button { width: 100%; margin-top: 5px; padding: 11px; border-radius: 10px; }
 
-    #app { display: grid; grid-template-columns: 264px minmax(0, 1fr); height: 100dvh; }
+    #app { display: grid; grid-template-columns: 280px minmax(0, 1fr); height: 100dvh; }
     #sidebar { display: flex; min-width: 0; flex-direction: column; border-right: 1px solid var(--line-soft); background: var(--sidebar); }
-    .sidebar-header { display: flex; height: 58px; align-items: center; gap: 8px; padding: 0 12px; }
-    .brand { flex: 1; font-size: 15px; font-weight: 700; letter-spacing: -.01em; }
-    #sessions { flex: 1; overflow: auto; padding: 5px 8px 14px; }
+    .sidebar-header { height: 52px; padding: 6px 8px; border-bottom: 1px solid var(--line-soft); }
+    .new-chat {
+      display: flex;
+      width: 100%;
+      height: 39px;
+      align-items: center;
+      gap: 10px;
+      padding: 0 10px;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      text-align: left;
+    }
+    .new-chat:hover { background: var(--surface-2); }
+    .new-chat svg { width: 18px; height: 18px; flex: 0 0 auto; }
+    #sessions { flex: 1; overflow: auto; padding: 7px 8px 16px; }
+    .folder-group { margin: 5px 0 12px; }
+    .folder-heading {
+      display: flex;
+      height: 31px;
+      min-width: 0;
+      align-items: center;
+      gap: 9px;
+      padding: 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 570;
+    }
+    .folder-heading svg { width: 17px; height: 17px; flex: 0 0 auto; }
+    .folder-heading span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .session {
-      margin: 2px 0;
-      padding: 10px 11px;
+      position: relative;
+      margin: 1px 0;
+      padding: 7px 9px 7px 34px;
       overflow: hidden;
-      border-radius: 9px;
+      border-radius: 7px;
       cursor: pointer;
     }
     .session:hover { background: var(--surface); }
     .session.active { background: var(--surface-2); }
-    .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
-    .session small { display: flex; align-items: center; gap: 5px; margin-top: 4px; overflow: hidden; color: var(--muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-    .running-dot { width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%; background: var(--ok); }
+    .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 430; text-overflow: ellipsis; white-space: nowrap; }
+    .running-dot { position: absolute; top: 12px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
     .sidebar-footer { padding: 10px 12px; border-top: 1px solid var(--line-soft); }
     .sidebar-footer button { display: flex; width: 100%; align-items: center; gap: 8px; padding: 8px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); text-align: left; }
     .sidebar-footer button:hover { background: var(--surface-2); color: var(--text); }
@@ -169,16 +198,16 @@
       overscroll-behavior: contain;
       scrollbar-gutter: stable;
     }
-    .chat-inner { width: min(880px, calc(100% - 32px)); min-height: 100%; margin: 0 auto; padding: 18px 0 24px; }
+    .chat-inner { width: min(790px, calc(100% - 44px)); min-height: 100%; margin: 0 auto; padding: 24px 0 28px; }
     .welcome { display: grid; min-height: calc(100dvh - 260px); place-content: center; color: var(--muted); text-align: center; }
     .welcome .cat { margin-bottom: 8px; font-size: 30px; filter: grayscale(.15); }
     .welcome strong { color: var(--text); font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
     .welcome p { margin: 7px 0 0; font-size: 13px; }
-    .message { display: flex; margin: 11px 0; }
-    .message.activity-message { margin: 2px 0; }
+    .message { display: flex; margin: 16px 0; }
+    .message.activity-message { margin: 1px 0; }
     .message.user { justify-content: flex-end; }
-    .message-content { min-width: 0; max-width: 100%; line-height: 1.58; overflow-wrap: anywhere; }
-    .message.user .message-content { max-width: 78%; padding: 7px 11px; border-radius: 10px 10px 3px 10px; background: var(--surface-2); }
+    .message-content { min-width: 0; max-width: 100%; font-size: 15px; line-height: 1.62; overflow-wrap: anywhere; }
+    .message.user .message-content { max-width: 82%; padding: 9px 13px; border-radius: 17px 17px 4px 17px; background: var(--surface-2); font-size: 14px; }
     .message.assistant .message-content { width: 100%; }
     .message.error .message-content { padding-left: 10px; border-left: 2px solid var(--danger); color: var(--danger); }
     .markdown p { margin: 0 0 8px; }
@@ -192,33 +221,35 @@
     .message-images img { max-width: 300px; max-height: 240px; border-radius: 10px; object-fit: contain; }
 
     .activity {
-      margin: 2px 0;
-      overflow: hidden;
-      border: 1px solid var(--line-soft);
-      border-radius: 6px;
-      background: var(--activity);
+      margin: 0;
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
       color: var(--muted);
     }
-    .activity[open] { border-color: var(--line); }
-    .activity summary { display: flex; min-height: 29px; align-items: center; gap: 7px; padding: 4px 8px; cursor: pointer; list-style: none; font-size: 11px; }
+    .activity[open] { border: 0; }
+    .activity summary { display: flex; min-height: 32px; align-items: center; gap: 8px; padding: 3px 2px; cursor: pointer; list-style: none; font-size: 13px; }
     .activity summary::-webkit-details-marker { display: none; }
-    .activity summary::before { width: 13px; color: var(--muted); content: "›"; font-size: 16px; line-height: 1; transform: rotate(0deg); transition: transform .12s; }
-    .activity[open] summary::before { transform: rotate(90deg); }
-    .activity .tool-name { color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 650; }
+    .tool-icon { display: inline-grid; width: 17px; height: 17px; flex: 0 0 auto; place-items: center; border: 1px solid var(--muted); border-radius: 4px; color: var(--muted); font: 9px ui-monospace, monospace; }
+    .activity .tool-name { color: var(--text); font-weight: 450; }
     .activity .tool-focus { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .activity .tool-state { margin-left: auto; color: var(--ok); }
+    .activity summary::after { margin-left: auto; color: var(--muted); content: "⌄"; font-size: 14px; transform: rotate(-90deg); transition: transform .12s; }
+    .activity[open] summary::after { transform: rotate(0deg); }
+    .activity .tool-state { display: block; padding: 6px 10px; border-top: 1px solid var(--line-soft); color: var(--ok); font-size: 12px; text-align: right; }
     .activity.error .tool-state { color: var(--danger); }
-    .tool-body { padding: 0 8px 8px 28px; }
-    .tool-body pre { max-height: 330px; }
-    .thought summary { color: var(--muted); font-style: italic; }
+    .tool-body { margin: 1px 20px 7px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--activity); }
+    .tool-body pre { max-height: 330px; margin: 0; padding: 10px 12px; border: 0; border-radius: 0; background: transparent; }
+    .thought summary { color: var(--muted); font-style: normal; }
+    .thought .tool-body { margin-left: 25px; }
 
     #composerWrap { padding: 0 16px 10px; background: linear-gradient(180deg, transparent, var(--bg) 12px); }
-    #composer { width: min(880px, 100%); margin: 0 auto; }
+    #composer { width: min(790px, 100%); margin: 0 auto; }
     #attachmentTray { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 6px 8px; }
     .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
     .attachment img { width: 100%; height: 100%; object-fit: cover; }
     .attachment button { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: #000c; color: white; font-size: 12px; }
-    .compose-box { overflow: visible; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); box-shadow: 0 6px 22px var(--shadow); }
+    .compose-box { overflow: visible; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: 0 6px 22px var(--shadow); }
     .compose-box:focus-within { border-color: var(--accent); }
     #prompt { display: block; width: 100%; min-height: 42px; max-height: 160px; padding: 10px 11px 2px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.4; }
     .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 2px; padding: 4px 5px 5px; }
@@ -227,7 +258,7 @@
     #model { width: 150px; } #thinking { width: 82px; }
     .toolbar-spacer { flex: 1; }
     #attachBtn { width: 27px; height: 27px; }
-    #sendBtn { width: 28px; height: 28px; border-radius: 6px; font-size: 15px; }
+    #sendBtn { width: 29px; height: 29px; border-radius: 50%; font-size: 15px; }
     #composerHint { min-height: 14px; padding-top: 3px; color: var(--muted); font-size: 10px; text-align: center; }
     #workspace.dragging::after { position: fixed; z-index: 20; inset: 70px 30px 100px 294px; display: grid; place-items: center; border: 2px dashed var(--accent); border-radius: 12px; background: var(--overlay); color: var(--text); content: "Drop images into this chat"; font-size: 15px; }
 
@@ -271,7 +302,7 @@
       #sidebar { display: none; }
       #folderBtn { max-width: 44vw; }
       #usage { display: none; }
-      .chat-inner { width: min(100% - 24px, 820px); }
+      .chat-inner { width: min(100% - 24px, 790px); }
       #composerWrap { padding: 0 10px 10px; }
       #model { width: 145px; }
       #workspace.dragging::after { inset: 65px 12px 100px; }
@@ -293,8 +324,10 @@
   <section id="app" class="hidden">
     <aside id="sidebar">
       <div class="sidebar-header">
-        <div class="brand">🐈 BashKitten</div>
-        <button id="newBtn" class="icon-button" type="button" title="New chat" aria-label="New chat">＋</button>
+        <button id="newBtn" class="new-chat" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h7"/><path d="m16.5 3.5 4 4L11 17H7v-4z"/></svg>
+          <span>New chat</span>
+        </button>
       </div>
       <div id="sessions"></div>
       <div class="sidebar-footer"><button id="settingsBtn" type="button"><span>⚙</span> Settings</button></div>
@@ -468,11 +501,21 @@
       body.append(holder);
     }
 
-    function toolFocus(argumentsValue) {
-      const value = argumentsValue || {};
-      const focus = value.path || value.command || value.pattern || value.query || '';
-      const text = typeof focus === 'string' ? focus : JSON.stringify(focus);
-      return text.length > 100 ? `${text.slice(0, 99)}…` : text;
+    function toolPresentation(block) {
+      const value = block.arguments || {};
+      const path = value.path || '.';
+      const presentations = {
+        bash: ['Ran', value.command || 'shell command'],
+        read: ['Read', `${path}${value.offset ? ` from line ${value.offset}` : ''}`],
+        write: ['Wrote', path],
+        edit: ['Edited', path],
+        ls: ['Listed', path],
+        find: ['Searched files', `${value.pattern || value.glob || '*'} in ${path}`],
+        grep: ['Searched text', `${value.pattern || value.query || ''} in ${path}`]
+      };
+      const [action, focusValue] = presentations[block.name] || [`Ran ${block.name}`, value.path || value.command || ''];
+      const focus = typeof focusValue === 'string' ? focusValue : JSON.stringify(focusValue);
+      return {action, focus: focus.length > 130 ? `${focus.slice(0, 129)}…` : focus};
     }
 
     function findTool(callId) {
@@ -485,22 +528,25 @@
       details = document.createElement('details');
       details.className = 'activity';
       details.dataset.call = block.id;
+      details.title = JSON.stringify(block.arguments || {});
       const summary = document.createElement('summary');
+      const icon = document.createElement('span');
+      icon.className = 'tool-icon';
+      icon.textContent = '>_';
+      const presentation = toolPresentation(block);
       const name = document.createElement('span');
       name.className = 'tool-name';
-      name.textContent = block.name;
+      name.textContent = presentation.action;
       const focus = document.createElement('span');
       focus.className = 'tool-focus';
-      focus.textContent = toolFocus(block.arguments);
+      focus.textContent = presentation.focus;
       const state = document.createElement('span');
       state.className = 'tool-state';
-      state.textContent = 'queued';
-      summary.append(name, focus, state);
+      state.textContent = 'Queued';
+      summary.append(icon, name, focus);
       const toolBody = document.createElement('div');
       toolBody.className = 'tool-body';
-      const input = document.createElement('pre');
-      input.textContent = JSON.stringify(block.arguments || {}, null, 2);
-      toolBody.append(input);
+      toolBody.append(state);
       details.append(summary, toolBody);
       body.append(details);
       body.parentElement.classList.add('activity-message');
@@ -515,15 +561,15 @@
       }
       details.classList.toggle('error', Boolean(message.isError));
       const state = details.querySelector('.tool-state');
-      state.textContent = message.isError ? 'failed' : 'done';
+      state.textContent = message.isError ? 'Failed' : '✓ Success';
       const toolBody = details.querySelector('.tool-body');
       const output = document.createElement('pre');
       output.textContent = textBlocks(message.content) || '(no output)';
-      toolBody.append(output);
+      toolBody.insertBefore(output, state);
       if (message.details?.diff) {
         const diff = document.createElement('pre');
         diff.textContent = message.details.diff;
-        toolBody.append(diff);
+        toolBody.insertBefore(diff, state);
       }
     }
 
@@ -620,7 +666,7 @@
         renderMessage(event.message);
       } else if (event.type === 'tool_start') {
         const details = findTool(event.id);
-        if (details) details.querySelector('.tool-state').textContent = 'running';
+        if (details) details.querySelector('.tool-state').textContent = 'Running';
       } else if (event.type === 'agent_start') {
         queueState.busy = true;
         $('#stopBtn').classList.remove('hidden');
@@ -795,10 +841,56 @@
       renderQueueState(queueState);
     }
 
+    function folderDisplayName(path) {
+      const normalized = String(path || '').replace(/\/+$/, '');
+      if (!normalized) return path === '/' ? '/' : 'Unknown folder';
+      return normalized.split('/').pop() || normalized;
+    }
+
+    function renderSessionSidebar(sessions) {
+      const root = $('#sessions');
+      root.innerHTML = '';
+      const groups = new Map();
+      for (const session of sessions) {
+        const folder = session.cwd || '';
+        if (!groups.has(folder)) groups.set(folder, []);
+        groups.get(folder).push(session);
+      }
+      for (const [folder, groupSessions] of groups) {
+        const group = document.createElement('section');
+        group.className = 'folder-group';
+        const heading = document.createElement('div');
+        heading.className = 'folder-heading';
+        heading.title = folder || 'Working folder unavailable';
+        heading.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H10l2 2h6.5A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/></svg>';
+        const label = document.createElement('span');
+        label.textContent = folderDisplayName(folder);
+        heading.append(label);
+        group.append(heading);
+        for (const session of groupSessions) {
+          const item = document.createElement('div');
+          item.className = `session${current?.id === session.id ? ' active' : ''}`;
+          item.dataset.id = session.id;
+          item.title = session.title;
+          const title = document.createElement('b');
+          title.textContent = session.title;
+          item.append(title);
+          if (session.running) {
+            const dot = document.createElement('span');
+            dot.className = 'running-dot';
+            dot.title = 'Running';
+            item.append(dot);
+          }
+          item.onclick = () => openSession(session);
+          group.append(item);
+        }
+        root.append(group);
+      }
+    }
+
     async function loadSessions() {
       const value = await api('/api/sessions?limit=100');
-      $('#sessions').innerHTML = value.sessions.map(session => `<div class="session${current?.id === session.id ? ' active' : ''}" data-id="${escapeHtml(session.id)}"><b>${escapeHtml(session.title)}</b><small>${session.running ? '<span class="running-dot"></span>' : ''}<span>${escapeHtml(session.model || '')}</span></small></div>`).join('');
-      document.querySelectorAll('.session').forEach(element => element.onclick = () => openSession(value.sessions.find(session => session.id === element.dataset.id)));
+      renderSessionSidebar(value.sessions);
       return value.sessions;
     }
 
@@ -1072,6 +1164,7 @@
           const result = await api('/api/sessions', {method: 'POST', body: createForm});
           const sessions = await loadSessions();
           current = sessions.find(session => session.id === result.id) || {id: result.id, title: text || 'Image session', cwd: pendingCwd, model: $('#model').value, thinking: $('#thinking').value, running: true};
+          renderSessionSidebar(sessions);
           $('#title').textContent = current.title;
           $('#folderLabel').textContent = current.cwd;
           $('#folderBtn').disabled = true;
