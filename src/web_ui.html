@@ -286,10 +286,13 @@
     #attachmentTray { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 6px 8px; }
     .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
     .attachment img { width: 100%; height: 100%; object-fit: cover; }
+    .attachment.file { display: flex; width: min(220px, 100%); height: 40px; align-items: center; gap: 8px; padding: 6px 27px 6px 9px; }
+    .attachment-kind { flex: 0 0 auto; color: var(--muted); font: 9px ui-monospace, monospace; }
+    .attachment-name { min-width: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
     .attachment button { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: #000c; color: white; font-size: 12px; }
     .compose-box { position: relative; overflow: visible; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: none; }
     .compose-box:focus-within { border-color: var(--line); }
-    .compose-box.dragging::after { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; border: 1px dashed var(--muted); border-radius: 18px; background: var(--overlay); color: var(--text); content: "Drop images"; pointer-events: none; }
+    .compose-box.dragging::after { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; border: 1px dashed var(--muted); border-radius: 18px; background: var(--overlay); color: var(--text); content: "Drop files"; pointer-events: none; }
     #prompt { display: block; width: 100%; min-height: 42px; max-height: 160px; padding: 10px 11px 2px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.4; }
     .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 2px; padding: 4px 5px 5px; }
     .composer-toolbar select { height: 27px; min-width: 0; padding: 0 22px 0 6px; overflow: hidden; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; text-overflow: ellipsis; cursor: pointer; }
@@ -412,15 +415,15 @@
           <div class="compose-box">
             <textarea id="prompt" rows="2" placeholder="Message BashKitten…" aria-label="Message BashKitten"></textarea>
             <div class="composer-toolbar">
-              <input id="files" class="hidden" type="file" accept="image/*" multiple>
-              <button id="attachBtn" class="icon-button" type="button" title="Attach images" aria-label="Attach images">＋</button>
+              <input id="files" class="hidden" type="file" multiple>
+              <button id="attachBtn" class="icon-button" type="button" title="Attach files" aria-label="Attach files">＋</button>
               <select id="model" title="Model"></select>
               <select id="thinking" title="Thinking level"></select>
               <span class="toolbar-spacer"></span>
               <button id="sendBtn" class="primary" type="submit" title="Send" aria-label="Send">↑</button>
             </div>
           </div>
-          <div id="composerHint">Paste, drag, or attach screenshots</div>
+          <div id="composerHint">Paste, drag, or attach files</div>
         </form>
       </div>
     </main>
@@ -866,7 +869,7 @@
         finishRenderedTurn(Date.now());
         queueState.busy = false;
         $('#stopBtn').classList.add('hidden');
-        $('#composerHint').textContent = 'Paste, drag, or attach screenshots';
+        $('#composerHint').textContent = 'Paste, drag, or attach files';
         loadSessions().catch(() => {});
         setTimeout(async () => {
           await refreshQueue().catch(() => {});
@@ -961,7 +964,7 @@
         kind.textContent = item.kind;
         const text = document.createElement('span');
         text.className = 'queue-text';
-        text.textContent = item.content || (item.attachments?.length ? `${item.attachments.length} image attachment(s)` : '(empty message)');
+        text.textContent = item.content || (item.attachments?.length ? `${item.attachments.length} attachment(s)` : '(empty message)');
         text.title = item.content || '';
         row.append(kind, text);
         if (item.kind !== 'steer') {
@@ -1027,7 +1030,7 @@
       editingQueueId = null;
       $('#prompt').value = '';
       $('#prompt').style.height = 'auto';
-      $('#composerHint').textContent = queueState.busy ? 'Agent is working' : 'Paste, drag, or attach screenshots';
+      $('#composerHint').textContent = queueState.busy ? 'Agent is working' : 'Paste, drag, or attach files';
       $('#attachBtn').disabled = false;
       renderQueueState(queueState);
     }
@@ -1212,8 +1215,8 @@
       $('#prompt').focus();
     }
 
-    function addImages(files) {
-      for (const file of files) if (file.type.startsWith('image/')) pendingFiles.push(file);
+    function addAttachments(files) {
+      for (const file of files) pendingFiles.push(file);
       renderAttachments();
     }
 
@@ -1223,16 +1226,29 @@
       tray.classList.toggle('hidden', !pendingFiles.length);
       pendingFiles.forEach((file, index) => {
         const item = document.createElement('div');
-        item.className = 'attachment';
+        const isImage = file.type.startsWith('image/');
+        item.className = `attachment${isImage ? '' : ' file'}`;
         item.title = file.name;
-        const image = document.createElement('img');
-        image.src = URL.createObjectURL(file);
-        image.alt = file.name;
+        if (isImage) {
+          const image = document.createElement('img');
+          image.src = URL.createObjectURL(file);
+          image.alt = file.name;
+          image.onload = () => URL.revokeObjectURL(image.src);
+          item.append(image);
+        } else {
+          const kind = document.createElement('span');
+          kind.className = 'attachment-kind';
+          kind.textContent = (file.name.split('.').pop() || 'FILE').slice(0, 5).toUpperCase();
+          const name = document.createElement('span');
+          name.className = 'attachment-name';
+          name.textContent = file.name;
+          item.append(kind, name);
+        }
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.textContent = '×';
         remove.onclick = () => { pendingFiles.splice(index, 1); renderAttachments(); };
-        item.append(image, remove);
+        item.append(remove);
         tray.append(item);
       });
     }
@@ -1342,16 +1358,16 @@
     document.querySelectorAll('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
 
     $('#attachBtn').onclick = () => $('#files').click();
-    $('#files').onchange = event => { addImages(event.target.files); event.target.value = ''; };
+    $('#files').onchange = event => { addAttachments(event.target.files); event.target.value = ''; };
     $('#prompt').addEventListener('paste', event => {
-      const images = [...(event.clipboardData?.files || [])].filter(file => file.type.startsWith('image/'));
-      if (images.length) { event.preventDefault(); addImages(images); }
+      const files = [...(event.clipboardData?.files || [])];
+      if (files.length) { event.preventDefault(); addAttachments(files); }
     });
     const composeBox = $('.compose-box');
     composeBox.addEventListener('dragenter', event => { event.preventDefault(); composeBox.classList.add('dragging'); });
     composeBox.addEventListener('dragover', event => { event.preventDefault(); composeBox.classList.add('dragging'); });
     composeBox.addEventListener('dragleave', event => { if (!event.relatedTarget || !composeBox.contains(event.relatedTarget)) composeBox.classList.remove('dragging'); });
-    composeBox.addEventListener('drop', event => { event.preventDefault(); composeBox.classList.remove('dragging'); addImages(event.dataTransfer.files); });
+    composeBox.addEventListener('drop', event => { event.preventDefault(); composeBox.classList.remove('dragging'); addAttachments(event.dataTransfer.files); });
     $('#prompt').addEventListener('input', event => { event.target.style.height = 'auto'; event.target.style.height = `${Math.min(event.target.scrollHeight, 190)}px`; });
     $('#prompt').addEventListener('keydown', event => {
       if (event.key === 'Escape' && editingQueueId) { event.preventDefault(); cancelQueueEdit(); }

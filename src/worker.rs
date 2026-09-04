@@ -450,18 +450,51 @@ impl Runtime {
         if !queued.content.is_empty() {
             blocks.push(ContentBlock::text(queued.content));
         }
+        let mut attachment_notes = Vec::new();
+        let mut images = Vec::new();
         for attachment in queued.attachments {
-            let data = fs::read(&attachment)
-                .with_context(|| format!("read attachment {}", attachment.display()))?;
+            let attachment = if attachment.is_absolute() {
+                attachment
+            } else {
+                self.header.cwd.join(attachment)
+            };
+            let attachment = fs::canonicalize(&attachment)
+                .with_context(|| format!("open attachment {}", attachment.display()))?;
+            if !attachment.is_file() {
+                bail!("attachment is not a file: {}", attachment.display());
+            }
+            let name = attachment
+                .file_name()
+                .map(|name| name.to_string_lossy().into_owned())
+                .unwrap_or_else(|| "attachment".into());
             let mime_type = mime_guess::from_path(&attachment)
                 .first_or_octet_stream()
                 .essence_str()
                 .to_owned();
-            blocks.push(ContentBlock::Image {
-                data: STANDARD.encode(data),
-                mime_type,
-            });
+            attachment_notes.push(format!(
+                "- name: {name}\n  path: {}\n  media type: {mime_type}",
+                attachment.display()
+            ));
+            let supported_image = matches!(
+                mime_type.as_str(),
+                "image/jpeg" | "image/png" | "image/gif" | "image/webp"
+            );
+            if supported_image && self.model.input.iter().any(|input| input == "image") {
+                let data = fs::read(&attachment)
+                    .with_context(|| format!("read attachment {}", attachment.display()))?;
+                images.push(ContentBlock::Image {
+                    data: STANDARD.encode(data),
+                    mime_type,
+                });
+            }
         }
+        if !attachment_notes.is_empty() {
+            blocks.push(ContentBlock::text(format!(
+                "Attached files saved on disk:\n{}",
+                attachment_notes.join("\n")
+            )));
+        }
+        blocks.extend(images);
         let message = AgentMessage::User {
             content: MessageContent::Blocks(blocks),
             timestamp: Utc::now().timestamp_millis(),

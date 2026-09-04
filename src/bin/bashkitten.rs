@@ -180,6 +180,7 @@ async fn main() -> Result<()> {
                     parent: args.parent,
                 };
                 let id = session::create(&paths, &request)?;
+                let attachments = session::copy_attachments(&paths, &id, &args.attachments)?;
                 session::start_worker(&paths, &id)?;
                 session::send(
                     &paths,
@@ -187,7 +188,7 @@ async fn main() -> Result<()> {
                     &ControlRequest::Send {
                         delivery: Delivery::Queue,
                         content: args.prompt,
-                        attachments: args.attachments,
+                        attachments,
                         source_session: std::env::var("BASHKITTEN_SESSION_ID").ok(),
                     },
                 )?;
@@ -242,6 +243,7 @@ async fn main() -> Result<()> {
             } else {
                 Delivery::Queue
             };
+            let attachments = session::copy_attachments(&paths, &args.id, &args.attachments)?;
             let socket = session::control_socket(&paths, &args.id)?;
             if !session::socket_is_live(&socket) {
                 session::start_worker(&paths, &args.id)?;
@@ -252,7 +254,7 @@ async fn main() -> Result<()> {
                 &ControlRequest::Send {
                     delivery,
                     content: args.message,
-                    attachments: args.attachments,
+                    attachments,
                     source_session: std::env::var("BASHKITTEN_SESSION_ID").ok(),
                 },
             )?;

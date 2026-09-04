@@ -1,7 +1,7 @@
 use crate::auth;
 use crate::config::AppConfig;
 use crate::models;
-use crate::paths::{AppPaths, set_private_file};
+use crate::paths::{AppPaths, ensure_private_dir, set_private_file};
 use crate::session::{self, ControlRequest, Delivery, NewSession, QueueAction};
 use anyhow::{Context, Result};
 use async_stream::stream;
@@ -363,7 +363,9 @@ fn save_attachments(
     let dir = paths.session_dir(id).join("attachments");
     let mut saved = Vec::new();
     for (name, bytes) in files {
-        let path = dir.join(format!("{}-{name}", uuid::Uuid::new_v4()));
+        let upload_dir = dir.join(uuid::Uuid::new_v4().to_string());
+        ensure_private_dir(&upload_dir)?;
+        let path = upload_dir.join(name);
         let mut file = fs::OpenOptions::new()
             .create_new(true)
             .write(true)

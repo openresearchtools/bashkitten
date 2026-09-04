@@ -313,6 +313,34 @@ pub fn read_segment(paths: &AppPaths, id: &str, number: u32) -> Result<Vec<Value
         .collect()
 }
 
+pub fn copy_attachments(paths: &AppPaths, id: &str, sources: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    validate_id(id)?;
+    let attachments_dir = paths.session_dir(id).join("attachments");
+    ensure_private_dir(&attachments_dir)?;
+    let mut copied = Vec::with_capacity(sources.len());
+    for source in sources {
+        let source = fs::canonicalize(source)
+            .with_context(|| format!("open attachment {}", source.display()))?;
+        if !source.is_file() {
+            bail!("attachment is not a file: {}", source.display());
+        }
+        let name = source.file_name().context("attachment has no filename")?;
+        let upload_dir = attachments_dir.join(Uuid::new_v4().to_string());
+        ensure_private_dir(&upload_dir)?;
+        let destination = upload_dir.join(name);
+        fs::copy(&source, &destination).with_context(|| {
+            format!(
+                "copy attachment {} to {}",
+                source.display(),
+                destination.display()
+            )
+        })?;
+        set_private_file(&destination)?;
+        copied.push(destination);
+    }
+    Ok(copied)
+}
+
 pub fn append_values(paths: &AppPaths, id: &str, values: &[Value]) -> Result<()> {
     validate_id(id)?;
     let dir = paths.session_dir(id);
@@ -423,6 +451,7 @@ pub fn save_provider_auth(paths: &AppPaths, value: &Value) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::os::unix::fs::PermissionsExt;
 
     #[test]
     fn title_is_local_and_short() {
@@ -453,5 +482,16 @@ mod tests {
         .unwrap();
         assert!(paths.session_dir(&id).join("000001.jsonl").exists());
         assert_eq!(list(&paths).unwrap()[0].title, "hello");
+
+        let source = temp.path().join("notes for agent.txt");
+        fs::write(&source, "attachment body").unwrap();
+        let copied = copy_attachments(&paths, &id, &[source]).unwrap();
+        assert_eq!(copied[0].file_name().unwrap(), "notes for agent.txt");
+        assert!(copied[0].starts_with(paths.session_dir(&id).join("attachments")));
+        assert_eq!(fs::read_to_string(&copied[0]).unwrap(), "attachment body");
+        assert_eq!(
+            copied[0].metadata().unwrap().permissions().mode() & 0o777,
+            0o600
+        );
     }
 }
