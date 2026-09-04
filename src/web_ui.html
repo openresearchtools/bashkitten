@@ -168,7 +168,7 @@
     .session.active { background: var(--surface-2); }
     .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 430; text-overflow: ellipsis; white-space: nowrap; }
     .running-dot { position: absolute; top: 12px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
-    #workspace { display: grid; min-width: 0; height: 100dvh; grid-template-rows: 58px minmax(0, 1fr) auto; }
+    #workspace { position: relative; display: grid; min-width: 0; height: 100dvh; overflow: hidden; grid-template-rows: 58px minmax(0, 1fr) auto; }
     .topbar { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line-soft); }
     .chat-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
     #title { max-width: min(48vw, 540px); overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
@@ -223,7 +223,18 @@
     .markdown code { padding: 2px 5px; border-radius: 4px; background: var(--code); color: var(--text); font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; }
     .markdown pre, .tool-body pre { margin: 6px 0 0; padding: 9px 10px; overflow: auto; border: 1px solid var(--line-soft); border-radius: 6px; background: var(--code); color: var(--text); font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
     .message-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
-    .message-images img { max-width: 300px; max-height: 240px; border-radius: 10px; object-fit: contain; }
+    .message-images img { max-width: 300px; max-height: 240px; border-radius: 10px; cursor: zoom-in; object-fit: contain; }
+    .tool-body .message-images { margin: 0; padding: 10px 12px; border-top: 1px solid var(--line-soft); }
+    .tool-body .message-images img { max-width: 260px; max-height: 220px; }
+
+    #imageViewer { position: absolute; z-index: 60; inset: 0; display: grid; min-width: 0; min-height: 0; grid-template-rows: 49px minmax(0, 1fr); background: var(--overlay); }
+    .image-viewer-toolbar { display: flex; min-width: 0; align-items: center; gap: 4px; padding: 7px 10px 7px 14px; border-bottom: 1px solid var(--line-soft); background: var(--surface); }
+    #viewerTitle { min-width: 0; flex: 1; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    #viewerZoom { width: 48px; color: var(--muted); font-size: 11px; text-align: center; }
+    .image-viewer-toolbar .icon-button { width: 31px; height: 31px; font-size: 17px; }
+    #imageViewport { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+    #imageStage { display: grid; width: max-content; min-width: 100%; height: max-content; min-height: 100%; padding: 24px; place-items: center; }
+    #viewerImage { display: block; max-width: none; max-height: none; border-radius: 4px; box-shadow: 0 8px 32px var(--shadow); }
 
     .turn-work {
       margin: 5px 0 14px;
@@ -285,7 +296,7 @@
     #composer { width: min(790px, 100%); margin: 0 auto; }
     #attachmentTray { display: flex; flex-wrap: wrap; gap: 7px; padding: 0 6px 8px; }
     .attachment { position: relative; width: 58px; height: 58px; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
-    .attachment img { width: 100%; height: 100%; object-fit: cover; }
+    .attachment img { width: 100%; height: 100%; cursor: zoom-in; object-fit: cover; }
     .attachment.file { display: flex; width: min(220px, 100%); height: 40px; align-items: center; gap: 8px; padding: 6px 27px 6px 9px; }
     .attachment-kind { flex: 0 0 auto; color: var(--muted); font: 9px ui-monospace, monospace; }
     .attachment-name { min-width: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
@@ -426,6 +437,16 @@
           <div id="composerHint">Paste, drag, or attach files</div>
         </form>
       </div>
+      <section id="imageViewer" class="hidden" role="dialog" aria-modal="true" aria-label="Image viewer">
+        <div class="image-viewer-toolbar">
+          <span id="viewerTitle">Image</span>
+          <button id="viewerOut" class="icon-button" type="button" title="Zoom out" aria-label="Zoom out">−</button>
+          <span id="viewerZoom">100%</span>
+          <button id="viewerIn" class="icon-button" type="button" title="Zoom in" aria-label="Zoom in">+</button>
+          <button id="viewerClose" class="icon-button" type="button" title="Close image" aria-label="Close image">×</button>
+        </div>
+        <div id="imageViewport"><div id="imageStage"><img id="viewerImage" alt=""></div></div>
+      </section>
     </main>
   </section>
 
@@ -461,6 +482,7 @@
     let editingQueueId = null;
     let renderedTurn = null;
     let displayedUsage = null;
+    let viewerZoom = 1;
     const $ = selector => document.querySelector(selector);
 
     async function api(url, options = {}) {
@@ -614,18 +636,74 @@
       else text.textContent = value;
     }
 
-    function renderImages(content, body) {
+    function setViewerZoom(value, preserveCenter = true) {
+      const image = $('#viewerImage');
+      if (!image.naturalWidth) return;
+      const viewport = $('#imageViewport');
+      const centerX = preserveCenter && viewport.scrollWidth ? (viewport.scrollLeft + viewport.clientWidth / 2) / viewport.scrollWidth : .5;
+      const centerY = preserveCenter && viewport.scrollHeight ? (viewport.scrollTop + viewport.clientHeight / 2) / viewport.scrollHeight : .5;
+      viewerZoom = Math.max(.02, Math.min(8, value));
+      image.style.width = `${Math.max(1, Math.round(image.naturalWidth * viewerZoom))}px`;
+      image.style.height = 'auto';
+      $('#viewerZoom').textContent = `${Math.round(viewerZoom * 100)}%`;
+      requestAnimationFrame(() => {
+        viewport.scrollLeft = Math.max(0, centerX * viewport.scrollWidth - viewport.clientWidth / 2);
+        viewport.scrollTop = Math.max(0, centerY * viewport.scrollHeight - viewport.clientHeight / 2);
+      });
+    }
+
+    function fitViewerImage() {
+      const image = $('#viewerImage');
+      const viewport = $('#imageViewport');
+      if (!image.naturalWidth || !image.naturalHeight) return;
+      const availableWidth = Math.max(1, viewport.clientWidth - 48);
+      const availableHeight = Math.max(1, viewport.clientHeight - 48);
+      setViewerZoom(Math.min(1, availableWidth / image.naturalWidth, availableHeight / image.naturalHeight), false);
+      viewport.scrollLeft = 0;
+      viewport.scrollTop = 0;
+    }
+
+    function openImageViewer(src, title) {
+      const viewer = $('#imageViewer');
+      const image = $('#viewerImage');
+      $('#viewerTitle').textContent = title || 'Image';
+      image.alt = title || 'Image';
+      image.onload = fitViewerImage;
+      image.src = src;
+      viewer.classList.remove('hidden');
+      if (image.complete) fitViewerImage();
+      $('#viewerClose').focus();
+    }
+
+    function closeImageViewer() {
+      $('#imageViewer').classList.add('hidden');
+      const image = $('#viewerImage');
+      image.onload = null;
+      image.removeAttribute('src');
+    }
+
+    function renderImages(content, body, label = 'Image', before = null) {
       const images = (Array.isArray(content) ? content : []).filter(block => block.type === 'image');
       if (!images.length) return;
       const holder = document.createElement('div');
       holder.className = 'message-images';
       for (const block of images) {
         const image = document.createElement('img');
-        image.alt = 'Attached image';
+        image.alt = label;
         image.src = `data:${block.mimeType};base64,${block.data}`;
+        image.tabIndex = 0;
+        image.setAttribute('role', 'button');
+        image.onclick = () => openImageViewer(image.src, image.alt);
+        image.onkeydown = event => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openImageViewer(image.src, image.alt);
+          }
+        };
         holder.append(image);
       }
-      body.append(holder);
+      body.insertBefore(holder, before);
+      return holder;
     }
 
     function toolPresentation(block) {
@@ -690,13 +768,22 @@
       const state = details.querySelector('.tool-state');
       state.textContent = message.isError ? 'Failed' : '✓ Success';
       const toolBody = details.querySelector('.tool-body');
-      const output = document.createElement('pre');
-      output.textContent = textBlocks(message.content) || '(no output)';
-      toolBody.insertBefore(output, state);
+      const imageBlocks = (Array.isArray(message.content) ? message.content : []).filter(block => block.type === 'image');
+      const outputText = textBlocks(message.content);
+      if (outputText || !imageBlocks.length) {
+        const output = document.createElement('pre');
+        output.textContent = outputText || '(no output)';
+        toolBody.insertBefore(output, state);
+      }
       if (message.details?.diff) {
         const diff = document.createElement('pre');
         diff.textContent = message.details.diff;
         toolBody.insertBefore(diff, state);
+      }
+      if (imageBlocks.length) {
+        details.querySelector('.tool-name').textContent = 'Viewed';
+        const label = details.querySelector('.tool-focus')?.textContent || 'Viewed image';
+        renderImages(message.content, toolBody, label, state);
       }
       updateUsage(message.usage);
     }
@@ -799,7 +886,7 @@
         const body = messageRow('user');
         const text = textBlocks(message.content);
         if (text) { const content = document.createElement('div'); content.className = 'markdown'; content.innerHTML = markdown(text); body.append(content); }
-        renderImages(message.content, body);
+        renderImages(message.content, body, 'Attached image');
         return;
       }
       if (message.role !== 'assistant') return;
@@ -813,6 +900,7 @@
         return;
       }
       const text = [];
+      const imageBlocks = [];
       let hasToolCall = false;
       for (const block of message.content || []) {
         if (block.type === 'text' && block.text) {
@@ -822,15 +910,20 @@
         } else if (block.type === 'toolCall') {
           hasToolCall = true;
           renderToolCall(block, ensureTurnWork());
+        } else if (block.type === 'image') {
+          imageBlocks.push(block);
         }
       }
-      if (text.length) {
+      if (text.length || imageBlocks.length) {
         if (!hasToolCall) finishRenderedTurn(message.timestamp);
         const body = messageRow('assistant');
-        const content = document.createElement('div');
-        content.className = 'markdown';
-        content.innerHTML = markdown(text.join('\n'));
-        body.append(content);
+        if (text.length) {
+          const content = document.createElement('div');
+          content.className = 'markdown';
+          content.innerHTML = markdown(text.join('\n'));
+          body.append(content);
+        }
+        renderImages(imageBlocks, body, 'Assistant image');
       }
       updateUsage(message.usage, modelId);
     }
@@ -1104,6 +1197,7 @@
     }
 
     function showSettingsView() {
+      closeImageViewer();
       $('#chat').classList.add('hidden');
       $('#composerWrap').classList.add('hidden');
       $('#settingsView').classList.remove('hidden');
@@ -1150,6 +1244,7 @@
 
     async function openSession(session) {
       if (!session) return;
+      closeImageViewer();
       current = session;
       showChatView();
       source?.close();
@@ -1188,6 +1283,7 @@
     }
 
     function beginNewSession() {
+      closeImageViewer();
       current = null;
       showChatView();
       source?.close();
@@ -1234,6 +1330,11 @@
           image.src = URL.createObjectURL(file);
           image.alt = file.name;
           image.onload = () => URL.revokeObjectURL(image.src);
+          image.onclick = () => {
+            const reader = new FileReader();
+            reader.onload = () => openImageViewer(reader.result, file.name);
+            reader.readAsDataURL(file);
+          };
           item.append(image);
         } else {
           const kind = document.createElement('span');
@@ -1358,6 +1459,15 @@
     document.querySelectorAll('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
 
     $('#attachBtn').onclick = () => $('#files').click();
+    $('#viewerClose').onclick = closeImageViewer;
+    $('#viewerOut').onclick = () => setViewerZoom(viewerZoom / 1.25);
+    $('#viewerIn').onclick = () => setViewerZoom(viewerZoom * 1.25);
+    document.addEventListener('keydown', event => {
+      if ($('#imageViewer').classList.contains('hidden')) return;
+      if (event.key === 'Escape') { event.preventDefault(); closeImageViewer(); }
+      else if (event.key === '-' || event.key === '_') { event.preventDefault(); setViewerZoom(viewerZoom / 1.25); }
+      else if (event.key === '+' || event.key === '=') { event.preventDefault(); setViewerZoom(viewerZoom * 1.25); }
+    });
     $('#files').onchange = event => { addAttachments(event.target.files); event.target.value = ''; };
     $('#prompt').addEventListener('paste', event => {
       const files = [...(event.clipboardData?.files || [])];
