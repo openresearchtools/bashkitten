@@ -133,6 +133,7 @@ Its responsibilities are limited to:
 - Grouping session titles automatically under their exact recorded working directories in the sidebar. Folder groups are derived directly from session headers, require no secondary index, and are ordered by the newest session they contain.
 - Creating, opening, resuming, viewing, steering, queueing, and stopping sessions.
 - Showing every pending steering and follow-up message as a compact row immediately above the composer. Each follow-up row can be promoted to steering, removed, or loaded back into the composer for editing without losing its position or attachments. The default Pi-compatible queue mode is one-at-a-time, so multiple follow-ups remain FIFO and are delivered as separate turns.
+- Using one compact square composer action as the only visible run control: a right-pointing Play glyph sends while idle, it becomes a Pause glyph during an active run, and clicking Pause stops only that session's current worker before returning to Play. Do not add a separate Stop control to the top bar. Enter still sends or queues the composed message; Shift+Enter inserts a newline.
 - Presenting each session primarily as a chat view.
 - Loading the newest numbered JSONL immediately.
 - Loading older JSONLs incrementally when the user scrolls upward.

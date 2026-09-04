@@ -191,7 +191,6 @@
     #folderBtn:not(:disabled):hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
     #folderBtn span { overflow: hidden; text-overflow: ellipsis; }
     #usage { flex: 0 0 auto; color: var(--muted); font-size: 11px; white-space: nowrap; }
-    #stopBtn { padding: 5px 9px; border: 1px solid var(--danger); border-radius: 6px; background: transparent; color: var(--danger); font-size: 11px; }
 
     #chat {
       overflow: auto;
@@ -327,8 +326,9 @@
     #model { width: 100px; } #thinking { width: 82px; }
     .toolbar-spacer { flex: 1; }
     #attachBtn { width: 27px; height: 27px; }
-    #sendBtn { width: 29px; height: 29px; border-radius: 50%; background: var(--text); color: var(--bg); font-size: 15px; }
+    #sendBtn { display: grid; flex: 0 0 30px; width: 30px; height: 30px; padding: 0; place-items: center; border-radius: 6px; background: var(--text); color: var(--bg); font-size: 13px; line-height: 1; }
     #sendBtn:hover { background: var(--muted); }
+    #sendBtn[data-mode="pause"] { font-size: 12px; letter-spacing: -2px; }
     #composerHint { min-height: 14px; padding-top: 3px; color: var(--muted); font-size: 10px; text-align: center; }
 
     #queuePanel { display: flex; max-height: 140px; flex-direction: column; gap: 2px; margin: 0 3px 5px; overflow: auto; }
@@ -410,7 +410,6 @@
           <button id="folderBtn" type="button" title="Set working folder"><span aria-hidden="true">⌁</span><span id="folderLabel">Set folder</span></button>
         </div>
         <span id="usage"></span>
-        <button id="stopBtn" class="hidden" type="button">Stop</button>
       </header>
       <div id="chat"><div id="chatInner" class="chat-inner"></div></div>
       <section id="settingsView" class="hidden">
@@ -446,7 +445,7 @@
               <select id="model" title="Model"></select>
               <select id="thinking" title="Thinking level"></select>
               <span class="toolbar-spacer"></span>
-              <button id="sendBtn" class="primary" type="submit" title="Send" aria-label="Send">↑</button>
+              <button id="sendBtn" class="primary" type="button" data-mode="play" title="Send" aria-label="Send">▶</button>
             </div>
           </div>
           <div id="composerHint">Paste, drag, or attach files</div>
@@ -1096,6 +1095,14 @@
       $('#liveThinking')?.remove();
     }
 
+    function setRunButton(running) {
+      const button = $('#sendBtn');
+      button.dataset.mode = running ? 'pause' : 'play';
+      button.textContent = running ? 'Ⅱ' : '▶';
+      button.title = running ? 'Stop current run' : 'Send';
+      button.setAttribute('aria-label', running ? 'Stop current run' : 'Send');
+    }
+
     function renderEvent(event) {
       if (event.type === 'session') return;
       if (event.type === 'assistant_delta') {
@@ -1116,15 +1123,17 @@
         }
       } else if (event.type === 'agent_start') {
         queueState.busy = true;
+        if (current) current.running = true;
         if (renderedTurn?.work) renderedTurn.work.open = true;
-        $('#stopBtn').classList.remove('hidden');
+        setRunButton(true);
         $('#composerHint').textContent = 'Agent is working';
       } else if (event.type === 'turn_end') {
         finishRenderedTurn(Date.now());
       } else if (event.type === 'agent_end') {
         finishRenderedTurn(Date.now());
         queueState.busy = false;
-        $('#stopBtn').classList.add('hidden');
+        if (current) current.running = false;
+        setRunButton(false);
         $('#composerHint').textContent = 'Paste, drag, or attach files';
         loadSessions().catch(() => {});
         setTimeout(async () => {
@@ -1208,6 +1217,7 @@
         steeringMessages: value.steeringMessages || [],
         queuedMessages: value.queuedMessages || []
       };
+      setRunButton(queueState.busy);
       const panel = $('#queuePanel');
       panel.innerHTML = '';
       const items = queuedItems();
@@ -1354,7 +1364,7 @@
       $('#title').textContent = current?.title || 'New chat';
       $('#folderLabel').textContent = current?.cwd || pendingCwd || 'Set folder';
       $('#folderBtn').disabled = Boolean(current);
-      $('#stopBtn').classList.toggle('hidden', !current?.running);
+      setRunButton(queueState.busy || Boolean(current?.running));
       if (current) renderUsage();
       else $('#usage').textContent = '';
     }
@@ -1368,7 +1378,6 @@
       $('#title').textContent = 'Settings';
       $('#folderBtn').classList.add('hidden');
       $('#usage').classList.add('hidden');
-      $('#stopBtn').classList.add('hidden');
     }
 
     function connectSession(id, consume = renderEvent) {
@@ -1401,6 +1410,11 @@
           stream.close();
           if (source === stream) source = null;
           if (!subscribed) reject(new Error('Agent session is offline'));
+          else {
+            if (current) current.running = false;
+            renderQueueState({busy: false});
+            $('#composerHint').textContent = 'Paste, drag, or attach files';
+          }
         });
       });
     }
@@ -1418,7 +1432,7 @@
       $('#folderLabel').textContent = session.cwd || 'Working folder';
       $('#folderBtn').disabled = true;
       $('#folderBtn').title = 'The working folder is fixed for this session';
-      $('#stopBtn').classList.toggle('hidden', !session.running);
+      setRunButton(Boolean(session.running));
       if (session.model) {
         $('#model').value = session.model;
         setThinking($('#model'));
@@ -1462,7 +1476,7 @@
       $('#folderLabel').textContent = pendingCwd || 'Set folder';
       $('#folderBtn').disabled = false;
       $('#folderBtn').title = 'Set working folder';
-      $('#stopBtn').classList.add('hidden');
+      setRunButton(false);
       $('#usage').textContent = '';
       if (config) {
         $('#model').value = config.default_model;
@@ -1692,20 +1706,36 @@
         const result = await api(`/api/sessions/${current.id}/messages`, {method: 'POST', body: messageForm});
         renderQueueState(result.data);
         setTimeout(() => refreshQueue().catch(() => {}), 100);
-        $('#stopBtn').classList.remove('hidden');
+        if (current) current.running = true;
+        setRunButton(true);
       } catch (error) {
         const body = messageRow('assistant', 'error');
         body.textContent = error.message;
       } finally { $('#sendBtn').disabled = false; }
     };
 
-    $('#stopBtn').onclick = async () => {
+    async function stopCurrentRun() {
       if (!current) return;
-      await api(`/api/sessions/${current.id}/stop`, {method: 'POST'});
-      source?.close();
-      source = null;
-      $('#stopBtn').classList.add('hidden');
-      await loadSessions();
+      $('#sendBtn').disabled = true;
+      try {
+        await api(`/api/sessions/${current.id}/stop`, {method: 'POST'});
+      } catch (error) {
+        if (!String(error.message).includes('not loaded')) alert(error.message);
+      } finally {
+        source?.close();
+        source = null;
+        current.running = false;
+        renderQueueState({busy: false});
+        $('#composerHint').textContent = 'Paste, drag, or attach files';
+        $('#sendBtn').disabled = false;
+        setRunButton(false);
+        await loadSessions().catch(() => {});
+      }
+    }
+
+    $('#sendBtn').onclick = () => {
+      if ($('#sendBtn').dataset.mode === 'pause') stopCurrentRun();
+      else $('#composer').requestSubmit();
     };
 
     $('#settingsBtn').onclick = () => {
