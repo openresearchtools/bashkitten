@@ -53,6 +53,7 @@ struct PendingModel {
 struct Shared {
     queues: Mutex<AgentQueues<QueuedMessage>>,
     model_change: Mutex<Option<PendingModel>>,
+    cwd_change: Mutex<Option<PathBuf>>,
     notify: Notify,
     events: broadcast::Sender<Value>,
     busy: AtomicBool,
@@ -65,6 +66,7 @@ impl Shared {
         Self {
             queues: Mutex::new(AgentQueues::default()),
             model_change: Mutex::new(None),
+            cwd_change: Mutex::new(None),
             notify: Notify::new(),
             events,
             busy: AtomicBool::new(false),
@@ -282,6 +284,18 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             shared.notify.notify_one();
             write_reply(&mut write, true, "model change queued", json!({})).await?;
         }
+        ControlRequest::ChangeCwd { cwd } => {
+            let cwd = session::validate_cwd(&cwd)?;
+            *shared.cwd_change.lock().await = Some(cwd);
+            shared.notify.notify_one();
+            write_reply(
+                &mut write,
+                true,
+                "Folder change will apply when the current turn settles",
+                json!({}),
+            )
+            .await?;
+        }
         ControlRequest::QueueAction {
             id,
             action,
@@ -362,10 +376,19 @@ impl Runtime {
     async fn has_work(&self) -> bool {
         self.shared.queues.lock().await.has_messages()
             || self.shared.model_change.lock().await.is_some()
+            || self.shared.cwd_change.lock().await.is_some()
     }
 
     async fn process_available_work(&mut self) -> Result<bool> {
         let mut did_work = false;
+        let cwd = { self.shared.cwd_change.lock().await.take() };
+        if let Some(cwd) = cwd {
+            if let Err(error) = self.apply_cwd_change(cwd) {
+                self.shared
+                    .emit(json!({"type":"cwd_error","message":error.to_string()}));
+            }
+            did_work = true;
+        }
         let change = { self.shared.model_change.lock().await.take() };
         if let Some(change) = change {
             self.apply_model_change(change).await?;
@@ -383,6 +406,32 @@ impl Runtime {
         self.run_agent_turn().await?;
         self.flush_pending()?;
         Ok(did_work)
+    }
+
+    fn apply_cwd_change(&mut self, cwd: PathBuf) -> Result<()> {
+        let cwd = session::validate_cwd(&cwd)?;
+        self.flush_pending()?;
+        let mut header = self.header.clone();
+        header.initial_cwd.get_or_insert_with(|| header.cwd.clone());
+        header.cwd = cwd;
+        let previous_id = self.last_entry_id.clone();
+        let event = self.entry(SessionEntryKind::Custom {
+            custom_type: "bashkitten.cwd".into(),
+            data: Some(json!({"cwd":header.cwd})),
+        });
+        if let Err(error) = session::replace_current_header(
+            &self.paths.session_dir(&self.id),
+            &header,
+            Some(&serde_json::to_value(&event)?),
+        ) {
+            self.last_entry_id = previous_id;
+            return Err(error);
+        }
+        self.entries.push(event);
+        self.header = header;
+        self.shared
+            .emit(json!({"type":"cwd_change","cwd":self.header.cwd}));
+        Ok(())
     }
 
     async fn apply_model_change(&mut self, change: PendingModel) -> Result<()> {

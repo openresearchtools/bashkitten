@@ -31,6 +31,7 @@ const COOKIE: &str = "bashkitten_session";
 pub struct WebState {
     pub paths: AppPaths,
     pub config: Arc<RwLock<AppConfig>>,
+    pub oauth: crate::oauth::LoginManager,
 }
 
 #[derive(Debug)]
@@ -66,6 +67,21 @@ struct Page {
 struct ModelChange {
     model: String,
     thinking: String,
+}
+
+#[derive(Deserialize)]
+struct FolderChange {
+    cwd: PathBuf,
+}
+
+#[derive(Deserialize)]
+struct OAuthStart {
+    method: String,
+}
+
+#[derive(Deserialize)]
+struct OAuthCode {
+    input: String,
 }
 
 #[derive(Deserialize)]
@@ -110,6 +126,7 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
     let state = WebState {
         paths,
         config: Arc::new(RwLock::new(config)),
+        oauth: crate::oauth::LoginManager::default(),
     };
     Router::new()
         .route("/", get(index))
@@ -131,11 +148,27 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
         .route("/api/sessions/{id}/queue", post(mutate_queue))
         .route("/api/sessions/{id}/stop", post(stop_session))
         .route("/api/sessions/{id}/model", post(change_model))
+        .route("/api/sessions/{id}/cwd", post(change_cwd))
         .route("/api/folders", get(list_folders).post(create_folder))
         .route("/api/settings", get(get_settings).post(save_settings))
-        .route("/api/provider/import-pi", post(import_pi_auth))
+        .route(
+            "/api/provider/login",
+            get(provider_login_status).post(provider_login),
+        )
+        .route("/api/provider/login/code", post(provider_login_code))
+        .route("/api/provider/login/cancel", post(provider_login_cancel))
+        .route("/api/provider/logout", post(provider_logout))
         .route("/api/llama/restart", post(restart_llama))
         .layer(DefaultBodyLimit::max(32 * 1024 * 1024))
+        .layer(axum::middleware::from_fn(
+            |request: axum::extract::Request, next: axum::middleware::Next| async move {
+                let mut response = next.run(request).await;
+                response
+                    .headers_mut()
+                    .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+                response
+            },
+        ))
         .with_state(state)
 }
 
@@ -755,6 +788,24 @@ async fn change_model(
     Ok(Json(serde_json::to_value(reply).expect("reply")))
 }
 
+async fn change_cwd(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+    Json(body): Json<FolderChange>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let cwd = session::validate_cwd(&body.cwd)?;
+    session::validate_id(&id)?;
+    session::read_header(&state.paths.session_dir(&id))?;
+    let socket = session::control_socket(&state.paths, &id)?;
+    if !session::socket_is_live(&socket) {
+        session::start_worker(&state.paths, &id)?;
+    }
+    let reply = session::send(&state.paths, &id, &ControlRequest::ChangeCwd { cwd })?;
+    Ok(Json(serde_json::to_value(reply).expect("reply")))
+}
+
 async fn events(
     State(state): State<WebState>,
     headers: HeaderMap,
@@ -808,26 +859,65 @@ async fn save_settings(
     Ok(Json(json!({"ok": true, "restartRequired": true})))
 }
 
-async fn import_pi_auth(
+async fn provider_login_status(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+) -> ApiResult<Json<Value>> {
+    let (_, login) = authenticated(&state, &headers)?;
+    Ok(Json(
+        json!({"authenticated":codex_authenticated(&state.paths),"login":state.oauth.status(&login.token_hash).await}),
+    ))
+}
+
+async fn provider_login(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    Json(body): Json<OAuthStart>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let (_, login) = authenticated(&state, &headers)?;
+    let status = state
+        .oauth
+        .start(
+            login.token_hash,
+            &body.method,
+            crate::providers::ProviderAuthStore::for_paths(&state.paths),
+        )
+        .await?;
+    Ok(Json(json!({"ok":true,"login":status})))
+}
+
+async fn provider_login_code(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    Json(body): Json<OAuthCode>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let (_, login) = authenticated(&state, &headers)?;
+    state.oauth.submit(&login.token_hash, body.input).await?;
+    Ok(Json(json!({"ok":true})))
+}
+
+async fn provider_login_cancel(
     State(state): State<WebState>,
     headers: HeaderMap,
 ) -> ApiResult<Json<Value>> {
     require_mutation(&state, &headers)?;
-    let home = std::env::var_os("HOME")
-        .map(PathBuf::from)
-        .context("HOME is not set")?;
-    let source = home.join(".pi/agent/auth.json");
-    let bytes = fs::read(&source).with_context(|| format!("read {}", source.display()))?;
-    let parsed: Value = serde_json::from_slice(&bytes).context("parse Pi credential file")?;
-    if parsed.get("openai-codex").is_none() {
-        return Err(ApiError(
-            StatusCode::BAD_REQUEST,
-            "Pi has no OpenAI subscription credential".into(),
-        ));
-    }
-    fs::write(state.paths.provider_auth_file(), bytes).context("write provider credential file")?;
-    set_private_file(&state.paths.provider_auth_file())?;
-    Ok(Json(json!({"ok": true})))
+    let (_, login) = authenticated(&state, &headers)?;
+    state.oauth.cancel(&login.token_hash).await?;
+    Ok(Json(json!({"ok":true})))
+}
+
+async fn provider_logout(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    state
+        .oauth
+        .logout(crate::providers::ProviderAuthStore::for_paths(&state.paths))
+        .await?;
+    Ok(Json(json!({"ok":true})))
 }
 
 async fn restart_llama(
@@ -859,20 +949,98 @@ pub async fn serve(paths: AppPaths, config: AppConfig) -> Result<()> {
 
 const INDEX_HTML: &str = include_str!("web_ui.html");
 
-#[allow(dead_code)]
-const LEGACY_INDEX_HTML: &str = r#"<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BashKitten</title><style>
-:root{color-scheme:dark;--bg:#12100f;--panel:#1b1816;--line:#332d29;--text:#f3eee8;--muted:#a99d94;--accent:#e69654;--danger:#d75b5b}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,sans-serif}button,input,select,textarea{font:inherit;color:inherit;background:#211d1a;border:1px solid var(--line);border-radius:7px;padding:.65rem}button{cursor:pointer}button.primary{background:var(--accent);color:#1a1008;border:0;font-weight:700}.hidden{display:none!important}#auth{max-width:390px;margin:12vh auto;padding:2rem;background:var(--panel);border:1px solid var(--line);border-radius:14px}#auth input{display:block;width:100%;margin:.7rem 0}#app{height:100vh;display:grid;grid-template-columns:280px 1fr}aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}header{height:58px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.6rem;padding:.7rem}header strong{flex:1}.sessions{overflow:auto;flex:1}.session{padding:.8rem 1rem;border-bottom:1px solid var(--line);cursor:pointer}.session:hover,.session.active{background:#29231f}.session small{display:block;color:var(--muted);margin-top:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dot{color:#64c278}main{min-width:0;display:grid;grid-template-rows:58px 1fr auto}#chat{overflow:auto;padding:1.2rem max(1rem,calc((100% - 850px)/2));display:flex;flex-direction:column;gap:.8rem}.msg{border:1px solid var(--line);border-radius:10px;padding:.85rem;white-space:pre-wrap;overflow-wrap:anywhere}.msg.user{background:#28221e;margin-left:12%}.msg.assistant{background:#191715;margin-right:6%}.msg.tool{font-family:ui-monospace,monospace;color:#d8c8ba}.meta{font-size:.8rem;color:var(--muted)}#composer{border-top:1px solid var(--line);padding:.8rem max(1rem,calc((100% - 850px)/2));display:grid;grid-template-columns:1fr auto;gap:.6rem}#composer textarea{resize:vertical;min-height:66px}.toolbar{grid-column:1/-1;display:flex;gap:.5rem;align-items:center}.toolbar select{max-width:260px}dialog{width:min(680px,92vw);background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px}dialog label{display:block;margin:.8rem 0}dialog input,dialog select{width:100%}.row{display:flex;gap:.5rem}.row>*{flex:1}.usage{color:var(--muted);font-size:.85rem}@media(max-width:720px){#app{grid-template-columns:1fr}aside{display:none}.msg.user{margin-left:4%}}
-</style></head><body>
-<section id="auth" class="hidden"><h1>🐈 BashKitten</h1><p id="authHint"></p><form id="authForm"><input id="username" autocomplete="username" placeholder="Username" required><input id="password" type="password" autocomplete="current-password" placeholder="Password (8+ characters)" required minlength="8"><button class="primary" type="submit">Continue</button><p id="authError" class="meta"></p></form></section>
-<section id="app" class="hidden"><aside><header><strong>🐈 BashKitten</strong><button id="newBtn">＋</button><button id="settingsBtn">⚙</button></header><div id="sessions" class="sessions"></div></aside><main><header><strong id="title">Select a session</strong><span id="usage" class="usage"></span><button id="stopBtn" class="hidden">Stop</button></header><div id="chat"></div><form id="composer"><textarea id="prompt" placeholder="Message the agent…"></textarea><button class="primary">Send</button><div class="toolbar"><select id="delivery"><option value="queue">Queue</option><option value="steer">Steer current turn</option></select><input id="files" type="file" accept="image/*" multiple><select id="model"></select><select id="thinking"></select><button id="applyModel" type="button">Apply model</button></div></form></main></section>
-<dialog id="newDialog"><form id="newForm"><h2>New session</h2><label>Working directory<input id="newCwd" required></label><label>Model<select id="newModel"></select></label><label>Thinking<select id="newThinking"></select></label><label>First message<textarea id="newPrompt" required></textarea></label><label>Images<input id="newFiles" type="file" accept="image/*" multiple></label><div class="row"><button type="button" data-close>Cancel</button><button class="primary">Start</button></div></form></dialog>
-<dialog id="settingsDialog"><form id="settingsForm"><h2>Settings</h2><label>Web port<input id="webPort" type="number" min="1024" max="65535"></label><label>Default working directory<input id="defaultCwd"></label><label>Default model<select id="defaultModel"></select></label><label>Default thinking<select id="defaultThinking"></select></label><label><input id="llamaEnabled" type="checkbox"> Enable managed llama.cpp router</label><div class="row"><label>llama.cpp port<input id="llamaPort" type="number"></label><label>Context size<input id="llamaContext" type="number"></label></div><div class="row"><button id="importPi" type="button">Import Pi login</button><button id="restartLlama" type="button">Restart llama.cpp</button></div><div class="row"><button type="button" data-close>Cancel</button><button class="primary">Save</button></div><p class="meta">Port changes take effect when the Web service restarts. No telemetry or update checks are performed.</p></form></dialog>
-<script>
-let csrf='',hasUser=false,models=[],current=null,source=null,config=null;const $=s=>document.querySelector(s);async function api(url,opt={}){opt.headers=opt.headers||{};if(opt.method&&opt.method!=='GET')opt.headers['x-bashkitten-csrf']=csrf;let r=await fetch(url,opt);let j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||r.statusText);return j}function authScreen(signup){hasUser=!signup;$('#app').classList.add('hidden');$('#auth').classList.remove('hidden');$('#authHint').textContent=signup?'Create the one local Web UI account.':'Sign in to the local Web UI.'}async function boot(){let b=await api('/api/bootstrap');if(!b.hasUser)return authScreen(true);if(!b.authenticated)return authScreen(false);csrf=b.csrf;$('#auth').classList.add('hidden');$('#app').classList.remove('hidden');await Promise.all([loadModels(),loadSessions(),loadSettings()])}$('#authForm').onsubmit=async e=>{e.preventDefault();try{let r=await api(hasUser?'/api/login':'/api/signup',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({username:$('#username').value,password:$('#password').value})});csrf=r.csrf;await boot()}catch(x){$('#authError').textContent=x.message}};
-function fillSelect(el,list,chosen){el.innerHTML=list.map(m=>`<option value="${escapeHtml(m.provider+'/'+m.id)}">${escapeHtml(m.name)} · ${escapeHtml(m.provider)}</option>`).join('');if(chosen)el.value=chosen;setThinking(el)}function setThinking(modelEl,target){let m=models.find(x=>x.provider+'/'+x.id===modelEl.value),t=target||($(modelEl=== $('#newModel')?'#newThinking':modelEl===$('#defaultModel')?'#defaultThinking':'#thinking'));t.innerHTML=(m?.thinking_levels||['off']).map(x=>`<option>${escapeHtml(x)}</option>`).join('');if(m?.default_thinking)t.value=m.default_thinking}async function loadModels(){let x=await api('/api/models');models=x.models.filter(m=>m.available);fillSelect($('#model'),models,x.defaultModel);fillSelect($('#newModel'),models,x.defaultModel);fillSelect($('#defaultModel'),models,x.defaultModel);setThinking($('#newModel'));setThinking($('#defaultModel'));$('#newThinking').value=x.defaultThinking;$('#defaultThinking').value=x.defaultThinking}for(let id of ['model','newModel','defaultModel'])$('#'+id).onchange=e=>setThinking(e.target);
-async function loadSessions(){let x=await api('/api/sessions?limit=100');$('#sessions').innerHTML=x.sessions.map(s=>`<div class="session" data-id="${s.id}"><b>${escapeHtml(s.title)}</b><small>${s.running?'<span class="dot">● running</span> · ':''}${escapeHtml(s.model||'')} · ${escapeHtml(s.cwd||'')}</small></div>`).join('');document.querySelectorAll('.session').forEach(e=>e.onclick=()=>openSession(x.sessions.find(s=>s.id===e.dataset.id)));return x.sessions}async function openSession(s){current=s;if(source)source.close();document.querySelectorAll('.session').forEach(e=>e.classList.toggle('active',e.dataset.id===s.id));$('#title').textContent=s.title;$('#stopBtn').classList.toggle('hidden',!s.running);if(s.model){$('#model').value=s.model;setThinking($('#model'));$('#thinking').value=s.thinking||'off'}$('#chat').innerHTML='';let h=await api(`/api/sessions/${s.id}/segments/${s.current_segment}`);h.entries.forEach(render);$('#chat').scrollTop=$('#chat').scrollHeight;if(s.running){source=new EventSource(`/api/sessions/${s.id}/events`);source.onmessage=e=>{try{render(JSON.parse(e.data))}catch{}}}}function render(e){if(e.type==='assistant_delta'){let d=$('#liveAssistant');if(!d){d=document.createElement('div');d.id='liveAssistant';d.className='msg assistant';$('#chat').append(d)}d.textContent+=e.delta;$('#chat').scrollTop=$('#chat').scrollHeight;return}if(e.type==='message')$('#liveAssistant')?.remove();if(e.type==='session'||(!e.type&&e.ok)||['agent_start','agent_end','turn_start','turn_end','status','thinking_delta','tool_start'].includes(e.type))return;let role=e.role||e.message?.role||e.type||'event',content=e.error??e.message?.errorMessage??e.content??e.message?.content??e.message??e;if(Array.isArray(content))content=content.map(x=>x.text||x.content||x.thinking||`[${x.type}]`).join('\n');if(typeof content!=='string')content=JSON.stringify(content,null,2);let d=document.createElement('div');d.className='msg '+(role.includes('tool')?'tool':role);d.textContent=content;$('#chat').append(d);$('#chat').scrollTop=$('#chat').scrollHeight;let usage=e.usage||e.message?.usage;if(usage)$('#usage').textContent=`${usage.totalTokens||0} tokens`}function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-$('#composer').onsubmit=async e=>{e.preventDefault();if(!current)return;let f=new FormData();f.append('content',$('#prompt').value);f.append('delivery',$('#delivery').value);for(let x of $('#files').files)f.append('file',x);$('#prompt').value='';try{await api(`/api/sessions/${current.id}/messages`,{method:'POST',body:f});let sessions=await loadSessions(),active=sessions.find(s=>s.id===current.id);if(active)await openSession(active)}catch(x){alert(x.message)}};$('#applyModel').onclick=async()=>{if(!current)return;try{await api(`/api/sessions/${current.id}/model`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({model:$('#model').value,thinking:$('#thinking').value})});await loadSessions()}catch(x){alert(x.message)}};$('#newBtn').onclick=()=>$('#newDialog').showModal();document.querySelectorAll('[data-close]').forEach(x=>x.onclick=()=>x.closest('dialog').close());$('#newForm').onsubmit=async e=>{e.preventDefault();let f=new FormData();f.append('prompt',$('#newPrompt').value);f.append('cwd',$('#newCwd').value);f.append('model',$('#newModel').value);f.append('thinking',$('#newThinking').value);for(let x of $('#newFiles').files)f.append('file',x);try{let r=await api('/api/sessions',{method:'POST',body:f});$('#newDialog').close();await loadSessions();document.querySelector(`.session[data-id="${r.id}"]`)?.click()}catch(x){alert(x.message)}};$('#stopBtn').onclick=async()=>{if(current){await api(`/api/sessions/${current.id}/stop`,{method:'POST'});await loadSessions()}};
-async function loadSettings(){let x=await api('/api/settings');config=x.config;$('#webPort').value=config.web_port;$('#defaultCwd').value=config.default_cwd;$('#llamaEnabled').checked=config.llama.enabled;$('#llamaPort').value=config.llama.port;$('#llamaContext').value=config.llama.context_size;$('#newCwd').value=config.default_cwd}$('#settingsBtn').onclick=()=>$('#settingsDialog').showModal();$('#settingsForm').onsubmit=async e=>{e.preventDefault();config.web_port=Number($('#webPort').value);config.default_cwd=$('#defaultCwd').value;config.default_model=$('#defaultModel').value;config.default_thinking=$('#defaultThinking').value;config.llama.enabled=$('#llamaEnabled').checked;config.llama.port=Number($('#llamaPort').value);config.llama.context_size=Number($('#llamaContext').value);await api('/api/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});$('#settingsDialog').close()};$('#importPi').onclick=async()=>{try{await api('/api/provider/import-pi',{method:'POST'});await loadModels();alert('Pi OpenAI login imported.')}catch(x){alert(x.message)}};$('#restartLlama').onclick=async()=>{try{await api('/api/llama/restart',{method:'POST'});alert('llama.cpp restarted.')}catch(x){alert(x.message)}};boot();setInterval(()=>{if(csrf)loadSessions().catch(()=>{})},5000);
-</script></body></html>"#;
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn subscription_routes_require_auth_origin_csrf_and_logout_removes_only_provider_login() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: temp.path().join("c"),
+            data: temp.path().join("d"),
+            runtime: temp.path().join("r"),
+        };
+        paths.ensure().unwrap();
+        let listener = tokio::net::TcpListener::bind(("127.0.0.1", 0))
+            .await
+            .unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let config = AppConfig {
+            web_port: port,
+            ..Default::default()
+        };
+        let login = auth::signup(&paths, "test", "test-password-123").unwrap();
+        let store = crate::providers::ProviderAuthStore::for_paths(&paths);
+        store.set_codex(Some(serde_json::from_value(json!({"type":"oauth","access":"test-access","refresh":"test-refresh","expires":0})).unwrap())).await.unwrap();
+        let app = router(paths.clone(), config);
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let origin = format!("http://127.0.0.1:{port}");
+        let cookie = format!("{COOKIE}={}", login.token);
+        let status = client
+            .get(format!("{origin}/api/provider/login"))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(status.status(), StatusCode::UNAUTHORIZED);
+        for endpoint in [
+            "/api/provider/login",
+            "/api/provider/login/code",
+            "/api/provider/login/cancel",
+            "/api/provider/logout",
+        ] {
+            let blocked = client
+                .post(format!("{origin}{endpoint}"))
+                .header(header::COOKIE, &cookie)
+                .header(header::ORIGIN, &origin)
+                .json(&json!({"method":"browser","input":"code"}))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(blocked.status(), StatusCode::FORBIDDEN);
+        }
+        let wrong_origin = client
+            .post(format!("{origin}/api/provider/logout"))
+            .header(header::COOKIE, &cookie)
+            .header(header::ORIGIN, "https://example.com")
+            .header("x-bashkitten-csrf", &login.csrf)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(wrong_origin.status(), StatusCode::FORBIDDEN);
+        let status = client
+            .get(format!("{origin}/api/provider/login"))
+            .header(header::COOKIE, &cookie)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(status.headers()[header::CACHE_CONTROL], "no-store");
+        let body = status.text().await.unwrap();
+        assert!(!body.contains("test-access") && !body.contains("test-refresh"));
+        assert_eq!(
+            serde_json::from_str::<Value>(&body).unwrap()["authenticated"],
+            true
+        );
+        let removed = client
+            .post(format!("{origin}/api/provider/import-pi"))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(removed.status(), StatusCode::NOT_FOUND);
+        let response = client
+            .post(format!("{origin}/api/provider/logout"))
+            .header(header::COOKIE, &cookie)
+            .header(header::ORIGIN, &origin)
+            .header("x-bashkitten-csrf", &login.csrf)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert!(store.credential("openai-codex").unwrap().is_none());
+        assert!(auth::validate(&paths, &login.token).is_ok());
+        server.abort();
+    }
+}

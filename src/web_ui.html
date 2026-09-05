@@ -138,7 +138,6 @@
       text-align: left;
     }
     .new-chat:hover { background: var(--surface-2); }
-    .new-chat svg { width: 18px; height: 18px; flex: 0 0 auto; }
     #settingsBtn { flex: 0 0 auto; color: var(--text); }
     .settings-glyph { font-size: 18px; line-height: 1; }
     #sessions { flex: 1; overflow: auto; padding: 7px 8px 16px; }
@@ -175,7 +174,7 @@
     #folderBtn {
       display: flex;
       min-width: 0;
-      max-width: min(32vw, 360px);
+      max-width: 100%;
       align-items: center;
       gap: 6px;
       padding: 5px 8px;
@@ -184,12 +183,13 @@
       border-radius: 7px;
       background: transparent;
       color: var(--muted);
-      font-size: 12px;
+      font-size: 13px;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     #folderBtn:not(:disabled):hover { border-color: var(--line); background: var(--surface-2); color: var(--text); }
     #folderBtn span { overflow: hidden; text-overflow: ellipsis; }
+    #folderBtn svg { width: 17px; height: 17px; flex: 0 0 auto; }
     #usage { flex: 0 0 auto; color: var(--muted); font-size: 11px; white-space: nowrap; }
 
     #chat {
@@ -315,9 +315,16 @@
     .attachment-kind { flex: 0 0 auto; color: var(--muted); font: 9px ui-monospace, monospace; }
     .attachment-name { min-width: 0; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
     .attachment button { position: absolute; top: 2px; right: 2px; width: 19px; height: 19px; padding: 0; border: 0; border-radius: 50%; background: #000c; color: white; font-size: 12px; }
-    .compose-box { position: relative; overflow: visible; border: 1px solid var(--line); border-radius: 18px; background: var(--surface); box-shadow: none; }
+    .compose-box { position: relative; overflow: visible; border: 1px solid var(--line); border-radius: 0; background: var(--surface); box-shadow: none; }
     .compose-box:focus-within { border-color: var(--line); }
-    .compose-box.dragging::after { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; border: 1px dashed var(--muted); border-radius: 18px; background: var(--overlay); color: var(--text); content: "Drop files"; pointer-events: none; }
+    .compose-box.dragging::after { position: absolute; z-index: 2; inset: 0; display: grid; place-items: center; border: 1px dashed var(--muted); border-radius: 0; background: var(--overlay); color: var(--text); content: "Drop files"; pointer-events: none; }
+    .subscription-settings { margin: 18px 0; padding: 16px 0; border-block: 1px solid var(--line-soft); }
+    .subscription-settings h3 { margin: 0 0 8px; font-size: 15px; }
+    .subscription-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 10px 0; }
+    .subscription-actions button, .subscription-actions a { padding: 7px 10px; font-size: 13px; }
+    #oauthManual label { display: block; font-size: 13px; }
+    #oauthCode { width: 100%; margin-top: 8px; }
+    #oauthUserCode { display: block; padding: 8px 0; font: 600 20px monospace; letter-spacing: 2px; }
     #prompt { display: block; width: 100%; min-height: 42px; max-height: 160px; padding: 10px 11px 2px; resize: none; border: 0; outline: 0; background: transparent; line-height: 1.4; }
     .composer-toolbar { display: flex; min-width: 0; align-items: center; gap: 2px; padding: 4px 5px 5px; }
     .composer-toolbar select { height: 27px; min-width: 0; padding: 0 22px 0 6px; overflow: hidden; border: 1px solid transparent; border-radius: 5px; background: transparent; color: var(--muted); font-size: 11px; text-overflow: ellipsis; cursor: pointer; }
@@ -393,7 +400,6 @@
     <aside id="sidebar">
       <div class="sidebar-header">
         <button id="newBtn" class="new-chat" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 20H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h7"/><path d="m16.5 3.5 4 4L11 17H7v-4z"/></svg>
           <span>New chat</span>
         </button>
         <button id="settingsBtn" class="icon-button" type="button" title="Settings" aria-label="Settings">
@@ -406,8 +412,8 @@
     <main id="workspace">
       <header class="topbar">
         <div class="chat-heading">
-          <strong id="title">New chat</strong>
-          <button id="folderBtn" type="button" title="Set working folder"><span aria-hidden="true">⌁</span><span id="folderLabel">Set folder</span></button>
+          <strong id="title" class="hidden">Settings</strong>
+          <button id="folderBtn" type="button" title="Set/change working folder" aria-label="Set/change working folder"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h5l3 3h6a2 2 0 0 1 2 2v2M3 7h7l2 3h8a1 1 0 0 1 1 1l-2 9H3L1 9a2 2 0 0 1 2-2Z"/></svg><span id="folderLabel">Set folder</span></button>
         </div>
         <span id="usage"></span>
       </header>
@@ -425,8 +431,26 @@
             <label>llama.cpp port<input id="llamaPort" type="number"></label>
             <label>Context size<input id="llamaContext" type="number"></label>
           </div>
+          <section class="subscription-settings" aria-label="OpenAI subscription">
+            <h3>OpenAI subscription</h3>
+            <p id="subscriptionStatus" class="meta" role="status">Checking connection…</p>
+            <div class="subscription-actions">
+              <button id="oauthLogin" type="button">Log in with OpenAI</button>
+              <button id="oauthDevice" type="button">Use device code</button>
+              <button id="oauthLogout" class="hidden" type="button">Log out</button>
+            </div>
+            <div id="oauthPending" class="hidden">
+              <p id="oauthMessage" class="meta" role="status"></p>
+              <strong id="oauthUserCode" class="hidden"></strong>
+              <div class="subscription-actions"><a id="oauthOpen" target="_blank" rel="noopener noreferrer" class="hidden">Open OpenAI login</a><button id="oauthCancel" type="button">Cancel login</button></div>
+              <div id="oauthManual" class="hidden">
+                <label for="oauthCode">Complete login in your browser, or paste the authorization code / redirect URL here:</label>
+                <input id="oauthCode" type="text" autocomplete="off" spellcheck="false" placeholder="http://localhost:1455/auth/callback">
+                <div class="subscription-actions"><button id="oauthSubmit" type="button">Complete login</button></div>
+              </div>
+            </div>
+          </section>
           <div class="dialog-actions">
-            <button id="importPi" type="button">Import Pi login</button>
             <button id="restartLlama" type="button">Restart llama.cpp</button>
           </div>
           <div class="dialog-actions"><button id="settingsDone" type="button">Done</button><button class="primary">Save</button></div>
@@ -477,7 +501,7 @@
         <input id="newFolderName" aria-label="New folder name" placeholder="New folder name">
         <button id="createFolder" type="button">Create</button>
       </div>
-      <p class="meta">Each session keeps the folder it starts with.</p>
+      <p class="meta">Changes apply after the current turn finishes. Session history and attachments stay in place.</p>
       <div class="dialog-actions"><button type="button" data-close>Cancel</button><button class="primary">Use this folder</button></div>
     </form>
   </dialog>
@@ -1147,6 +1171,14 @@
         renderQueueState(event.data);
       } else if (event.type === 'model_change') {
         $('#composerHint').textContent = `Using ${event.model}`;
+      } else if (event.type === 'cwd_change') {
+        current.cwd = event.cwd;
+        $('#folderLabel').textContent = event.cwd;
+        $('#folderBtn').title = `Change working folder: ${event.cwd}`;
+        $('#composerHint').textContent = `Working folder: ${event.cwd}`;
+        loadSessions().catch(() => {});
+      } else if (event.type === 'cwd_error') {
+        $('#composerHint').textContent = event.message;
       } else if (event.type === 'compaction_start') {
         $('#composerHint').textContent = 'Compacting context…';
       }
@@ -1182,12 +1214,14 @@
     }
 
     async function loadModels() {
+      const selected = $('#model').value;
+      const thinking = $('#thinking').value;
       const value = await api('/api/models');
       models = value.models.filter(model => model.available);
-      fillSelect($('#model'), models, value.defaultModel);
+      fillSelect($('#model'), models, current?.model || selected || value.defaultModel);
       fillSelect($('#defaultModel'), models, value.defaultModel);
       setThinking($('#defaultModel'), $('#defaultThinking'));
-      $('#thinking').value = value.defaultThinking;
+      if ([...$('#thinking').options].some(option => option.value === thinking)) $('#thinking').value = thinking;
       $('#defaultThinking').value = value.defaultThinking;
     }
 
@@ -1202,6 +1236,7 @@
       $('#llamaEnabled').checked = config.llama.enabled;
       $('#llamaPort').value = config.llama.port;
       $('#llamaContext').value = config.llama.context_size;
+      await refreshSubscription();
     }
 
     function queuedItems() {
@@ -1350,6 +1385,12 @@
 
     async function loadSessions() {
       const value = await api('/api/sessions?limit=100');
+      const updated = current && value.sessions.find(session => session.id === current.id);
+      if (updated && updated.cwd !== current.cwd) {
+        current.cwd = updated.cwd;
+        $('#folderLabel').textContent = current.cwd;
+        $('#folderBtn').title = `Change working folder: ${current.cwd}`;
+      }
       renderSessionSidebar(value.sessions);
       return value.sessions;
     }
@@ -1361,9 +1402,9 @@
       $('#settingsBtn').classList.remove('active');
       $('#folderBtn').classList.remove('hidden');
       $('#usage').classList.remove('hidden');
-      $('#title').textContent = current?.title || 'New chat';
+      $('#title').classList.add('hidden');
       $('#folderLabel').textContent = current?.cwd || pendingCwd || 'Set folder';
-      $('#folderBtn').disabled = Boolean(current);
+      $('#folderBtn').disabled = false;
       setRunButton(queueState.busy || Boolean(current?.running));
       if (current) renderUsage();
       else $('#usage').textContent = '';
@@ -1376,6 +1417,8 @@
       $('#settingsView').classList.remove('hidden');
       $('#settingsBtn').classList.add('active');
       $('#title').textContent = 'Settings';
+      $('#title').classList.remove('hidden');
+      refreshSubscription().catch(error => { $('#subscriptionStatus').textContent = error.message; });
       $('#folderBtn').classList.add('hidden');
       $('#usage').classList.add('hidden');
     }
@@ -1430,8 +1473,8 @@
       renderAttachments();
       $('#title').textContent = session.title;
       $('#folderLabel').textContent = session.cwd || 'Working folder';
-      $('#folderBtn').disabled = true;
-      $('#folderBtn').title = 'The working folder is fixed for this session';
+      $('#folderBtn').disabled = false;
+      $('#folderBtn').title = `Change working folder: ${session.cwd}`;
       setRunButton(Boolean(session.running));
       if (session.model) {
         $('#model').value = session.model;
@@ -1600,9 +1643,8 @@
     }
 
     $('#folderBtn').onclick = async () => {
-      if (current) return;
       $('#folderDialog').showModal();
-      try { await loadFolder(pendingCwd); }
+      try { await loadFolder(current?.cwd || pendingCwd); }
       catch (error) { alert(error.message); }
     };
     $('#folderGo').onclick = () => loadFolder($('#folderPath').value.trim()).catch(error => alert(error.message));
@@ -1629,7 +1671,13 @@
         return;
       }
       pendingCwd = folderView.path;
-      $('#folderLabel').textContent = pendingCwd || 'Set folder';
+      if (current) {
+        try {
+          const reply = await api(`/api/sessions/${current.id}/cwd`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({cwd: pendingCwd})});
+          $('#composerHint').textContent = reply.message;
+          await loadSessions();
+        } catch (error) { alert(error.message); return; }
+      } else $('#folderLabel').textContent = pendingCwd || 'Set folder';
       $('#folderDialog').close();
       $('#prompt').focus();
     };
@@ -1696,7 +1744,7 @@
           renderSessionSidebar(sessions);
           $('#title').textContent = current.title;
           $('#folderLabel').textContent = current.cwd;
-          $('#folderBtn').disabled = true;
+          $('#folderBtn').disabled = false;
         }
         if (!source) await connectSession(current.id);
         const messageForm = new FormData();
@@ -1762,10 +1810,70 @@
         $('#thinking').value = config.default_thinking;
       }
     };
-    $('#importPi').onclick = async () => {
-      try { await api('/api/provider/import-pi', {method: 'POST'}); await loadModels(); alert('Pi OpenAI login imported.'); }
-      catch (error) { alert(error.message); }
+    let oauthActive = false;
+    let subscriptionConnected = null;
+    function renderLogin(login = {}) {
+      oauthActive = ['waiting', 'starting'].includes(login.phase);
+      $('#oauthPending').classList.toggle('hidden', !oauthActive);
+      $('#oauthLogin').disabled = oauthActive;
+      $('#oauthDevice').disabled = oauthActive;
+      $('#oauthMessage').textContent = login.message || '';
+      $('#oauthUserCode').textContent = login.userCode || '';
+      $('#oauthUserCode').classList.toggle('hidden', !login.userCode);
+      $('#oauthOpen').classList.toggle('hidden', !login.url);
+      if (login.url) $('#oauthOpen').href = login.url;
+      else $('#oauthOpen').removeAttribute('href');
+      const manual = oauthActive && login.url && !login.userCode;
+      $('#oauthManual').classList.toggle('hidden', !manual);
+      if (manual && !login.callbackAvailable) $('#oauthMessage').textContent += ' Port 1455 is in use; paste the redirect URL here after signing in.';
+      if (!oauthActive) $('#oauthCode').value = '';
+    }
+    async function refreshSubscription() {
+      const value = await api('/api/provider/login');
+      const changed = subscriptionConnected !== null && subscriptionConnected !== value.authenticated;
+      subscriptionConnected = value.authenticated;
+      $('#subscriptionStatus').textContent = value.login.phase === 'error' ? value.login.message : (value.authenticated ? 'Connected to OpenAI (ChatGPT Plus/Pro).' : 'Not connected. Log in with your ChatGPT subscription.');
+      $('#oauthLogout').classList.toggle('hidden', !value.authenticated);
+      $('#oauthLogin').textContent = value.authenticated ? 'Log in again' : 'Log in with OpenAI';
+      renderLogin(value.login);
+      if (changed) await loadModels();
+    }
+    async function startSubscription(method) {
+      // Open synchronously from the click so popup blockers do not swallow it.
+      const popup = method === 'browser' ? window.open('about:blank', '_blank') : null;
+      if (popup) popup.opener = null;
+      try {
+        $('#oauthLogin').disabled = $('#oauthDevice').disabled = true;
+        const value = await api('/api/provider/login', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({method})});
+        renderLogin(value.login);
+        if (popup && value.login.url) popup.location.replace(value.login.url);
+      } catch (error) {
+        popup?.close();
+        $('#subscriptionStatus').textContent = error.message;
+        $('#oauthLogin').disabled = $('#oauthDevice').disabled = false;
+      }
+    }
+    $('#oauthLogin').onclick = () => startSubscription('browser');
+    $('#oauthDevice').onclick = () => startSubscription('device_code');
+    $('#oauthCancel').onclick = async () => {
+      try { await api('/api/provider/login/cancel', {method: 'POST'}); await refreshSubscription(); }
+      catch (error) { $('#oauthMessage').textContent = error.message; }
     };
+    $('#oauthSubmit').onclick = async () => {
+      try {
+        const input = $('#oauthCode').value.trim();
+        if (!input) return;
+        await api('/api/provider/login/code', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({input})});
+        $('#oauthCode').value = '';
+        $('#oauthMessage').textContent = 'Completing login…';
+      } catch (error) { $('#oauthMessage').textContent = error.message; }
+    };
+    $('#oauthCode').onkeydown = event => { if (event.key === 'Enter') { event.preventDefault(); $('#oauthSubmit').click(); } };
+    $('#oauthLogout').onclick = async () => {
+      try { await api('/api/provider/logout', {method: 'POST'}); await refreshSubscription(); }
+      catch (error) { $('#subscriptionStatus').textContent = error.message; }
+    };
+    setInterval(() => { if (csrf && oauthActive) refreshSubscription().catch(() => {}); }, 1000);
     $('#restartLlama').onclick = async () => {
       try { await api('/api/llama/restart', {method: 'POST'}); alert('llama.cpp restarted.'); }
       catch (error) { alert(error.message); }

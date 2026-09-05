@@ -1,7 +1,7 @@
 use anyhow::{Context, Result, bail};
 use bashkitten::config::{AppConfig, GpuLayers};
 use bashkitten::models;
-use bashkitten::paths::{AppPaths, set_private_file};
+use bashkitten::paths::AppPaths;
 use bashkitten::session::{self, ControlRequest, Delivery, NewSession};
 use clap::{Args, Parser, Subcommand};
 use serde_json::Value;
@@ -93,7 +93,6 @@ struct SendArguments {
 
 #[derive(Subcommand)]
 enum AuthCommand {
-    ImportPi,
     Status,
     ResetWeb,
 }
@@ -261,21 +260,6 @@ async fn main() -> Result<()> {
             println!("{}", reply.message);
         }
         Commands::Auth { command } => match command {
-            AuthCommand::ImportPi => {
-                let home = std::env::var_os("HOME")
-                    .map(PathBuf::from)
-                    .context("HOME is not set")?;
-                let source = home.join(".pi/agent/auth.json");
-                let bytes =
-                    fs::read(&source).with_context(|| format!("read {}", source.display()))?;
-                let parsed: Value = serde_json::from_slice(&bytes)?;
-                if parsed.get("openai-codex").is_none() {
-                    bail!("Pi has no OpenAI subscription credential");
-                }
-                fs::write(paths.provider_auth_file(), bytes)?;
-                set_private_file(&paths.provider_auth_file())?;
-                println!("Imported Pi OpenAI subscription credentials.");
-            }
             AuthCommand::Status => println!(
                 "OpenAI subscription: {}",
                 if codex_authenticated(&paths) {

@@ -6,8 +6,8 @@ Debian. It has seven built-in tools (`bash`, `read`, `edit`, `write`, `grep`,
 authenticated local Web UI, and a small GTK lifecycle/settings application.
 Node.js and npm are not build or runtime dependencies.
 
-The compatibility target is Pi `v0.84.4` at commit
-`b79e4cc834970cca69daebffab7df1da7d1e52c4`; see [PI_UPSTREAM.md](PI_UPSTREAM.md)
+The compatibility target is Pi post-`v0.85.0` (including GPT-6 Astra) at commit
+`9841914c71a74d81abe07f751aefd271fd924e63`; see [PI_UPSTREAM.md](PI_UPSTREAM.md)
 and [AGENTS.md](AGENTS.md) for the precise scope and intentional differences.
 
 ## Build the amd64 Debian package
@@ -40,11 +40,18 @@ Web login state, and skills live under `~/.config/bashkitten/`; session folders
 live under `~/.local/share/bashkitten/sessions/`. Those directories and their
 sensitive files are restricted to the current user.
 
+Connect your OpenAI subscription in **Settings → OpenAI subscription** using
+browser login or a device code. No Pi/Codex credential import is needed or
+supported. Logout removes the BashKitten subscription credential (not another
+application's login). OAuth secrets stay in Rust and the private credential file.
+The folder control in the chat header changes the session's primary working
+directory after any current turn settles; the sidebar automatically regroups it.
+
 Useful CLI commands:
 
 ```sh
 bashkitten models --json
-bashkitten auth import-pi
+bashkitten auth status
 bashkitten session start --prompt "Inspect this repository"
 bashkitten session list
 bashkitten send SESSION_ID --steer "Check the parser first"

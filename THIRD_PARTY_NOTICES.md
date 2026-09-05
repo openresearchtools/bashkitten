@@ -1,10 +1,11 @@
 # Third-party notices
 
 Portions of BashKitten's behavioral compatibility implementation, including
-model-visible tool wording and compaction prompts, are derived from Pi v0.84.4:
+model-visible tool wording, compaction prompts, OAuth and model metadata, are derived from Pi:
 
 - Source: <https://github.com/earendil-works/pi>
-- Commit: `b79e4cc834970cca69daebffab7df1da7d1e52c4`
+- Current reference commit: `9841914c71a74d81abe07f751aefd271fd924e63` (post-v0.85.0)
+- Original port reference: `b79e4cc834970cca69daebffab7df1da7d1e52c4` (v0.84.4)
 
 Pi is distributed under the following license:
 

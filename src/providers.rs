@@ -592,6 +592,26 @@ impl ProviderAuthStore {
         Ok(self.load()?.remove(provider))
     }
 
+    /// Login/logout and refresh share one cross-process lock. In particular,
+    /// logout must wait out refresh before removing its newly written token.
+    pub async fn set_codex(&self, credential: Option<ProviderCredential>) -> Result<()> {
+        let store = self.clone();
+        tokio::task::spawn_blocking(move || -> Result<()> {
+            let lock = acquire_auth_lock(&store.lock_path)?;
+            let mut auth = store.load()?;
+            if let Some(credential) = credential {
+                auth.insert(OPENAI_CODEX_PROVIDER_ID.into(), credential);
+            } else {
+                auth.remove(OPENAI_CODEX_PROVIDER_ID);
+            }
+            crate::config::atomic_private_json(&store.path, &auth)?;
+            FileExt::unlock(&lock)?;
+            Ok(())
+        })
+        .await
+        .context("join credential update")?
+    }
+
     async fn codex_access(&self, client: &Client) -> Result<CodexAccess> {
         let current = self
             .credential(OPENAI_CODEX_PROVIDER_ID)?
@@ -819,6 +839,7 @@ fn load_auth_file(path: &Path) -> Result<ProviderAuthFile> {
     if !path.exists() {
         return Ok(BTreeMap::new());
     }
+    set_private_file(path)?;
     let bytes = fs::read(path)
         .with_context(|| format!("read provider credentials at {}", path.display()))?;
     serde_json::from_slice(&bytes)
@@ -883,7 +904,7 @@ async fn refresh_codex_token(client: &Client, refresh_token: &str) -> Result<Ref
     })
 }
 
-fn account_id_from_jwt(token: &str) -> Result<String> {
+pub(crate) fn account_id_from_jwt(token: &str) -> Result<String> {
     let payload = token
         .split('.')
         .nth(1)

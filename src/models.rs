@@ -39,6 +39,9 @@ fn codex_model(
     if max {
         levels.push("max");
     }
+    if id == "gpt-6-astra" {
+        levels.retain(|level| !matches!(*level, "off" | "minimal"));
+    }
     ModelInfo {
         provider: "openai-codex".into(),
         id: id.into(),
@@ -94,11 +97,20 @@ fn tier(input: f64, output: f64, cache_read: f64, cache_write: f64) -> CostRates
 pub fn codex_models() -> Vec<ModelInfo> {
     vec![
         codex_model(
+            "gpt-6-astra",
+            "GPT-6 Astra",
+            272_000,
+            true,
+            true,
+            true,
+            cost(10.0, 50.0, 1.0, 12.5, Some(tier(20.0, 75.0, 2.0, 25.0))),
+        ),
+        codex_model(
             "gpt-5.3-codex-spark",
             "GPT-5.3 Codex Spark",
             128_000,
             false,
-            false,
+            true,
             false,
             cost(1.75, 14.0, 0.175, 0.0, None),
         ),
@@ -116,7 +128,7 @@ pub fn codex_models() -> Vec<ModelInfo> {
             "GPT-5.4 mini",
             272_000,
             true,
-            false,
+            true,
             false,
             cost(0.75, 4.5, 0.075, 0.0, None),
         ),
@@ -220,6 +232,28 @@ pub fn find_model(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn astra_catalog_matches_pinned_pi_metadata_and_costs() {
+        let models = codex_models();
+        assert_eq!(models.len(), 8);
+        let astra = &models[0];
+        assert_eq!(astra.id, "gpt-6-astra");
+        assert_eq!(astra.context_window, 272_000);
+        assert_eq!(astra.max_tokens, 128_000);
+        assert_eq!(astra.input, ["text", "image"]);
+        assert_eq!(
+            astra.thinking_levels,
+            ["low", "medium", "high", "xhigh", "max"]
+        );
+        assert_eq!(astra.cost.rates, tier(10.0, 50.0, 1.0, 12.5));
+        assert_eq!(astra.cost.tiers[0].rates, tier(20.0, 75.0, 2.0, 25.0));
+        assert!(
+            models
+                .iter()
+                .all(|model| model.thinking_levels.contains(&"xhigh".into()))
+        );
+    }
 
     #[test]
     fn codex_costs_include_pi_long_context_tiers() {

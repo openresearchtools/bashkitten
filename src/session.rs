@@ -22,6 +22,12 @@ pub struct SessionHeader {
     pub id: String,
     pub timestamp: String,
     pub cwd: PathBuf,
+    #[serde(
+        rename = "initialCwd",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub initial_cwd: Option<PathBuf>,
     pub provider: String,
     #[serde(rename = "modelId")]
     pub model_id: String,
@@ -71,6 +77,9 @@ pub enum ControlRequest {
     ChangeModel {
         model: String,
         thinking: String,
+    },
+    ChangeCwd {
+        cwd: PathBuf,
     },
     QueueAction {
         id: String,
@@ -160,6 +169,7 @@ pub fn create(paths: &AppPaths, request: &NewSession) -> Result<String> {
         id: id.clone(),
         timestamp: Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
         cwd: fs::canonicalize(&request.cwd).unwrap_or_else(|_| request.cwd.clone()),
+        initial_cwd: None,
         provider,
         model_id,
         thinking_level: request.thinking.clone(),
@@ -216,6 +226,82 @@ pub fn read_header(dir: &Path) -> Result<SessionHeader> {
         .next()
         .context("Empty session")??;
     Ok(serde_json::from_str(&line)?)
+}
+
+pub fn validate_cwd(cwd: &Path) -> Result<PathBuf> {
+    if !cwd.is_absolute() {
+        bail!("Working folder must be an absolute path");
+    }
+    let cwd = fs::canonicalize(cwd).context("Working folder does not exist")?;
+    if !cwd.is_dir() {
+        bail!("Working folder must be a directory");
+    }
+    fs::read_dir(&cwd).context("Working folder is not readable")?;
+    Ok(cwd)
+}
+
+/// Called only by the session owner at a settled-turn boundary (or on an
+/// unpublished fork). Original message lines remain byte-for-byte unchanged.
+pub fn replace_current_header(
+    dir: &Path,
+    header: &SessionHeader,
+    event: Option<&Value>,
+) -> Result<()> {
+    let (_, path) = current_segment(dir)?;
+    let bytes = fs::read(&path)?;
+    let first_newline = bytes
+        .iter()
+        .position(|byte| *byte == b'\n')
+        .context("Missing session header")?;
+    let first: Value = serde_json::from_slice(&bytes[..first_newline])?;
+    if first["type"] != "session" {
+        bail!("Current segment has no session header");
+    }
+    let temporary = dir.join(format!(".{}.header", Uuid::new_v4()));
+    let result = (|| -> Result<()> {
+        use std::os::unix::fs::OpenOptionsExt;
+        let mut output = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .open(&temporary)?;
+        serde_json::to_writer(&mut output, header)?;
+        output.write_all(b"\n")?;
+        output.write_all(&bytes[first_newline + 1..])?;
+        if let Some(event) = event {
+            if !bytes.ends_with(b"\n") {
+                output.write_all(b"\n")?;
+            }
+            serde_json::to_writer(&mut output, event)?;
+            output.write_all(b"\n")?;
+        }
+        output.sync_all()?;
+        fs::rename(&temporary, &path)?;
+        fs::File::open(dir)?.sync_all()?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(temporary);
+    }
+    result
+}
+
+fn restore_fork_cwd(dir: &Path) -> Result<()> {
+    let mut header = read_header(dir)?;
+    if let Some(initial) = &header.initial_cwd {
+        header.cwd = initial.clone();
+        let (_, segment) = current_segment(dir)?;
+        for line in BufReader::new(fs::File::open(segment)?).lines() {
+            let value: Value = serde_json::from_str(&line?)?;
+            if value["type"] == "custom" && value["customType"] == "bashkitten.cwd" {
+                if let Some(cwd) = value["data"]["cwd"].as_str() {
+                    header.cwd = cwd.into();
+                }
+            }
+        }
+        replace_current_header(dir, &header, None)?;
+    }
+    Ok(())
 }
 
 fn effective_model(dir: &Path, header: &SessionHeader) -> (String, String) {
@@ -493,6 +579,7 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
         if !found {
             bail!("Fork message is not yet available in session history");
         }
+        restore_fork_cwd(&temporary_dir)?;
 
         let title_path = temporary_dir.join("title");
         let title = fs::read_to_string(source_dir.join("title"))
@@ -626,6 +713,68 @@ mod tests {
     fn title_is_local_and_short() {
         assert_eq!(shorten_title("\n  hello   there \nsecond"), "hello there");
         assert!(shorten_title(&"x".repeat(80)).ends_with('…'));
+    }
+
+    #[test]
+    fn changed_folder_persists_regroups_and_forks_at_historical_folder() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: temp.path().join("c"),
+            data: temp.path().join("d"),
+            runtime: temp.path().join("r"),
+        };
+        paths.ensure().unwrap();
+        let first = temp.path().join("first");
+        let second = temp.path().join("second");
+        fs::create_dir(&first).unwrap();
+        fs::create_dir(&second).unwrap();
+        let id = create(
+            &paths,
+            &NewSession {
+                cwd: first.clone(),
+                model: "p/m".into(),
+                thinking: "off".into(),
+                prompt: "folder test".into(),
+                attachments: vec![],
+                parent: None,
+            },
+        )
+        .unwrap();
+        let message = |id: &str| json!({"type":"message","id":id,"parentId":null,"timestamp":"2026-09-05T00:00:00Z","message":{"role":"user","content":id,"timestamp":1}});
+        append_values(&paths, &id, &[message("before-change")]).unwrap();
+        let dir = paths.session_dir(&id);
+        let old = fs::read(dir.join("000001.jsonl")).unwrap();
+        let mut header = read_header(&dir).unwrap();
+        header.initial_cwd = Some(first.clone());
+        header.cwd = second.clone();
+        let event = json!({"type":"custom","id":"folder-change","parentId":"before-change","timestamp":"2026-09-05T00:00:01Z","customType":"bashkitten.cwd","data":{"cwd":second}});
+        replace_current_header(&dir, &header, Some(&event)).unwrap();
+        append_values(&paths, &id, &[message("after-change")]).unwrap();
+        assert_eq!(read_header(&dir).unwrap().cwd, second);
+        assert_eq!(list(&paths).unwrap()[0].cwd, Some(second.clone()));
+        let saved = fs::read(dir.join("000001.jsonl")).unwrap();
+        let original_messages = &old[old.iter().position(|byte| *byte == b'\n').unwrap() + 1..];
+        assert!(
+            saved
+                .windows(original_messages.len())
+                .any(|part| part == original_messages)
+        );
+        let before = fork_at(&paths, &id, "before-change").unwrap();
+        let after = fork_at(&paths, &id, "after-change").unwrap();
+        assert_eq!(read_header(&paths.session_dir(&before)).unwrap().cwd, first);
+        assert_eq!(read_header(&paths.session_dir(&after)).unwrap().cwd, second);
+        assert!(validate_cwd(Path::new("relative")).is_err());
+        assert!(validate_cwd(&dir.join("title")).is_err());
+        assert!(validate_cwd(&temp.path().join("missing")).is_err());
+        assert_eq!(
+            dir.join("000001.jsonl")
+                .metadata()
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
     }
 
     #[test]
