@@ -1,0 +1,47 @@
+// Offline oracle: execute pinned Pi's complete compatible-provider SSE parser.
+import {execFileSync} from 'node:child_process';
+import {readFileSync,writeFileSync} from 'node:fs';
+import {pathToFileURL} from 'node:url';
+const root=process.env.PI_REFERENCE!;const pin='9841914c71a74d81abe07f751aefd271fd924e63';
+if(execFileSync('git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8'}).trim()!==pin)throw Error('Wrong Pi commit');
+globalThis.fetch=async()=>{throw Error('Network forbidden in stream fixtures');};
+const {stream}=await import(pathToFileURL(`${root}/packages/ai/src/api/openai-completions.ts`).href);
+const {parseStreamingJson}=await import(pathToFileURL(`${root}/packages/ai/src/utils/json-parse.ts`).href);
+const base={id:'fixture',name:'Fixture',api:'openai-completions',provider:'fixture',baseUrl:'http://localhost/v1',contextWindow:128000,maxTokens:16384,reasoning:true,input:['text','image'],cost:{input:1,output:2,cacheRead:.1,cacheWrite:1.25}};
+const cases:any[]=[];
+const chunk=(delta:any={},reason:any=null,extra:any={})=>({id:'response-id',model:'fixture',choices:[{index:0,delta,finish_reason:reason}],...extra});
+const call=(index:any,id:any,name:any,args:any)=>({index,id,function:{name,arguments:args}});
+async function add(name:string,chunks:any[],model:any={},done=true){
+ model={...base,...model};const payload=chunks.map(c=>`data: ${JSON.stringify(c)}\n\n`).join('')+(done?'data: [DONE]\n\n':'');
+ const headers:any[]=[];const events:any[]=[];
+ const result=stream(model,{systemPrompt:'System',messages:[{role:'user',content:'Test',timestamp:1}]},{apiKey:'fixture-key',sessionId:'fixture-session',fetch:async(url:any,options:any)=>{headers.push(Object.fromEntries(new Headers(options.headers)));return new Response(payload,{headers:{'content-type':'text/event-stream'}});},maxRetries:0});
+ for await(const event of result){events.push({type:event.type,...(event.contentIndex!==undefined?{contentIndex:event.contentIndex}:{}),...(event.delta!==undefined?{delta:event.delta}:{})});}
+ const message=await result.result();delete message.timestamp;
+ cases.push({name,model,chunks,done,expected:message,events,headers:headers[0]});
+}
+for(const reason of ['stop','end','length','tool_calls','function_call','content_filter','network_error','error','max_tokens','unknown'])await add(`finish-${reason}`,[chunk({content:'answer'},reason)]);
+await add('missing-finish',[chunk({content:'partial'})]);
+await add('missing-finish-eof',[chunk({content:'partial'})],{},false);
+await add('finish-optional',[chunk({content:'answer'})],{compat:{supportsFinishReason:false}});
+await add('empty-stream',[]);await add('empty-optional',[],{compat:{supportsFinishReason:false}});
+await add('response-id-model',[chunk({content:'one'},null,{id:'',model:'other'}),chunk({content:'two'},'stop',{id:'final-id',model:'another'})]);
+for(const field of ['reasoning_content','reasoning','reasoning_text'])await add(`reasoning-${field}`,[chunk({[field]:'Think'}),chunk({[field]:' more',content:'Answer'},'stop')]);
+await add('reasoning-first-field',[chunk({reasoning_content:'first',reasoning:'duplicate',reasoning_text:'duplicate'}),chunk({reasoning:'second'},'stop')]);
+await add('opencode-go-signature',[chunk({reasoning:'Think'},'stop')],{provider:'opencode-go'});
+await add('reasoning-details',[chunk({reasoning_details:[{type:'reasoning.text',text:'one'},{type:'reasoning.text',text:'two',id:'id',format:'fixture',signature:'sig',index:0}]}),chunk({reasoning_details:[{type:'reasoning.summary',summary:'a'},{type:'reasoning.summary',summary:'b'},{type:'reasoning.encrypted',data:'opaque',id:'r1'},{type:'reasoning.encrypted',data:'opaque2',id:'r2'},{type:'invalid'},{type:'reasoning.text',text:3}]}),chunk({content:'Answer'},'stop')]);
+await add('reasoning-details-no-finish',[chunk({reasoning_details:[{type:'reasoning.summary',summary:'partial'}]})]);
+await add('block-order',[chunk({tool_calls:[call(5,'call5','read','{"path":')]}),chunk({reasoning:'Think',content:'Answer'}),chunk({tool_calls:[call(2,'call2','ls','{}'),call(5,'call5','read','"a"}')]},'tool_calls')]);
+await add('tool-ids-without-index',[chunk({tool_calls:[call(undefined,'a','read','{"path":'),call(undefined,'b','ls','{"path":')]}),chunk({tool_calls:[call(undefined,'b','ls','"b"}'),call(undefined,'a','read','"a"}')]},'tool_calls')]);
+await add('late-tool-identity',[chunk({tool_calls:[call(1,undefined,undefined,'{"path":')]}),chunk({tool_calls:[call(1,'late','read','"a"}')]},'tool_calls')]);
+await add('tool-id-gains-index',[chunk({tool_calls:[call(undefined,'a','read','{"path":')]}),chunk({tool_calls:[call(5,'a','read','"a"}')]},'tool_calls')]);
+await add('tool-stop-preserved',[chunk({tool_calls:[call(0,'a','ls','{}')]},'stop')]);
+await add('tool-finish-optional',[chunk({tool_calls:[call(0,'a','ls','{}')]})],{compat:{supportsFinishReason:false}});
+await add('legacy-function-ignored',[chunk({function_call:{name:'read',arguments:'{}'}},'function_call')]);
+await add('custom-input',[chunk({tool_calls:[{index:0,id:'a',type:'custom',custom:{name:'made_up',input:'line\n'}}]}),chunk({tool_calls:[{index:0,custom:{input:'two'}}]},'tool_calls')]);
+const fragments=['{"path":"abc','{"a":true,"b":','{"a": [1,2,','{"a":"raw\nnewline"}','{"a":"C:\\path\\name"}','{"a":1e','{"a":-','not json'];
+for(let i=0;i<fragments.length;i++)await add(`partial-args-${i}`,[chunk({tool_calls:[call(0,'a','read',fragments[i])]},'tool_calls')]);
+for(const usage of [{prompt_tokens:100,completion_tokens:20,total_tokens:999},{prompt_tokens:100,completion_tokens:20,prompt_cache_hit_tokens:40},{prompt_tokens:100,completion_tokens:20,cached_tokens:30},{prompt_tokens:100,completion_tokens:20,cached_tokens:30,prompt_cache_hit_tokens:40,prompt_tokens_details:{cached_tokens:0,cache_write_tokens:5},completion_tokens_details:{reasoning_tokens:0}},{prompt_tokens:10,completion_tokens:5,prompt_tokens_details:{cached_tokens:20,cache_write_tokens:3}}])await add(`usage-${cases.length}`,[chunk({content:'answer'},'stop',{usage})]);
+await add('choice-usage',[{id:'a',choices:[{delta:{content:'answer'},finish_reason:'stop',usage:{prompt_tokens:100,completion_tokens:20,cached_tokens:30}}]}]);
+await add('usage-after-finish',[chunk({content:'answer'},'stop'),{choices:[],usage:{prompt_tokens:100,completion_tokens:20}}]);
+const jsonCases=['',' ','null','false','123','[1,2]','{"a":true}','{"a":"x\\q"}',...fragments,'{"a":nul','{"a":fals','{"a":tru','{"a":1e+','{"a":1.','{"a":"x\\','{"a":"x\\u12','{"a":1, "b"','{"a":[{"b":2},'].map(input=>({input,expected:parseStreamingJson(input)}));
+writeFileSync(process.argv[2],JSON.stringify({pin,cases,jsonCases},null,2)+'\n');console.log(`Captured ${cases.length} streams and ${jsonCases.length} JSON cases from pinned Pi; no network.`);

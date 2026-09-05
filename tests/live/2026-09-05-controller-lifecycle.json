@@ -1,0 +1,192 @@
+{
+  "date": "2026-09-05",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "fixtureRoot": "/run/media/user/Data/bashkitten-builds/controller-lifecycle-audit",
+  "isolation": "GTK Broadway display and real systemd services prefixed bashkitten-lifecycle-proof; test command wrappers only translate unit names. Production instance stayed active.",
+  "results": {
+    "crash": {
+      "before": {
+        "bashkitten-lifecycle-proof-controller.service": 3888406,
+        "bashkitten-lifecycle-proof-web.service": 3888425,
+        "bashkitten-lifecycle-proof-llama.service": 3889077,
+        "bashkitten-lifecycle-proof-session-01a0738e-0782-7941-a438-2e30d46793ea.service": 3889049
+      },
+      "after": {
+        "bashkitten-lifecycle-proof-controller.service": 3890665,
+        "bashkitten-lifecycle-proof-web.service": 3888425,
+        "bashkitten-lifecycle-proof-llama.service": 3889077,
+        "bashkitten-lifecycle-proof-session-01a0738e-0782-7941-a438-2e30d46793ea.service": 3889049
+      },
+      "restartCount": 1,
+      "repeatedLaunchUsesExistingPid": true
+    },
+    "quit": {
+      "states": {
+        "bashkitten-lifecycle-proof-controller.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        },
+        "bashkitten-lifecycle-proof-web.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        },
+        "bashkitten-lifecycle-proof-llama.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        },
+        "bashkitten-lifecycle-proof-session-01a0738e-0782-7941-a438-2e30d46793ea.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        },
+        "bashkitten-lifecycle-proof.target": {
+          "ActiveState": "inactive"
+        }
+      },
+      "partialSaved": true,
+      "stopReason": "aborted",
+      "testSession": "01a0738e-0782-7941-a438-2e30d46793ea"
+    },
+    "sigterm": {
+      "before": {
+        "bashkitten-lifecycle-proof-controller.service": 3899405,
+        "bashkitten-lifecycle-proof-web.service": 3899423,
+        "bashkitten-lifecycle-proof-llama.service": 3899535,
+        "bashkitten-lifecycle-proof-session-01a07391-f088-73f3-a988-2c42c6d3fe08.service": 3899507
+      },
+      "after": {
+        "bashkitten-lifecycle-proof-controller.service": 0,
+        "bashkitten-lifecycle-proof-web.service": 0,
+        "bashkitten-lifecycle-proof-llama.service": 0,
+        "bashkitten-lifecycle-proof-session-01a07391-f088-73f3-a988-2c42c6d3fe08.service": 0
+      },
+      "partialSaved": true,
+      "session": "01a07391-f088-73f3-a988-2c42c6d3fe08",
+      "controllerResult": "success"
+    },
+    "settings": {
+      "occupiedPortRejectedBeforeSaving": true,
+      "oldPids": {
+        "bashkitten-lifecycle-proof-controller.service": 3906327,
+        "bashkitten-lifecycle-proof-web.service": 3906329,
+        "bashkitten-lifecycle-proof-llama.service": 3906462,
+        "bashkitten-lifecycle-proof-session-01a07394-958a-7740-8557-31f7a9fd1208.service": 3906418
+      },
+      "newPids": {
+        "bashkitten-lifecycle-proof-controller.service": 3906327,
+        "bashkitten-lifecycle-proof-web.service": 3910047,
+        "bashkitten-lifecycle-proof-llama.service": 3906462,
+        "bashkitten-lifecycle-proof-session-01a07394-958a-7740-8557-31f7a9fd1208.service": 3906418
+      },
+      "webPort": 49748,
+      "startup": "enabled",
+      "restartPolicy": "no",
+      "webCrashWithRestartOff": {
+        "state": "failed",
+        "mainPid": 0,
+        "restarts": 0,
+        "siblingsUnchanged": true
+      },
+      "explicitOpen": {
+        "startedStoppedWeb": true,
+        "requestedBrowserUrl": "http://127.0.0.1:49748",
+        "browserLaunchInterceptedByTestHarness": true
+      },
+      "webCrashWithRestartOn": {
+        "beforePid": 3913252,
+        "afterPid": 3913804,
+        "siblingsUnchanged": true
+      },
+      "startupAfterDisable": "disabled"
+    },
+    "window-close": {
+      "states": {
+        "bashkitten-lifecycle-proof-controller.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        },
+        "bashkitten-lifecycle-proof-web.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        },
+        "bashkitten-lifecycle-proof-llama.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        },
+        "bashkitten-lifecycle-proof-session-01a07394-958a-7740-8557-31f7a9fd1208.service": {
+          "ActiveState": "inactive",
+          "MainPID": "0",
+          "Result": "success"
+        }
+      },
+      "session": "01a07394-958a-7740-8557-31f7a9fd1208",
+      "partialSaved": true
+    },
+    "cli-installation": {
+      "session": "01a0739e-8d30-7090-9634-a6337d3e36ed",
+      "agentOverrideUnset": true,
+      "actualAgentExecutable": "/run/media/user/Data/bashkitten-builds/target/debug/bashkitten-agent",
+      "observedAgentPid": 3947514,
+      "toolResolvedCli": "/run/media/user/Data/bashkitten-builds/target/debug/bashkitten",
+      "modelRegistryIncludedFixtureAndPinnedAstra": true,
+      "toolSucceeded": true
+    },
+    "deployment": {
+      "binaryDirectory": "/home/user/.local/lib/bashkitten/current",
+      "binarySha256": {
+        "bashkitten": "449174b8c0a86af2e17d45e49c991f84d23fb80b02de65005962c513a20a77db",
+        "bashkitten-agent": "8449cc95a2193d2ecb1bbed61e99a301f49b9c7dd45bebbc614f37eec40fc211",
+        "bashkitten-web": "d26152dd334bd19d9ebd9761d2f6e799dc766115a9913d39cfb498f81b01f14d",
+        "bashkitten-controller": "5a7aa7d86ab5f17444bb4a1ef77a0c939309fc60751190ca04f4ace59dd2f6c7"
+      },
+      "desktopEntry": "/home/user/.local/share/applications/bashkitten.desktop",
+      "localCommands": [
+        "/home/user/.local/bin/bashkitten",
+        "/home/user/.local/bin/bashkitten-controller"
+      ],
+      "controllerType": "dbus",
+      "controllerPrimaryArgument": "--service",
+      "webPort": 3939,
+      "oldWebPid": 3853911,
+      "newWebPid": 3955580,
+      "activeAgentsBefore": 0,
+      "systemPackageUnchanged": true
+    }
+  },
+  "credentialPublication": {
+    "concurrentSignupAttempts": 8,
+    "successfulIdentities": 1,
+    "createRefusesExistingFileAndDanglingSymlink": true,
+    "concurrentAtomicSaveWriters": 8,
+    "completePrivateFileAndNoTemporaryFiles": true
+  },
+  "verification": {
+    "rustTestsPassed": 103,
+    "libraryTestsPassed": 81,
+    "clippyWithWarningsDenied": "pass"
+  },
+  "cleanup": {
+    "testGtkTabClosed": true,
+    "testControllerTargetWebRouterAgentsStopped": true,
+    "temporaryUnitsRemoved": [
+      "/run/user/1000/systemd/user/bashkitten-lifecycle-proof.target",
+      "/run/user/1000/systemd/user/bashkitten-lifecycle-proof-llama.service",
+      "/run/user/1000/systemd/user/bashkitten-lifecycle-proof-web.service",
+      "/run/user/1000/systemd/user/bashkitten-lifecycle-proof-controller.service",
+      "/home/user/.config/systemd/user/bashkitten-lifecycle-proof-web.service.d/restart.conf"
+    ],
+    "testProviderAndDisplayStopped": true,
+    "productionPort": 3939
+  },
+  "limitations": [
+    "The browser-opening command was recorded by the fixture instead of launching the user default browser.",
+    "The system Debian package remains unchanged; current user-local binaries, commands, services and desktop entry are deployed.",
+    "Controller save reports filesystem/systemd failures; transactional recovery from a failure after config persistence has not been audited."
+  ]
+}

@@ -1,0 +1,649 @@
+{
+  "started": "2026-09-05T15:13:16Z",
+  "root": "/tmp/bashkitten-live-w5q5ydxd",
+  "tasks": [
+    {
+      "name": "csv-inventory-repair",
+      "model": "openai-codex/gpt-5.6-luna",
+      "thinking": "medium",
+      "folder": "/tmp/bashkitten-live-w5q5ydxd/csv-inventory-repair",
+      "oracle": "/tmp/bashkitten-live-w5q5ydxd/oracles/csv-inventory-repair",
+      "testHashes": {
+        "tests/test_inventory.py": "98fbdbbc0d4a311d20931766584433ced819ae23e8e6716dc75c4be8adf17204"
+      },
+      "required": [
+        "README.md"
+      ],
+      "allToolsRequired": true,
+      "status": "passed",
+      "session": "01a07221-8ce5-7733-b0cc-de9a2de2079c",
+      "launchError": "",
+      "tools": [
+        "ls",
+        "find",
+        "grep",
+        "read",
+        "read",
+        "read",
+        "read",
+        "edit",
+        "write",
+        "bash",
+        "bash",
+        "read",
+        "read",
+        "bash",
+        "write"
+      ],
+      "errors": [],
+      "checks": [
+        {
+          "name": "supplied",
+          "exitCode": 0,
+          "output": "test_accumulate (test_inventory.InventoryTests.test_accumulate) ... ok\ntest_empty (test_inventory.InventoryTests.test_empty) ... ok\ntest_invalid (test_inventory.InventoryTests.test_invalid) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n"
+        },
+        {
+          "name": "independent",
+          "exitCode": 0,
+          "output": "test_bad_value (test_independent.IndependentTests.test_bad_value) ... ok\ntest_generator (test_independent.IndependentTests.test_generator) ... ok\ntest_separate_buckets_and_signed_integers (test_independent.IndependentTests.test_separate_buckets_and_signed_integers) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n"
+        }
+      ],
+      "testsUnchanged": true,
+      "missingFiles": [],
+      "allToolsUsed": true,
+      "usage": [
+        {
+          "input": 1322,
+          "output": 105,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 28,
+          "totalTokens": 1427,
+          "cost": {
+            "input": 0.00026440000000000003,
+            "output": 0.000126,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.00039040000000000006
+          }
+        },
+        {
+          "input": 1722,
+          "output": 80,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 1802,
+          "cost": {
+            "input": 0.0003444,
+            "output": 9.6e-05,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.0004404
+          }
+        },
+        {
+          "input": 2097,
+          "output": 277,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 130,
+          "totalTokens": 2374,
+          "cost": {
+            "input": 0.00041940000000000006,
+            "output": 0.0003324,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.0007518000000000001
+          }
+        },
+        {
+          "input": 859,
+          "output": 140,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "totalTokens": 2535,
+          "cost": {
+            "input": 0.0001718,
+            "output": 0.000168,
+            "cacheRead": 3.0720000000000004e-05,
+            "cacheWrite": 0.0,
+            "total": 0.00037052000000000005
+          }
+        },
+        {
+          "input": 2553,
+          "output": 31,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 2584,
+          "cost": {
+            "input": 0.0005106,
+            "output": 3.7199999999999996e-05,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.0005478000000000001
+          }
+        },
+        {
+          "input": 2614,
+          "output": 48,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 14,
+          "totalTokens": 2662,
+          "cost": {
+            "input": 0.0005228,
+            "output": 5.76e-05,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.0005804
+          }
+        },
+        {
+          "input": 1193,
+          "output": 69,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "totalTokens": 2798,
+          "cost": {
+            "input": 0.00023860000000000003,
+            "output": 8.28e-05,
+            "cacheRead": 3.0720000000000004e-05,
+            "cacheWrite": 0.0,
+            "total": 0.00035212000000000004
+          }
+        },
+        {
+          "input": 1329,
+          "output": 152,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "reasoning": 102,
+          "totalTokens": 3017,
+          "cost": {
+            "input": 0.0002658,
+            "output": 0.0001824,
+            "cacheRead": 3.0720000000000004e-05,
+            "cacheWrite": 0.0,
+            "total": 0.00047892
+          }
+        },
+        {
+          "input": 633,
+          "output": 196,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "reasoning": 63,
+          "totalTokens": 3389,
+          "cost": {
+            "input": 0.00012660000000000001,
+            "output": 0.0002352,
+            "cacheRead": 5.12e-05,
+            "cacheWrite": 0.0,
+            "total": 0.000413
+          }
+        },
+        {
+          "input": 848,
+          "output": 27,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "totalTokens": 3435,
+          "cost": {
+            "input": 0.0001696,
+            "output": 3.24e-05,
+            "cacheRead": 5.12e-05,
+            "cacheWrite": 0.0,
+            "total": 0.0002532
+          }
+        },
+        {
+          "input": 894,
+          "output": 24,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "totalTokens": 3478,
+          "cost": {
+            "input": 0.0001788,
+            "output": 2.88e-05,
+            "cacheRead": 5.12e-05,
+            "cacheWrite": 0.0,
+            "total": 0.0002588
+          }
+        }
+      ],
+      "finalText": "Verified iterator support and signed amounts successfully. Wrote `resume-check.md` with the required text."
+    },
+    {
+      "name": "config-parser-refactor",
+      "model": "openai-codex/gpt-5.6-sol",
+      "thinking": "medium",
+      "folder": "/tmp/bashkitten-live-w5q5ydxd/config-parser-refactor",
+      "oracle": "/tmp/bashkitten-live-w5q5ydxd/oracles/config-parser-refactor",
+      "testHashes": {
+        "tests/test_parser.py": "cb17735aa98308e1af791603b5b1544ba3f85e0733e412c6cc71d5b9a3ea2fd6"
+      },
+      "required": [
+        "README.md"
+      ],
+      "allToolsRequired": false,
+      "status": "passed",
+      "session": "01a07221-8d2d-7bf2-8532-634921a898fa",
+      "launchError": "",
+      "tools": [
+        "ls",
+        "read",
+        "read",
+        "find",
+        "read",
+        "read",
+        "ls",
+        "write",
+        "write",
+        "write",
+        "bash",
+        "bash",
+        "edit",
+        "bash"
+      ],
+      "errors": [],
+      "checks": [
+        {
+          "name": "supplied",
+          "exitCode": 0,
+          "output": "test_basic (test_parser.ParserTests.test_basic) ... ok\ntest_comments (test_parser.ParserTests.test_comments) ... ok\ntest_empty (test_parser.ParserTests.test_empty) ... ok\ntest_empty_trimmed_key_reports_source_line (test_parser_edge_cases.ParserEdgeCaseTests.test_empty_trimmed_key_reports_source_line) ... ok\ntest_empty_value_is_allowed (test_parser_edge_cases.ParserEdgeCaseTests.test_empty_value_is_allowed) ... ok\ntest_indented_comments_and_whitespace_only_lines_are_skipped (test_parser_edge_cases.ParserEdgeCaseTests.test_indented_comments_and_whitespace_only_lines_are_skipped) ... ok\ntest_initial_bom_and_crlf (test_parser_edge_cases.ParserEdgeCaseTests.test_initial_bom_and_crlf) ... ok\ntest_last_duplicate_key_wins (test_parser_edge_cases.ParserEdgeCaseTests.test_last_duplicate_key_wins) ... ok\ntest_missing_separator_reports_source_line (test_parser_edge_cases.ParserEdgeCaseTests.test_missing_separator_reports_source_line) ... ok\ntest_only_one_initial_bom_is_removed (test_parser_edge_cases.ParserEdgeCaseTests.test_only_one_initial_bom_is_removed) ... ok\ntest_value_keeps_hashes_and_additional_equals (test_parser_edge_cases.ParserEdgeCaseTests.test_value_keeps_hashes_and_additional_equals) ... ok\n\n----------------------------------------------------------------------\nRan 11 tests in 0.000s\n\nOK\n"
+        },
+        {
+          "name": "independent",
+          "exitCode": 0,
+          "output": "test_bom_crlf_duplicate_equals (test_independent.IndependentTests.test_bom_crlf_duplicate_equals) ... ok\ntest_comments_and_value (test_independent.IndependentTests.test_comments_and_value) ... ok\ntest_empty_key (test_independent.IndependentTests.test_empty_key) ... ok\ntest_error_line (test_independent.IndependentTests.test_error_line) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n"
+        }
+      ],
+      "testsUnchanged": true,
+      "missingFiles": [],
+      "allToolsUsed": true,
+      "usage": [
+        {
+          "input": 1346,
+          "output": 92,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 1438,
+          "cost": {
+            "input": 0.006730000000000001,
+            "output": 0.00276,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.00949
+          }
+        },
+        {
+          "input": 1517,
+          "output": 76,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 10,
+          "totalTokens": 1593,
+          "cost": {
+            "input": 0.007585000000000001,
+            "output": 0.00228,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.009865
+          }
+        },
+        {
+          "input": 433,
+          "output": 465,
+          "cacheRead": 1408,
+          "cacheWrite": 0,
+          "reasoning": 223,
+          "totalTokens": 2306,
+          "cost": {
+            "input": 0.0021650000000000003,
+            "output": 0.01395,
+            "cacheRead": 0.000704,
+            "cacheWrite": 0.0,
+            "total": 0.016819
+          }
+        },
+        {
+          "input": 660,
+          "output": 703,
+          "cacheRead": 1664,
+          "cacheWrite": 0,
+          "totalTokens": 3027,
+          "cost": {
+            "input": 0.0033000000000000004,
+            "output": 0.02109,
+            "cacheRead": 0.000832,
+            "cacheWrite": 0.0,
+            "total": 0.025222
+          }
+        },
+        {
+          "input": 1913,
+          "output": 39,
+          "cacheRead": 1152,
+          "cacheWrite": 0,
+          "reasoning": 9,
+          "totalTokens": 3104,
+          "cost": {
+            "input": 0.009565,
+            "output": 0.00117,
+            "cacheRead": 0.000576,
+            "cacheWrite": 0.0,
+            "total": 0.011311000000000002
+          }
+        },
+        {
+          "input": 190,
+          "output": 48,
+          "cacheRead": 2944,
+          "cacheWrite": 0,
+          "reasoning": 17,
+          "totalTokens": 3182,
+          "cost": {
+            "input": 0.0009500000000000001,
+            "output": 0.00144,
+            "cacheRead": 0.001472,
+            "cacheWrite": 0.0,
+            "total": 0.003862
+          }
+        },
+        {
+          "input": 1043,
+          "output": 114,
+          "cacheRead": 2176,
+          "cacheWrite": 0,
+          "reasoning": 63,
+          "totalTokens": 3333,
+          "cost": {
+            "input": 0.005215,
+            "output": 0.0034200000000000003,
+            "cacheRead": 0.001088,
+            "cacheWrite": 0.0,
+            "total": 0.009723
+          }
+        },
+        {
+          "input": 410,
+          "output": 32,
+          "cacheRead": 2944,
+          "cacheWrite": 0,
+          "totalTokens": 3386,
+          "cost": {
+            "input": 0.00205,
+            "output": 0.00096,
+            "cacheRead": 0.001472,
+            "cacheWrite": 0.0,
+            "total": 0.004482
+          }
+        },
+        {
+          "input": 479,
+          "output": 106,
+          "cacheRead": 3200,
+          "cacheWrite": 0,
+          "totalTokens": 3785,
+          "cost": {
+            "input": 0.002395,
+            "output": 0.00318,
+            "cacheRead": 0.0015999999999999999,
+            "cacheWrite": 0.0,
+            "total": 0.007175
+          }
+        }
+      ],
+      "finalText": "Implemented the configuration parser refactor.\n\nChanges:\n- Updated `parser.py` with BOM handling, CRLF/LF support, comments, whitespace trimming, first-`=` splitting, duplicate handling, and line-numbered errors.\n- Added edge-case tests in `tests/test_parser_edge_cases.py`.\n- Added behavior and test instructions to `README.md`.\n- Left supplied tests unchanged.\n\nTest result: **11 tests passed** using:\n\n```bash\npython3 -m unittest discover -s tests -v\n```"
+    }
+  ],
+  "checked": "2026-09-05T15:20:46Z",
+  "phases": [
+    {
+      "name": "real-compaction-and-resume",
+      "session": "01a07221-8ce5-7733-b0cc-de9a2de2079c",
+      "oldSegmentSha256": "c98c7a8528a491e7eda48fe95ea7a118454fa05c4f2eb632fb9b05103b636bc2",
+      "result": "Live summary/rotation passed: True. Segments: ['000001.jsonl', '000002.jsonl']. Old segment unchanged: True. Error: None. Used Pi's configurable keepRecentTokens=1000 for this small task and restored the test configuration afterward.",
+      "launchExit": 0,
+      "launchOutput": "compaction requested\n",
+      "segments": [
+        "000001.jsonl",
+        "000002.jsonl"
+      ],
+      "oldSegmentUnchanged": true,
+      "compactions": [],
+      "resumeLaunchExit": 0,
+      "resumeLaunchOutput": "message queued\n",
+      "beforeRealCompactionSha256": "0ed3b3b7c314793ab148a306d404f75041e8fc4737b9007543bab96a2397d997",
+      "events": [
+        {
+          "type": "usage",
+          "data": {
+            "totals": {
+              "input": 16064,
+              "output": 1149,
+              "cacheRead": 12288,
+              "cacheWrite": 0,
+              "cost": 0.004837360000000001
+            },
+            "context": {
+              "tokens": 3478,
+              "contextWindow": 272000,
+              "percent": 1.2786764705882354
+            },
+            "latestCacheHitRate": 74.11696583671106,
+            "text": "\u219116k \u21931.1k R12k CH74.1% $0.005 (sub) 1.3%/272k (auto)"
+          }
+        },
+        {
+          "type": "status",
+          "state": "idle"
+        },
+        {
+          "type": "queue_state",
+          "data": {
+            "busy": false,
+            "steering": 0,
+            "queued": 0,
+            "steeringMessages": [],
+            "queuedMessages": []
+          }
+        },
+        {
+          "type": "compaction_start",
+          "reason": "manual"
+        },
+        {
+          "type": "usage",
+          "data": {
+            "totals": {
+              "input": 16977,
+              "output": 1442,
+              "cacheRead": 12288,
+              "cacheWrite": 0,
+              "cost": 0.005371560000000001
+            },
+            "context": {
+              "tokens": null,
+              "contextWindow": 272000,
+              "percent": null
+            },
+            "latestCacheHitRate": 74.11696583671106,
+            "text": "\u219117k \u21931.4k R12k CH74.1% $0.005 (sub) ?/272k (auto)"
+          }
+        },
+        {
+          "type": "segment_change",
+          "segment": 2,
+          "entry": {
+            "id": "062af306",
+            "parentId": "323274fa",
+            "timestamp": "2026-09-05T15:23:26.699Z",
+            "type": "compaction",
+            "summary": "No prior history.\n\n---\n\n**Turn Context (split turn):**\n\n## Original Request\nRepair `inventory.totals` to:\n- Strip surrounding whitespace from category names.\n- Parse amounts as signed base-10 integers.\n- Accumulate duplicate categories.\n- Return `{}` for no rows.\n- Propagate `ValueError` for invalid amounts.\nAlso inspect with `ls`, `find`, `grep`, and `read`; use `edit`, write a short `README.md`, run supplied tests with `bash`, use all seven built-in tools, do not modify tests, and report actual results.\n\n## Early Progress\n- Inspected the project files: `inventory.py`, `TASK.md`, `data/records.csv`, and `tests/test_inventory.py`.\n- Found the current implementation overwrites duplicate categories and leaves amounts as strings.\n- Tests require accumulation (`\"12\"` + `\"-3\"` \u2192 `9`), empty input `{}`, and `ValueError` for `\"oops\"`.\n- Data CSV contains Hardware `12`, Software `9`, Hardware `-3`.\n\n## Context for Suffix\nThe code still needs to be edited, `README.md` created, tests run via `bash`, and actual test results reported. Tests must remain unchanged.\n\n<read-files>\nTASK.md\ndata/records.csv\ninventory.py\ntests/test_inventory.py\n</read-files>",
+            "firstKeptEntryId": "74dba649",
+            "tokensBefore": 3478,
+            "details": {
+              "readFiles": [
+                "TASK.md",
+                "data/records.csv",
+                "inventory.py",
+                "tests/test_inventory.py"
+              ],
+              "modifiedFiles": []
+            },
+            "usage": {
+              "input": 913,
+              "output": 293,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "reasoning": 47,
+              "totalTokens": 1206,
+              "cost": {
+                "input": 0.00018260000000000002,
+                "output": 0.0003516,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0005342
+              }
+            },
+            "fromHook": false
+          }
+        },
+        {
+          "type": "compaction_end",
+          "reason": "manual",
+          "result": {
+            "summary": "No prior history.\n\n---\n\n**Turn Context (split turn):**\n\n## Original Request\nRepair `inventory.totals` to:\n- Strip surrounding whitespace from category names.\n- Parse amounts as signed base-10 integers.\n- Accumulate duplicate categories.\n- Return `{}` for no rows.\n- Propagate `ValueError` for invalid amounts.\nAlso inspect with `ls`, `find`, `grep`, and `read`; use `edit`, write a short `README.md`, run supplied tests with `bash`, use all seven built-in tools, do not modify tests, and report actual results.\n\n## Early Progress\n- Inspected the project files: `inventory.py`, `TASK.md`, `data/records.csv`, and `tests/test_inventory.py`.\n- Found the current implementation overwrites duplicate categories and leaves amounts as strings.\n- Tests require accumulation (`\"12\"` + `\"-3\"` \u2192 `9`), empty input `{}`, and `ValueError` for `\"oops\"`.\n- Data CSV contains Hardware `12`, Software `9`, Hardware `-3`.\n\n## Context for Suffix\nThe code still needs to be edited, `README.md` created, tests run via `bash`, and actual test results reported. Tests must remain unchanged.\n\n<read-files>\nTASK.md\ndata/records.csv\ninventory.py\ntests/test_inventory.py\n</read-files>",
+            "firstKeptEntryId": "74dba649",
+            "tokensBefore": 3478,
+            "estimatedTokensAfter": 1223,
+            "usage": {
+              "input": 913,
+              "output": 293,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "reasoning": 47,
+              "totalTokens": 1206,
+              "cost": {
+                "input": 0.00018260000000000002,
+                "output": 0.0003516,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0005342
+              }
+            },
+            "details": {
+              "readFiles": [
+                "TASK.md",
+                "data/records.csv",
+                "inventory.py",
+                "tests/test_inventory.py"
+              ],
+              "modifiedFiles": []
+            }
+          },
+          "aborted": false,
+          "willRetry": false
+        }
+      ],
+      "compactionPassed": true
+    },
+    {
+      "name": "real-cancellation-and-resume",
+      "model": "openai-codex/gpt-5.6-luna",
+      "session": "01a07224-9b15-7ed3-aa8e-da06b72811c4",
+      "folder": "/tmp/bashkitten-live-w5q5ydxd/cancellation-resume",
+      "launchExit": 0,
+      "launchError": "",
+      "result": "Web Pause stopped the real bash command before its completion marker (passed: True); the aborted tool result is persisted. A new worker resumed from that history, read the existing files, wrote the expected resumed.md, and independently verified the cancelled command had not completed (passed: True).",
+      "begunExists": true,
+      "completedExists": false,
+      "savedToolResults": [
+        {
+          "role": "toolResult",
+          "toolCallId": "call_7RqifqJBLAnoTYmBz3wNcCZq|fc_003bef4008fab777016a9c32566db887d2b82c980087881007",
+          "toolName": "bash",
+          "content": [
+            {
+              "type": "text",
+              "text": "started\n\n\nCommand aborted"
+            }
+          ],
+          "isError": true,
+          "timestamp": 1788621482700
+        }
+      ],
+      "pausePassed": true,
+      "resumeLaunchExit": 0,
+      "resumeLaunchOutput": "message queued\n",
+      "resumePassed": true
+    },
+    {
+      "name": "post-compaction-model-switch-and-image",
+      "session": "01a07221-8ce5-7733-b0cc-de9a2de2079c",
+      "model": "openai-codex/gpt-6-astra",
+      "thinking": "medium",
+      "image": "/tmp/bashkitten-live-w5q5ydxd/csv-inventory-repair/fixture-view.png",
+      "imageDimensions": [
+        2400,
+        1600
+      ],
+      "expected": {
+        "leftLabel": "ORANGE 7",
+        "rightLabel": "BLUE 9",
+        "panelCount": 2,
+        "sum": 16
+      },
+      "modelChangeExit": 0,
+      "modelChangeOutput": "model change queued\n",
+      "sendExit": 0,
+      "sendOutput": "message queued\n",
+      "result": "Astra continued the compacted Luna session after a worker restart and model change, read the 2400\u00d71600 image through read, and returned the expected two labels, panel count and sum (passed: True). Code tests are checked independently in the inventory task above. This verifies image delivery/replay, not Pi's still-missing image resize parity.",
+      "actual": {
+        "leftLabel": "ORANGE 7",
+        "rightLabel": "BLUE 9",
+        "panelCount": 2,
+        "sum": 16
+      },
+      "passed": true
+    },
+    {
+      "name": "automatic-project-instructions-before-repair",
+      "model": "openai-codex/gpt-5.6-luna",
+      "folder": "/tmp/bashkitten-live-w5q5ydxd/automatic-project-instructions",
+      "session": "01a07230-136f-7193-9e56-5ddd2fc283b4",
+      "launchExit": 0,
+      "result": "Before repair: requested answer created: True; mandatory artifact specified only in repository AGENTS.md created: False. The worker still uses a shortened prompt without automatic project-instruction loading. This is a confirmed parity failure, now being repaired.",
+      "answerExists": true,
+      "policyProofExists": false,
+      "passed": false
+    },
+    {
+      "name": "automatic-project-instructions-after-repair",
+      "session": "01a07285-515f-7640-93bc-1ad496f430c9",
+      "folder": "/tmp/bashkitten-instructions-ku3jkxtq",
+      "passed": true,
+      "result": "Fresh Luna session created answer.txt with the requested value and instruction-proof.txt with the value specified only in AGENTS.md (passed: True). The actual-worker HTTP fixture also confirms unchanged system prompt, non-message fields and message prefixes over two turns and a worker restart, with earlier JSONL bytes intact. A subsequent real worker restart read both files and wrote the independently checked restart-proof.txt. The provider reported 1,536 cached input tokens during that restarted turn.",
+      "restartCacheRead": 1536,
+      "restartProofPassed": true
+    }
+  ],
+  "failures": [
+    {
+      "name": "long session socket path",
+      "observed": "Worker exited with session control socket was not created; no provider request was sent.",
+      "cause": "The session control.sock absolute path exceeded Linux sockaddr_un; listener startup errors were hidden in a detached task.",
+      "repair": "Retain an open parent directory through /proc/self/fd address resolution; bind before worker publication and refuse duplicate live workers.",
+      "verification": "Dedicated long-path/duplicate-worker runtime test passed; the real model sessions above run under the same long data directory."
+    },
+    {
+      "name": "sidebar scroll and narrow window",
+      "observed": "Long sidebar moved the page/header; narrow windows hid the sidebar entirely.",
+      "repair": "Constrain grid/flex heights, retain the fixed header and list scroll position, keep a compact sidebar at narrow widths.",
+      "verification": "Wide-window independent scrolling verified in browser; narrow-width recheck pending."
+    }
+  ]
+}

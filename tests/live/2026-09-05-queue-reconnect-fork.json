@@ -1,0 +1,95 @@
+{
+  "date": "2026-09-05",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "isolatedRoot": "/run/media/user/Data/bashkitten-builds/browser-queue-parity",
+  "provider": "Direct local HTTP fixture, no external requests",
+  "webPort": 49743,
+  "queue": {
+    "sourceSession": "01a0736e-1d28-7790-943a-ea330b85fb1c",
+    "heldFifoHead": true,
+    "attachmentRetained": true,
+    "editDeliveredExactlyOnce": true,
+    "removedFollowupNeverSent": true,
+    "steeringDeliveredBeforeFollowup": true,
+    "cancelEditRetainsOriginal": true,
+    "remainingRows": 0
+  },
+  "reconnect": {
+    "duringThinking": true,
+    "duringToolOutput": true,
+    "duringPartialAnswer": true,
+    "noDuplicateUserMessagesOrToolCall": true,
+    "completedWorkCollapsed": true,
+    "thinkingBeforeToolAfterFix": true
+  },
+  "pause": {
+    "session": "01a07374-fd58-7c41-938b-9ddfd21259c4",
+    "partialResponsePersisted": "Partial response before pause.",
+    "stopReason": "aborted",
+    "providerError": "Request was aborted"
+  },
+  "images": {
+    "nativeFilePickerUpload": true,
+    "composerThumbnail": true,
+    "transcriptThumbnail": true,
+    "viewerLeft": 280,
+    "sidebarRight": 280,
+    "zoomAfterZoomIn": "125%",
+    "imageLoaded": true
+  },
+  "fork": {
+    "source": "01a0736e-1d28-7790-943a-ea330b85fb1c",
+    "legacyForkWithRewrittenHistory": "01a07376-f270-7873-a262-e9207e15c6c0",
+    "fork": "01a0737d-2b9b-7460-b2dd-cf2269ce79e3",
+    "retainedEntries": 5,
+    "sourceEntryId": "ea76ced1",
+    "historyLinesByteIdentical": true,
+    "attachments": [
+      "attachments/68aded5c-f538-45d7-bdc8-fa2f129c2ffb/queue-proof.txt"
+    ],
+    "excludedLaterImage": true,
+    "anonymousDownloadStatus": 401,
+    "authenticatedDownloadStatus": 200
+  },
+  "webAuth": {
+    "twoTabsRemainedUsable": true,
+    "alreadyOpenTabSurvivedWebRestart": true,
+    "bootstrapLeftAuthFileByteIdentical": true,
+    "nativeConcurrentBootstrapRequests": 8,
+    "wrongOriginAndCsrfRejectedBeforeMutation": true,
+    "hashOnlyTokenPersistenceVerified": true
+  },
+  "verification": {
+    "rustTestsPassed": 101,
+    "libraryTestsPassed": 79,
+    "clippyWarningsDenied": "pass",
+    "embeddedJavascriptSyntax": "pass"
+  },
+  "deployment": {
+    "webPort": 3939,
+    "oldWebPid": 3747972,
+    "newWebPid": 3853911,
+    "activeSessionUnitsBefore": "",
+    "binaryDirectory": "/home/user/.local/lib/bashkitten/current",
+    "binarySha256": {
+      "bashkitten": "a7b4f67b996c6b573e1dcbf0bfbf8102a0eca899284817d9dc86e914868b97f9",
+      "bashkitten-agent": "075373448eebe353e776968f30c6567cab1723f14586f06237b4185ef3714c78",
+      "bashkitten-web": "eebc0136b9d744182fd71249c046fdaa7bd9fb355d841bfd17c893c6a9cbd154",
+      "bashkitten-controller": "5394307800a7d8affd706f7e51536d39cfab4810c2c96972f2ee6b037526871d"
+    },
+    "verifiedSharedFolderControls": true,
+    "verifiedCurrentQueueUi": true
+  },
+  "cleanup": {
+    "testProcessesSignalled": {
+      "provider": 3777273,
+      "web": 3843045
+    },
+    "testBrowserTabsClosed": true,
+    "testHistoryAndRequestEvidenceRetained": true
+  },
+  "limitations": [
+    "Browser paste/drop events were not independently exercised in this pass.",
+    "Full Pi parity and installed package delivery remain active gates."
+  ]
+}

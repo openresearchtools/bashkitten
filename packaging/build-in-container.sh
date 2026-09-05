@@ -32,6 +32,9 @@ install -m 0644 LICENSE "$package_root/usr/share/doc/bashkitten/copyright"
 install -m 0644 PI_UPSTREAM.md "$package_root/usr/share/doc/bashkitten/PI_UPSTREAM.md"
 install -m 0644 README.md "$package_root/usr/share/doc/bashkitten/README.md"
 install -m 0644 THIRD_PARTY_NOTICES.md "$package_root/usr/share/doc/bashkitten/THIRD_PARTY_NOTICES.md"
+install -d "$package_root/usr/share/doc/bashkitten/pi-reference"
+tar -xzf reference/pi-documentation.tar.gz -C "$package_root/usr/share/doc/bashkitten/pi-reference" --no-same-owner
+install -m 0644 reference/PI-LICENSE "$package_root/usr/share/doc/bashkitten/pi-reference/LICENSE"
 
 installed_size=$(du -sk "$package_root/usr" | awk '{print $1}')
 cat >"$package_root/DEBIAN/control" <<EOF
@@ -42,7 +45,7 @@ Priority: optional
 Architecture: amd64
 Maintainer: OpenResearchTools <openresearchtools@users.noreply.github.com>
 Homepage: https://github.com/openresearchtools/bashkitten
-Depends: libc6, libgtk-4-1, systemd, ripgrep, fd-find
+Depends: libc6, libgtk-4-1, systemd, ripgrep, fd-find, xdg-utils
 Installed-Size: $installed_size
 Description: Minimal standalone Rust coding-agent Web UI
  BashKitten provides isolated agent-session processes, a local authenticated

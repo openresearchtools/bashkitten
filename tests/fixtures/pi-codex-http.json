@@ -1,0 +1,2454 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+  "cases": [
+    {
+      "name": "http-400-0",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":{\"message\":\"bad input\",\"type\":\"invalid_request_error\",\"param\":\"messages\"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "bad input",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-429-1",
+      "responses": [
+        {
+          "status": 429,
+          "body": "{\"error\":{\"message\":\"Quota exhausted\",\"code\":\"insufficient_quota\"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "You have hit your ChatGPT usage limit.",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-429-2",
+      "responses": [
+        {
+          "status": 429,
+          "body": "{\"error\":{\"code\":\"usage_limit_reached\",\"plan_type\":\"PLUS\",\"resets_at\":1}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "You have hit your ChatGPT usage limit (plus plan). Try again in ~0 min.",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-503-3",
+      "responses": [
+        {
+          "status": 503,
+          "body": "upstream unavailable"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "upstream unavailable",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-401-4",
+      "responses": [
+        {
+          "status": 401,
+          "body": ""
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "Unauthorized",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-422-5",
+      "responses": [
+        {
+          "status": 422,
+          "body": "{\"detail\":\"Invalid\",\"message\":\"Top level error\"}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "{\"detail\":\"Invalid\",\"message\":\"Top level error\"}",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-400-6",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":\"plain string\"}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "{\"error\":\"plain string\"}",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-400-7",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":{\"message\":{\"field\":\"bad\"}}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "[object Object]",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-500-8",
+      "responses": [
+        {
+          "status": 500,
+          "body": "{\"error\":{\"message\":\"  preserve\\nspaces  \"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "  preserve\nspaces  ",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-400-9",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":{\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expectedStop": "error"
+    },
+    {
+      "name": "retry-400",
+      "responses": [
+        {
+          "status": 400,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-408",
+      "responses": [
+        {
+          "status": 408,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-429",
+      "responses": [
+        {
+          "status": 429,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-500",
+      "responses": [
+        {
+          "status": 500,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-501",
+      "responses": [
+        {
+          "status": 501,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-503",
+      "responses": [
+        {
+          "status": 503,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "terminal-quota",
+      "responses": [
+        {
+          "status": 429,
+          "body": "{\"error\":{\"code\":\"insufficient_quota\",\"message\":\"Quota exhausted\"}}"
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "You have hit your ChatGPT usage limit.",
+      "expectedStop": "error"
+    },
+    {
+      "name": "ignored-sdk-retry-header",
+      "responses": [
+        {
+          "status": 503,
+          "body": "no retry",
+          "headers": {
+            "x-should-retry": "false",
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-delay-cap",
+      "responses": [
+        {
+          "status": 429,
+          "body": "wait",
+          "headers": {
+            "retry-after-ms": "61000"
+          }
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "Server requested 61s retry delay (max: 60s)",
+      "expectedStop": "error"
+    },
+    {
+      "name": "retry-limit",
+      "responses": [
+        {
+          "status": 503,
+          "body": "overloaded",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        },
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": "overloaded",
+      "expectedStop": "error"
+    },
+    {
+      "name": "cache-none",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "cacheRetention": "none"
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WAcAAUGAOJNJx1gZ9sGBq+qvdZaqDJCRLEmPobWMEU4kD85AYLgrAuubTtn3pGYeXvq5trrDlLEOVL1QLBVsiehcUgoKR/uCXZEVp7lBJq3J41YBRYHrhSWwvJm7NvNuwD7UEkn7KTn5ou8bsfUvUKw91I3Ol0zYr4il0ElIoorcK9YGnA7J0V91jYndINr2544XOQ8gx1Xm28+MAYArQ63JyKauBIMAILOelgcEgH0BrloCKEmTZULp3qB5eiJGaOyjbAmGQ=="
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "cache-short",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "cacheRetention": "short"
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "cache-long",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "cacheRetention": "long"
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "options-headers",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {
+        "headers": {
+          "Authorization": "Bearer ignored",
+          "session-id": "override-session",
+          "x-fixture": "option",
+          "User-Agent": "ignored"
+        }
+      },
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "headers": {
+          "x-fixture": "model"
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "x-fixture": "option"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "url-http://localhost/backend-api/codex",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api/codex",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "url-http://localhost/backend-api/codex/responses///",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"type\":\"response.completed\",\"response\":{\"id\":\"response-fixture\",\"status\":\"completed\",\"output\":[],\"usage\":{\"input_tokens\":100,\"output_tokens\":10,\"total_tokens\":110}}}\n\n"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api/codex/responses///",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/backend-api/codex/responses",
+          "headers": {
+            "accept": "text/event-stream",
+            "authorization": "Bearer e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+            "chatgpt-account-id": "fixture-account",
+            "content-encoding": "zstd",
+            "content-type": "application/json",
+            "openai-beta": "responses=experimental",
+            "originator": "pi",
+            "session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          },
+          "body": {
+            "model": "gpt-5.5",
+            "store": false,
+            "stream": true,
+            "instructions": "You are a helpful assistant.",
+            "input": [
+              {
+                "role": "user",
+                "content": [
+                  {
+                    "type": "input_text",
+                    "text": "test"
+                  }
+                ]
+              }
+            ],
+            "text": {
+              "verbosity": "low"
+            },
+            "include": [
+              "reasoning.encrypted_content"
+            ],
+            "prompt_cache_key": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "tool_choice": "auto",
+            "parallel_tool_calls": true
+          },
+          "compressed": "KLUv/WByAL0GAJLPKx5gZ9sGCKijtNZa6Km1Ycg30Ta0himDlNjKCSAIbgULtu1zzjyUmHl77Oba7ZLSJKFULRgsVczIKIAwSZdQM0WX3RwIwWaITQuNw1JL+XBfOEekZVpOoPlzRCvWgMWBJ47lWN6M/XPzLsBGDNELe2m6+SK3n2PqPlE478Zu9LpmxXxFNgNLTIorcK9oCvBzXqo6tW1e6gbb9rlyuMh5hnNcbb45wSAMmh1+noio8kQOAILOKlsczASA+B1HrNAbn6Nh2Zpvqkg4dQtYR8/JGFVsRDDJ"
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    }
+  ]
+}

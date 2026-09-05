@@ -40,12 +40,23 @@ Web login state, and skills live under `~/.config/bashkitten/`; session folders
 live under `~/.local/share/bashkitten/sessions/`. Those directories and their
 sensitive files are restricted to the current user.
 
-Connect your OpenAI subscription in **Settings → OpenAI subscription** using
+Connect your OpenAI subscription in **Settings → Subscriptions** using
 browser login or a device code. No Pi/Codex credential import is needed or
 supported. Logout removes the BashKitten subscription credential (not another
 application's login). OAuth secrets stay in Rust and the private credential file.
 The folder control in the chat header changes the session's primary working
 directory after any current turn settles; the sidebar automatically regroups it.
+
+Settings has **App**, **Subscriptions**, **APIs**, and **llama.cpp** tabs. The
+same folder picker is used for a chat's working folder, the App default working
+folder, the llama.cpp models directory, and additional model folders. It supports
+parent navigation, an absolute path, and creating a subfolder.
+
+Configure compatible providers under **APIs**, using either HTTP or HTTPS
+(including local servers such as `http://127.0.0.1:8000/v1`). Provider requests
+connect directly; BashKitten does not use an HTTP proxy. Model downloads, cached
+GGUF discovery, extra model folders, and GPU visibility controls are under
+**llama.cpp**. Opening that tab does not start a Hugging Face search or download.
 
 Useful CLI commands:
 

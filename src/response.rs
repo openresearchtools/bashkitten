@@ -17,10 +17,16 @@ pub struct PendingToolCall {
     pub arguments: String,
 }
 
+#[derive(Clone)]
 pub struct ResponseAssembly {
+    diagnostics: Vec<Value>,
+    abort_message: String,
     blocks: BTreeMap<u64, ContentBlock>,
     pub calls: BTreeMap<u64, PendingToolCall>,
     response_id: Option<String>,
+    response_model: Option<String>,
+    end_turn: Option<bool>,
+    cost_multiplier: f64,
     usage: NormalizedUsage,
     pub stop_reason: StopReason,
     raw_stop_reason: Option<String>,
@@ -31,9 +37,14 @@ pub struct ResponseAssembly {
 impl Default for ResponseAssembly {
     fn default() -> Self {
         Self {
+            diagnostics: Vec::new(),
+            abort_message: "Request was aborted".into(),
             blocks: BTreeMap::new(),
             calls: BTreeMap::new(),
             response_id: None,
+            response_model: None,
+            end_turn: None,
+            cost_multiplier: 1.0,
             usage: NormalizedUsage::default(),
             stop_reason: StopReason::Stop,
             raw_stop_reason: None,
@@ -44,6 +55,9 @@ impl Default for ResponseAssembly {
 }
 
 impl ResponseAssembly {
+    pub fn error_message(&self) -> Option<&str> {
+        self.error.as_deref()
+    }
     pub fn fail(&mut self, error: String) {
         self.stop_reason = StopReason::Error;
         self.error = Some(error);
@@ -51,12 +65,63 @@ impl ResponseAssembly {
 
     pub fn abort(&mut self) {
         self.stop_reason = StopReason::Aborted;
-        self.error = Some("Request aborted".into());
+        self.error = Some(self.abort_message.clone());
     }
 
     pub fn push(&mut self, event: ProviderEvent) -> Option<Value> {
         match event {
-            ProviderEvent::Start { response_id } => self.response_id = response_id,
+            ProviderEvent::AbortMessage { message } => self.abort_message = message,
+            ProviderEvent::Diagnostic { diagnostic } => self.diagnostics.push(diagnostic),
+            ProviderEvent::BlockContent { index, block } => {
+                if block["type"] == "toolCall" {
+                    self.calls.insert(
+                        index,
+                        PendingToolCall {
+                            id: block["id"].as_str().unwrap_or_default().into(),
+                            name: block["name"].as_str().unwrap_or_default().into(),
+                            arguments: block["arguments"].to_string(),
+                        },
+                    );
+                }
+                match serde_json::from_value(block) {
+                    Ok(block) => {
+                        self.blocks.insert(index, block);
+                    }
+                    Err(error) => self.fail(format!("Invalid provider content: {error}")),
+                }
+            }
+            ProviderEvent::ResponseInfo {
+                response_id,
+                end_turn,
+                cost_multiplier,
+            } => {
+                if response_id.is_some() {
+                    self.response_id = response_id;
+                }
+                if end_turn.is_some() {
+                    self.end_turn = end_turn;
+                }
+                if let Some(value) = cost_multiplier {
+                    self.cost_multiplier = value;
+                }
+            }
+            ProviderEvent::Failure { message } => self.fail(message),
+            ProviderEvent::Start { response_id } => {
+                if response_id.is_some() {
+                    self.response_id = response_id;
+                }
+            }
+            ProviderEvent::Metadata {
+                response_id,
+                response_model,
+            } => {
+                if self.response_id.as_deref().is_none_or(str::is_empty) {
+                    self.response_id = response_id;
+                }
+                if self.response_model.as_deref().is_none_or(str::is_empty) {
+                    self.response_model = response_model;
+                }
+            }
             ProviderEvent::TextDelta { index, delta } => {
                 if let ContentBlock::Text { text, .. } = self
                     .blocks
@@ -163,18 +228,29 @@ impl ResponseAssembly {
                 ContentBlock::ToolCall {
                     id: call.id.clone(),
                     name: call.name.clone(),
-                    arguments: OrderedJsonValue::from(
-                        serde_json::from_str::<Value>(&call.arguments)
-                            .unwrap_or_else(|_| json!({})),
-                    ),
+                    arguments: OrderedJsonValue::from(crate::streaming_json::parse_streaming_json(
+                        &call.arguments,
+                    )),
                     thought_signature: None,
                     namespace: None,
+                    extra: Default::default(),
                 },
             );
         }
     }
 
     pub fn message(&self, provider: &str, model: &str, cost: &ModelCost) -> AgentMessage {
+        let mut usage = normalized_usage(&self.usage, cost);
+        if self.cost_multiplier != 1.0 {
+            usage.cost.input *= self.cost_multiplier;
+            usage.cost.output *= self.cost_multiplier;
+            usage.cost.cache_read *= self.cost_multiplier;
+            usage.cost.cache_write *= self.cost_multiplier;
+            usage.cost.total = usage.cost.input
+                + usage.cost.output
+                + usage.cost.cache_read
+                + usage.cost.cache_write;
+        }
         AgentMessage::Assistant {
             content: self.blocks.values().cloned().collect(),
             api: if provider == "openai-codex" {
@@ -185,10 +261,10 @@ impl ResponseAssembly {
             .into(),
             provider: provider.into(),
             model: model.into(),
-            response_model: None,
+            response_model: self.response_model.clone(),
             response_id: self.response_id.clone(),
-            diagnostics: None,
-            usage: normalized_usage(&self.usage, cost),
+            diagnostics: (!self.diagnostics.is_empty()).then(|| json!(self.diagnostics)),
+            usage,
             stop_reason: match self.stop_reason {
                 StopReason::Stop | StopReason::Unknown => crate::agent::StopReason::Stop,
                 StopReason::Length => crate::agent::StopReason::Length,
@@ -199,7 +275,7 @@ impl ResponseAssembly {
             deferred: None,
             error_message: self.error.clone(),
             raw_stop_reason: self.raw_stop_reason.clone(),
-            end_turn: None,
+            end_turn: self.end_turn,
             timestamp: self.timestamp,
         }
     }
@@ -220,7 +296,8 @@ pub fn normalized_usage(usage: &NormalizedUsage, model_cost: &ModelCost) -> Usag
         cache_read: usage.cache_read_tokens,
         cache_write: usage.cache_write_tokens,
         cache_write_1h: None,
-        reasoning: (usage.reasoning_tokens > 0).then_some(usage.reasoning_tokens),
+        reasoning: (usage.reasoning_present || usage.reasoning_tokens > 0)
+            .then_some(usage.reasoning_tokens),
         total_tokens: usage.total_tokens,
         ..Usage::default()
     };

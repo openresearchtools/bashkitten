@@ -1,4 +1,4 @@
-use crate::agent::{CostRates, CostTier, ModelCost};
+use crate::agent::ModelCost;
 use crate::config::{AppConfig, ModelPreset};
 use serde::{Deserialize, Serialize};
 
@@ -15,6 +15,10 @@ pub struct ModelInfo {
     pub default_thinking: String,
     pub cost: ModelCost,
     pub available: bool,
+    /// Authentication status is separate from router/model availability.
+    pub authentication: String,
+    /// Non-secret invocation and loading parameters from the shared registry.
+    pub parameters: serde_json::Value,
 }
 
 impl ModelInfo {
@@ -23,152 +27,25 @@ impl ModelInfo {
     }
 }
 
-fn codex_model(
-    id: &str,
-    name: &str,
-    context: u64,
-    image: bool,
-    xhigh: bool,
-    max: bool,
-    cost: ModelCost,
-) -> ModelInfo {
-    let mut levels = vec!["off", "minimal", "low", "medium", "high"];
-    if xhigh {
-        levels.push("xhigh");
-    }
-    if max {
-        levels.push("max");
-    }
-    if id == "gpt-6-astra" {
-        levels.retain(|level| !matches!(*level, "off" | "minimal"));
-    }
-    ModelInfo {
-        provider: "openai-codex".into(),
-        id: id.into(),
-        name: name.into(),
-        context_window: context,
-        max_tokens: 128_000,
-        input: if image {
-            vec!["text".into(), "image".into()]
-        } else {
-            vec!["text".into()]
-        },
-        reasoning: true,
-        thinking_levels: levels.into_iter().map(str::to_owned).collect(),
-        default_thinking: "medium".into(),
-        cost,
-        available: true,
-    }
-}
-
-fn cost(
-    input: f64,
-    output: f64,
-    cache_read: f64,
-    cache_write: f64,
-    tier: Option<CostRates>,
-) -> ModelCost {
-    ModelCost {
-        rates: CostRates {
-            input,
-            output,
-            cache_read,
-            cache_write,
-        },
-        tiers: tier
-            .into_iter()
-            .map(|rates| CostTier {
-                rates,
-                input_tokens_above: 272_000,
-            })
-            .collect(),
-    }
-}
-
-fn tier(input: f64, output: f64, cache_read: f64, cache_write: f64) -> CostRates {
-    CostRates {
-        input,
-        output,
-        cache_read,
-        cache_write,
-    }
-}
-
 pub fn codex_models() -> Vec<ModelInfo> {
-    vec![
-        codex_model(
-            "gpt-6-astra",
-            "GPT-6 Astra",
-            272_000,
-            true,
-            true,
-            true,
-            cost(10.0, 50.0, 1.0, 12.5, Some(tier(20.0, 75.0, 2.0, 25.0))),
-        ),
-        codex_model(
-            "gpt-5.3-codex-spark",
-            "GPT-5.3 Codex Spark",
-            128_000,
-            false,
-            true,
-            false,
-            cost(1.75, 14.0, 0.175, 0.0, None),
-        ),
-        codex_model(
-            "gpt-5.4",
-            "GPT-5.4",
-            272_000,
-            true,
-            true,
-            false,
-            cost(2.5, 15.0, 0.25, 0.0, Some(tier(5.0, 22.5, 0.5, 0.0))),
-        ),
-        codex_model(
-            "gpt-5.4-mini",
-            "GPT-5.4 mini",
-            272_000,
-            true,
-            true,
-            false,
-            cost(0.75, 4.5, 0.075, 0.0, None),
-        ),
-        codex_model(
-            "gpt-5.5",
-            "GPT-5.5",
-            272_000,
-            true,
-            true,
-            false,
-            cost(5.0, 30.0, 0.5, 0.0, Some(tier(10.0, 45.0, 1.0, 0.0))),
-        ),
-        codex_model(
-            "gpt-5.6-luna",
-            "GPT-5.6 Luna",
-            272_000,
-            true,
-            true,
-            true,
-            cost(0.2, 1.2, 0.02, 0.25, Some(tier(0.4, 1.8, 0.04, 0.5))),
-        ),
-        codex_model(
-            "gpt-5.6-sol",
-            "GPT-5.6 Sol",
-            272_000,
-            true,
-            true,
-            true,
-            cost(5.0, 30.0, 0.5, 6.25, Some(tier(10.0, 45.0, 1.0, 12.5))),
-        ),
-        codex_model(
-            "gpt-5.6-terra",
-            "GPT-5.6 Terra",
-            272_000,
-            true,
-            true,
-            true,
-            cost(2.0, 12.0, 0.2, 2.5, Some(tier(4.0, 18.0, 0.4, 5.0))),
-        ),
-    ]
+    crate::codex::catalog()
+        .into_iter()
+        .map(|model| ModelInfo {
+            provider: "openai-codex".into(),
+            id: model["id"].as_str().expect("catalog ID").into(),
+            name: model["name"].as_str().expect("catalog name").into(),
+            context_window: model["contextWindow"].as_u64().expect("catalog context"),
+            max_tokens: model["maxTokens"].as_u64().expect("catalog maximum"),
+            input: serde_json::from_value(model["input"].clone()).expect("catalog inputs"),
+            reasoning: model["reasoning"] == true,
+            thinking_levels: crate::codex::thinking_levels(&model),
+            default_thinking: "medium".into(),
+            cost: serde_json::from_value(model["cost"].clone()).expect("catalog costs"),
+            available: true,
+            authentication: "authenticated".into(),
+            parameters: model,
+        })
+        .collect()
 }
 
 fn from_preset(provider: &str, p: &ModelPreset, available: bool) -> ModelInfo {
@@ -188,6 +65,8 @@ fn from_preset(provider: &str, p: &ModelPreset, available: bool) -> ModelInfo {
         default_thinking: p.default_thinking.clone(),
         cost: p.cost.clone(),
         available,
+        authentication: "not_required".into(),
+        parameters: serde_json::json!({}),
     }
 }
 
@@ -199,22 +78,66 @@ pub fn all_models(
     let mut out = codex_models();
     for model in &mut out {
         model.available = codex_authenticated;
+        model.authentication = if codex_authenticated {
+            "authenticated"
+        } else {
+            "required"
+        }
+        .into();
     }
     for provider in &config.compatible_providers {
-        out.extend(
-            provider
-                .models
-                .iter()
-                .map(|p| from_preset(&provider.id, p, true)),
-        );
+        out.extend(provider.models.iter().map(|p| {
+            let mut model = from_preset(&provider.id, p, true);
+            model.authentication = match &provider.auth {
+                crate::config::CompatibleAuth::None => "not_required",
+                crate::config::CompatibleAuth::Bearer { secret }
+                | crate::config::CompatibleAuth::Header { secret, .. } => {
+                    if secret.is_empty() {
+                        "required"
+                    } else {
+                        "configured"
+                    }
+                }
+            }
+            .into();
+            model.available = model.authentication != "required";
+            model.parameters =
+                crate::completions::preset_model(&provider.id, &provider.base_url, p, false);
+            model
+        }));
     }
-    out.extend(
-        config
-            .llama
-            .models
-            .iter()
-            .map(|p| from_preset("llama.cpp", p, llama_available)),
-    );
+    out.extend(config.llama.models.iter().map(|p| {
+        let reported = config.llama.catalog.iter().find(|m| m["id"] == p.id);
+        let mut model = from_preset(
+            "llama.cpp",
+            p,
+            llama_available
+                && reported
+                    .is_some_and(|m| crate::llama::selectable(m, config.llama.router_autoload)),
+        );
+        model.authentication = if config.llama.api_key.is_empty() {
+            "not_required"
+        } else {
+            "configured"
+        }
+        .into();
+        model.parameters = crate::completions::preset_model(
+            "llama.cpp",
+            &format!("http://127.0.0.1:{}/v1", config.llama.port),
+            p,
+            true,
+        );
+        model.parameters["llamaOptions"] = serde_json::json!(p.llama_options);
+        model.parameters["llamaModelPath"] = serde_json::json!(p.llama_model_path);
+        if let Some(entry) = reported
+            .filter(|m| matches!(m["status"]["value"].as_str(), Some("loaded" | "sleeping")))
+            && entry["meta"]["n_ctx"].as_u64().is_some_and(|n| n > 0)
+        {
+            model.context_window = entry["meta"]["n_ctx"].as_u64().unwrap();
+            model.parameters["contextWindow"] = serde_json::json!(model.context_window);
+        }
+        model
+    }));
     out
 }
 
@@ -229,8 +152,33 @@ pub fn find_model(
         .find(|m| m.full_id() == full_id)
 }
 
+/// One launch/switch validation path for Web, CLI and session workers.
+pub fn resolve_model(
+    config: &AppConfig,
+    full_id: &str,
+    thinking: &str,
+    codex_authenticated: bool,
+    llama_available: bool,
+) -> anyhow::Result<ModelInfo> {
+    let model = find_model(config, full_id, codex_authenticated, llama_available)
+        .filter(|model| model.available)
+        .ok_or_else(|| anyhow::anyhow!("Unknown or unavailable model: {full_id}"))?;
+    if !model.thinking_levels.iter().any(|level| level == thinking) {
+        anyhow::bail!("Thinking level {thinking} is not supported by {full_id}");
+    }
+    Ok(model)
+}
+
 #[cfg(test)]
 mod tests {
+    fn tier(input: f64, output: f64, cache_read: f64, cache_write: f64) -> crate::agent::CostRates {
+        crate::agent::CostRates {
+            input,
+            output,
+            cache_read,
+            cache_write,
+        }
+    }
     use super::*;
 
     #[test]
@@ -244,7 +192,7 @@ mod tests {
         assert_eq!(astra.input, ["text", "image"]);
         assert_eq!(
             astra.thinking_levels,
-            ["low", "medium", "high", "xhigh", "max"]
+            ["minimal", "low", "medium", "high", "xhigh", "max"]
         );
         assert_eq!(astra.cost.rates, tier(10.0, 50.0, 1.0, 12.5));
         assert_eq!(astra.cost.tiers[0].rates, tier(20.0, 75.0, 2.0, 25.0));

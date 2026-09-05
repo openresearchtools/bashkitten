@@ -1,0 +1,3806 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "model": {
+    "api": "openai-completions",
+    "id": "model",
+    "provider": "fixture",
+    "name": "Fixture",
+    "baseUrl": "http://127.0.0.1",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 2000,
+    "maxTokens": 1000,
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    }
+  },
+  "summaryUsage": {
+    "input": 100,
+    "output": 10,
+    "cacheRead": 20,
+    "cacheWrite": 0,
+    "totalTokens": 130,
+    "cost": {
+      "input": 0.1,
+      "output": 0.2,
+      "cacheRead": 0.01,
+      "cacheWrite": 0,
+      "total": 0.31
+    }
+  },
+  "cases": [
+    {
+      "name": "empty",
+      "entries": [],
+      "settings": {
+        "enabled": true,
+        "reserveTokens": 200,
+        "keepRecentTokens": 20
+      },
+      "messages": [],
+      "estimate": {
+        "tokens": 0,
+        "usageTokens": 0,
+        "trailingTokens": 0,
+        "lastUsageIndex": null
+      },
+      "cut": {
+        "firstKeptEntryIndex": 0,
+        "turnStartIndex": -1,
+        "isSplitTurn": false
+      },
+      "preparation": null,
+      "requests": [],
+      "result": null
+    },
+    {
+      "name": "tiny",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "settings": {
+        "enabled": true,
+        "reserveTokens": 200,
+        "keepRecentTokens": 20
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "hi"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        }
+      ],
+      "estimate": {
+        "tokens": 130,
+        "usageTokens": 130,
+        "trailingTokens": 0,
+        "lastUsageIndex": 1
+      },
+      "cut": {
+        "firstKeptEntryIndex": 0,
+        "turnStartIndex": -1,
+        "isSplitTurn": false
+      },
+      "preparation": null,
+      "requests": [],
+      "result": null
+    },
+    {
+      "name": "history",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "settings": {
+        "enabled": true,
+        "reserveTokens": 200,
+        "keepRecentTokens": 20
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "latest"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        }
+      ],
+      "estimate": {
+        "tokens": 130,
+        "usageTokens": 130,
+        "trailingTokens": 0,
+        "lastUsageIndex": 3
+      },
+      "cut": {
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": -1,
+        "isSplitTurn": false
+      },
+      "preparation": {
+        "firstKeptEntryId": "e2",
+        "messagesToSummarize": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        ],
+        "turnPrefixMessages": [],
+        "isSplitTurn": false,
+        "tokensBefore": 130,
+        "fileOps": {
+          "read": [],
+          "written": [],
+          "edited": []
+        },
+        "settings": {
+          "enabled": true,
+          "reserveTokens": 200,
+          "keepRecentTokens": 20
+        }
+      },
+      "requests": [
+        {
+          "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<conversation>\n[User]: old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old \n\n[Assistant]: done\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: preserve tests"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "maxTokens": 160,
+            "reasoning": "low",
+            "cacheRetention": "none",
+            "sessionId": "fixture-session"
+          }
+        }
+      ],
+      "result": {
+        "summary": "summary 1",
+        "firstKeptEntryId": "e2",
+        "tokensBefore": 130,
+        "usage": {
+          "input": 100,
+          "output": 10,
+          "cacheRead": 20,
+          "cacheWrite": 0,
+          "totalTokens": 130,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        }
+      }
+    },
+    {
+      "name": "split",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer "
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new"
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "settings": {
+        "enabled": true,
+        "reserveTokens": 200,
+        "keepRecentTokens": 20
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer "
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "new"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "latest"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        }
+      ],
+      "estimate": {
+        "tokens": 130,
+        "usageTokens": 130,
+        "trailingTokens": 0,
+        "lastUsageIndex": 3
+      },
+      "cut": {
+        "firstKeptEntryIndex": 1,
+        "turnStartIndex": 0,
+        "isSplitTurn": true
+      },
+      "preparation": {
+        "firstKeptEntryId": "e1",
+        "messagesToSummarize": [],
+        "turnPrefixMessages": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        ],
+        "isSplitTurn": true,
+        "tokensBefore": 130,
+        "fileOps": {
+          "read": [],
+          "written": [],
+          "edited": []
+        },
+        "settings": {
+          "enabled": true,
+          "reserveTokens": 200,
+          "keepRecentTokens": 20
+        }
+      },
+      "requests": [
+        {
+          "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<conversation>\n[User]: old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old \n</conversation>\n\nThis is the PREFIX of a turn that was too large to keep. The SUFFIX (recent work) is retained.\n\nSummarize the prefix to provide context for the retained suffix:\n\n## Original Request\n[What did the user ask for in this turn?]\n\n## Early Progress\n- [Key decisions and work done in the prefix]\n\n## Context for Suffix\n- [Information needed to understand the retained recent work]\n\nBe concise. Focus on what's needed to understand the kept suffix."
+                }
+              ]
+            }
+          ],
+          "options": {
+            "maxTokens": 100,
+            "reasoning": "low",
+            "cacheRetention": "none",
+            "sessionId": "fixture-session"
+          }
+        }
+      ],
+      "result": {
+        "summary": "No prior history.\n\n---\n\n**Turn Context (split turn):**\n\nsummary 1",
+        "firstKeptEntryId": "e1",
+        "tokensBefore": 130,
+        "usage": {
+          "input": 100,
+          "output": 10,
+          "cacheRead": 20,
+          "cacheWrite": 0,
+          "totalTokens": 130,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        }
+      }
+    },
+    {
+      "name": "tools",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call",
+                "name": "edit",
+                "arguments": {
+                  "path": "a.ts",
+                  "edits": [
+                    {
+                      "oldText": "a",
+                      "newText": "b"
+                    }
+                  ]
+                }
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "call",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1001
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e4",
+          "parentId": "e3",
+          "timestamp": "1970-01-01T00:00:01.004Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "settings": {
+        "enabled": true,
+        "reserveTokens": 200,
+        "keepRecentTokens": 20
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "call",
+              "name": "edit",
+              "arguments": {
+                "path": "a.ts",
+                "edits": [
+                  {
+                    "oldText": "a",
+                    "newText": "b"
+                  }
+                ]
+              }
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "call",
+          "toolName": "edit",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "isError": false,
+          "timestamp": 1001
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "latest"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        }
+      ],
+      "estimate": {
+        "tokens": 130,
+        "usageTokens": 130,
+        "trailingTokens": 0,
+        "lastUsageIndex": 4
+      },
+      "cut": {
+        "firstKeptEntryIndex": 3,
+        "turnStartIndex": -1,
+        "isSplitTurn": false
+      },
+      "preparation": {
+        "firstKeptEntryId": "e3",
+        "messagesToSummarize": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call",
+                "name": "edit",
+                "arguments": {
+                  "path": "a.ts",
+                  "edits": [
+                    {
+                      "oldText": "a",
+                      "newText": "b"
+                    }
+                  ]
+                }
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1001
+          }
+        ],
+        "turnPrefixMessages": [],
+        "isSplitTurn": false,
+        "tokensBefore": 130,
+        "fileOps": {
+          "read": [],
+          "written": [],
+          "edited": [
+            "a.ts"
+          ]
+        },
+        "settings": {
+          "enabled": true,
+          "reserveTokens": 200,
+          "keepRecentTokens": 20
+        }
+      },
+      "requests": [
+        {
+          "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<conversation>\n[User]: old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old \n\n[Assistant tool calls]: edit(path=\"a.ts\", edits=[{\"oldText\":\"a\",\"newText\":\"b\"}])\n\n[Tool result]: done\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: preserve tests"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "maxTokens": 160,
+            "reasoning": "low",
+            "cacheRetention": "none",
+            "sessionId": "fixture-session"
+          }
+        }
+      ],
+      "result": {
+        "summary": "summary 1\n\n<modified-files>\na.ts\n</modified-files>",
+        "firstKeptEntryId": "e3",
+        "tokensBefore": 130,
+        "usage": {
+          "input": 100,
+          "output": 10,
+          "cacheRead": 20,
+          "cacheWrite": 0,
+          "totalTokens": 130,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": [
+            "a.ts"
+          ]
+        }
+      }
+    },
+    {
+      "name": "unicode",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "thought",
+                "thinkingSignature": "signature"
+              },
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "settings": {
+        "enabled": true,
+        "reserveTokens": 200,
+        "keepRecentTokens": 20
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "thought",
+              "thinkingSignature": "signature"
+            },
+            {
+              "type": "text",
+              "text": "answer"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        }
+      ],
+      "estimate": {
+        "tokens": 130,
+        "usageTokens": 130,
+        "trailingTokens": 0,
+        "lastUsageIndex": 3
+      },
+      "cut": {
+        "firstKeptEntryIndex": 2,
+        "turnStartIndex": -1,
+        "isSplitTurn": false
+      },
+      "preparation": {
+        "firstKeptEntryId": "e2",
+        "messagesToSummarize": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 "
+              }
+            ],
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        ],
+        "turnPrefixMessages": [],
+        "isSplitTurn": false,
+        "tokensBefore": 130,
+        "fileOps": {
+          "read": [],
+          "written": [],
+          "edited": []
+        },
+        "settings": {
+          "enabled": true,
+          "reserveTokens": 200,
+          "keepRecentTokens": 20
+        }
+      },
+      "requests": [
+        {
+          "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<conversation>\n[User]: 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 \n\n[Assistant]: done\n</conversation>\n\nThe messages above are a conversation to summarize. Create a structured context checkpoint summary that another LLM will use to continue the work.\n\nUse this EXACT format:\n\n## Goal\n[What is the user trying to accomplish? Can be multiple items if the session covers different tasks.]\n\n## Constraints & Preferences\n- [Any constraints, preferences, or requirements mentioned by user]\n- [Or \"(none)\" if none were mentioned]\n\n## Progress\n### Done\n- [x] [Completed tasks/changes]\n\n### In Progress\n- [ ] [Current work]\n\n### Blocked\n- [Issues preventing progress, if any]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale]\n\n## Next Steps\n1. [Ordered list of what should happen next]\n\n## Critical Context\n- [Any data, examples, or references needed to continue]\n- [Or \"(none)\" if not applicable]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: preserve tests"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "maxTokens": 160,
+            "reasoning": "low",
+            "cacheRetention": "none",
+            "sessionId": "fixture-session"
+          }
+        }
+      ],
+      "result": {
+        "summary": "summary 1",
+        "firstKeptEntryId": "e2",
+        "tokensBefore": 130,
+        "usage": {
+          "input": 100,
+          "output": 10,
+          "cacheRead": 20,
+          "cacheWrite": 0,
+          "totalTokens": 130,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "details": {
+          "readFiles": [],
+          "modifiedFiles": []
+        }
+      }
+    },
+    {
+      "name": "iterative",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c0",
+          "parentId": "e3",
+          "timestamp": "1970-01-01T00:00:01.100Z",
+          "summary": "previous checkpoint",
+          "firstKeptEntryId": "e2",
+          "tokensBefore": 1000,
+          "details": {
+            "readFiles": [
+              "a.ts"
+            ],
+            "modifiedFiles": [
+              "b.ts"
+            ]
+          },
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          }
+        },
+        {
+          "type": "message",
+          "id": "e4",
+          "parentId": "c0",
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e5",
+          "parentId": "e4",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "end"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "settings": {
+        "enabled": true,
+        "reserveTokens": 200,
+        "keepRecentTokens": 20
+      },
+      "messages": [
+        {
+          "role": "compactionSummary",
+          "summary": "previous checkpoint",
+          "tokensBefore": 1000,
+          "timestamp": 1100
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent "
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "openai-completions",
+          "provider": "fixture",
+          "model": "model",
+          "content": [
+            {
+              "type": "text",
+              "text": "end"
+            }
+          ],
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1000
+        }
+      ],
+      "estimate": {
+        "tokens": 130,
+        "usageTokens": 130,
+        "trailingTokens": 0,
+        "lastUsageIndex": 4
+      },
+      "cut": {
+        "firstKeptEntryIndex": 5,
+        "turnStartIndex": -1,
+        "isSplitTurn": false
+      },
+      "preparation": {
+        "firstKeptEntryId": "e4",
+        "messagesToSummarize": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept "
+              }
+            ],
+            "timestamp": 1
+          },
+          {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        ],
+        "turnPrefixMessages": [],
+        "isSplitTurn": false,
+        "tokensBefore": 130,
+        "previousSummary": "previous checkpoint",
+        "fileOps": {
+          "read": [
+            "a.ts"
+          ],
+          "written": [],
+          "edited": [
+            "b.ts"
+          ]
+        },
+        "settings": {
+          "enabled": true,
+          "reserveTokens": 200,
+          "keepRecentTokens": 20
+        }
+      },
+      "requests": [
+        {
+          "systemPrompt": "You are a context summarization assistant. Your task is to read a conversation between a user and an AI assistant, then produce a structured summary following the exact format specified.\n\nDo NOT continue the conversation. Do NOT respond to any questions in the conversation. ONLY output the structured summary.",
+          "messages": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "<conversation>\n[User]: kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept \n\n[Assistant]: done\n</conversation>\n\n<previous-summary>\nprevious checkpoint\n</previous-summary>\n\nThe messages above are NEW conversation messages to incorporate into the existing summary provided in <previous-summary> tags.\n\nUpdate the existing structured summary with new information. RULES:\n- PRESERVE all existing information from the previous summary\n- ADD new progress, decisions, and context from the new messages\n- UPDATE the Progress section: move items from \"In Progress\" to \"Done\" when completed\n- UPDATE \"Next Steps\" based on what was accomplished\n- PRESERVE exact file paths, function names, and error messages\n- If something is no longer relevant, you may remove it\n\nUse this EXACT format:\n\n## Goal\n[Preserve existing goals, add new ones if the task expanded]\n\n## Constraints & Preferences\n- [Preserve existing, add new ones discovered]\n\n## Progress\n### Done\n- [x] [Include previously done items AND newly completed items]\n\n### In Progress\n- [ ] [Current work - update based on progress]\n\n### Blocked\n- [Current blockers - remove if resolved]\n\n## Key Decisions\n- **[Decision]**: [Brief rationale] (preserve all previous, add new)\n\n## Next Steps\n1. [Update based on current state]\n\n## Critical Context\n- [Preserve important context, add new if needed]\n\nKeep each section concise. Preserve exact file paths, function names, and error messages.\n\nAdditional focus: preserve tests"
+                }
+              ]
+            }
+          ],
+          "options": {
+            "maxTokens": 160,
+            "reasoning": "low",
+            "cacheRetention": "none",
+            "sessionId": "fixture-session"
+          }
+        }
+      ],
+      "result": {
+        "summary": "summary 1\n\n<read-files>\na.ts\n</read-files>\n\n<modified-files>\nb.ts\n</modified-files>",
+        "firstKeptEntryId": "e4",
+        "tokensBefore": 130,
+        "usage": {
+          "input": 100,
+          "output": 10,
+          "cacheRead": 20,
+          "cacheWrite": 0,
+          "totalTokens": 130,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "details": {
+          "readFiles": [
+            "a.ts"
+          ],
+          "modifiedFiles": [
+            "b.ts"
+          ]
+        }
+      }
+    }
+  ],
+  "recovery": [
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "overloaded"
+      },
+      "retryable": true,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "429"
+      },
+      "retryable": true,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "insufficient_quota"
+      },
+      "retryable": false,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "billing"
+      },
+      "retryable": false,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "maximum context length is 2000 tokens"
+      },
+      "retryable": false,
+      "overflow": true
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "too many requests"
+      },
+      "retryable": true,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "request_too_large"
+      },
+      "retryable": false,
+      "overflow": true
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "stream ended before a terminal response event"
+      },
+      "retryable": true,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "Request aborted"
+      },
+      "retryable": false,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "ResourceExhausted"
+      },
+      "retryable": true,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "400 (no body)"
+      },
+      "retryable": false,
+      "overflow": true
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "rate limit context length exceeded"
+      },
+      "retryable": true,
+      "overflow": false
+    },
+    {
+      "message": {
+        "role": "assistant",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "model",
+        "content": [],
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0.1,
+            "output": 0.2,
+            "cacheRead": 0.01,
+            "cacheWrite": 0,
+            "total": 0.31
+          }
+        },
+        "stopReason": "error",
+        "timestamp": 1000,
+        "errorMessage": "exceeds the available context size"
+      },
+      "retryable": false,
+      "overflow": true
+    }
+  ],
+  "usageCases": [
+    {
+      "name": "empty",
+      "entries": [],
+      "contextWindow": 2000,
+      "subscription": false,
+      "auto": true,
+      "text": "0.0%/2.0k (auto)"
+    },
+    {
+      "name": "empty",
+      "entries": [],
+      "contextWindow": 2000,
+      "subscription": true,
+      "auto": false,
+      "text": "$0.000 (sub) 0.0%/2.0k"
+    },
+    {
+      "name": "tiny",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": false,
+      "auto": true,
+      "text": "↑100 ↓10 R20 CH16.7% $0.310 6.5%/2.0k (auto)"
+    },
+    {
+      "name": "tiny",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "hi"
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": true,
+      "auto": false,
+      "text": "↑100 ↓10 R20 CH16.7% $0.310 (sub) 6.5%/2.0k"
+    },
+    {
+      "name": "history",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": false,
+      "auto": true,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 6.5%/2.0k (auto)"
+    },
+    {
+      "name": "history",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": true,
+      "auto": false,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 (sub) 6.5%/2.0k"
+    },
+    {
+      "name": "split",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer "
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new"
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": false,
+      "auto": true,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 6.5%/2.0k (auto)"
+    },
+    {
+      "name": "split",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer answer "
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new"
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": true,
+      "auto": false,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 (sub) 6.5%/2.0k"
+    },
+    {
+      "name": "tools",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call",
+                "name": "edit",
+                "arguments": {
+                  "path": "a.ts",
+                  "edits": [
+                    {
+                      "oldText": "a",
+                      "newText": "b"
+                    }
+                  ]
+                }
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "call",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1001
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e4",
+          "parentId": "e3",
+          "timestamp": "1970-01-01T00:00:01.004Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": false,
+      "auto": true,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 6.5%/2.0k (auto)"
+    },
+    {
+      "name": "tools",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call",
+                "name": "edit",
+                "arguments": {
+                  "path": "a.ts",
+                  "edits": [
+                    {
+                      "oldText": "a",
+                      "newText": "b"
+                    }
+                  ]
+                }
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "call",
+            "toolName": "edit",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1001
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e4",
+          "parentId": "e3",
+          "timestamp": "1970-01-01T00:00:01.004Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "latest"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": true,
+      "auto": false,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 (sub) 6.5%/2.0k"
+    },
+    {
+      "name": "unicode",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "thought",
+                "thinkingSignature": "signature"
+              },
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": false,
+      "auto": true,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 6.5%/2.0k (auto)"
+    },
+    {
+      "name": "unicode",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 🙂漢字 "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "new new new new new new new new new new new new new new new new new new new new new new new new new new new new new new "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "thinking",
+                "thinking": "thought",
+                "thinkingSignature": "signature"
+              },
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": true,
+      "auto": false,
+      "text": "↑200 ↓20 R40 CH16.7% $0.620 (sub) 6.5%/2.0k"
+    },
+    {
+      "name": "iterative",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c0",
+          "parentId": "e3",
+          "timestamp": "1970-01-01T00:00:01.100Z",
+          "summary": "previous checkpoint",
+          "firstKeptEntryId": "e2",
+          "tokensBefore": 1000,
+          "details": {
+            "readFiles": [
+              "a.ts"
+            ],
+            "modifiedFiles": [
+              "b.ts"
+            ]
+          },
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          }
+        },
+        {
+          "type": "message",
+          "id": "e4",
+          "parentId": "c0",
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e5",
+          "parentId": "e4",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "end"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": false,
+      "auto": true,
+      "text": "↑400 ↓40 R80 CH16.7% $1.240 6.5%/2.0k (auto)"
+    },
+    {
+      "name": "iterative",
+      "entries": [
+        {
+          "type": "message",
+          "id": "e0",
+          "parentId": null,
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old old "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e1",
+          "parentId": "e0",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "message",
+          "id": "e2",
+          "parentId": "e1",
+          "timestamp": "1970-01-01T00:00:01.002Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept kept "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e3",
+          "parentId": "e2",
+          "timestamp": "1970-01-01T00:00:01.003Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "c0",
+          "parentId": "e3",
+          "timestamp": "1970-01-01T00:00:01.100Z",
+          "summary": "previous checkpoint",
+          "firstKeptEntryId": "e2",
+          "tokensBefore": 1000,
+          "details": {
+            "readFiles": [
+              "a.ts"
+            ],
+            "modifiedFiles": [
+              "b.ts"
+            ]
+          },
+          "usage": {
+            "input": 100,
+            "output": 10,
+            "cacheRead": 20,
+            "cacheWrite": 0,
+            "totalTokens": 130,
+            "cost": {
+              "input": 0.1,
+              "output": 0.2,
+              "cacheRead": 0.01,
+              "cacheWrite": 0,
+              "total": 0.31
+            }
+          }
+        },
+        {
+          "type": "message",
+          "id": "e4",
+          "parentId": "c0",
+          "timestamp": "1970-01-01T00:00:01.000Z",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent recent "
+              }
+            ],
+            "timestamp": 1
+          }
+        },
+        {
+          "type": "message",
+          "id": "e5",
+          "parentId": "e4",
+          "timestamp": "1970-01-01T00:00:01.001Z",
+          "message": {
+            "role": "assistant",
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "content": [
+              {
+                "type": "text",
+                "text": "end"
+              }
+            ],
+            "usage": {
+              "input": 100,
+              "output": 10,
+              "cacheRead": 20,
+              "cacheWrite": 0,
+              "totalTokens": 130,
+              "cost": {
+                "input": 0.1,
+                "output": 0.2,
+                "cacheRead": 0.01,
+                "cacheWrite": 0,
+                "total": 0.31
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 1000
+          }
+        }
+      ],
+      "contextWindow": 2000,
+      "subscription": true,
+      "auto": false,
+      "text": "↑400 ↓40 R80 CH16.7% $1.240 (sub) 6.5%/2.0k"
+    }
+  ],
+  "fixedCases": [
+    {
+      "value": 0,
+      "digits": 1,
+      "text": "0.0"
+    },
+    {
+      "value": 0,
+      "digits": 3,
+      "text": "0.000"
+    },
+    {
+      "value": 0.0625,
+      "digits": 1,
+      "text": "0.1"
+    },
+    {
+      "value": 0.0625,
+      "digits": 3,
+      "text": "0.063"
+    },
+    {
+      "value": 0.0005,
+      "digits": 1,
+      "text": "0.0"
+    },
+    {
+      "value": 0.0005,
+      "digits": 3,
+      "text": "0.001"
+    },
+    {
+      "value": 0.3125,
+      "digits": 1,
+      "text": "0.3"
+    },
+    {
+      "value": 0.3125,
+      "digits": 3,
+      "text": "0.313"
+    },
+    {
+      "value": 1.25,
+      "digits": 1,
+      "text": "1.3"
+    },
+    {
+      "value": 1.25,
+      "digits": 3,
+      "text": "1.250"
+    },
+    {
+      "value": 2.55,
+      "digits": 1,
+      "text": "2.5"
+    },
+    {
+      "value": 2.55,
+      "digits": 3,
+      "text": "2.550"
+    },
+    {
+      "value": 9.95,
+      "digits": 1,
+      "text": "9.9"
+    },
+    {
+      "value": 9.95,
+      "digits": 3,
+      "text": "9.950"
+    },
+    {
+      "value": 99.95,
+      "digits": 1,
+      "text": "100.0"
+    },
+    {
+      "value": 99.95,
+      "digits": 3,
+      "text": "99.950"
+    },
+    {
+      "value": 100.005,
+      "digits": 1,
+      "text": "100.0"
+    },
+    {
+      "value": 100.005,
+      "digits": 3,
+      "text": "100.005"
+    }
+  ],
+  "tokenCases": [
+    {
+      "value": 0,
+      "text": "0"
+    },
+    {
+      "value": 999,
+      "text": "999"
+    },
+    {
+      "value": 1000,
+      "text": "1.0k"
+    },
+    {
+      "value": 1050,
+      "text": "1.1k"
+    },
+    {
+      "value": 1250,
+      "text": "1.3k"
+    },
+    {
+      "value": 2550,
+      "text": "2.5k"
+    },
+    {
+      "value": 9999,
+      "text": "10.0k"
+    },
+    {
+      "value": 10000,
+      "text": "10k"
+    },
+    {
+      "value": 10500,
+      "text": "11k"
+    },
+    {
+      "value": 999499,
+      "text": "999k"
+    },
+    {
+      "value": 999500,
+      "text": "1000k"
+    },
+    {
+      "value": 1000000,
+      "text": "1.0M"
+    },
+    {
+      "value": 9999999,
+      "text": "10.0M"
+    },
+    {
+      "value": 10000000,
+      "text": "10M"
+    }
+  ]
+}

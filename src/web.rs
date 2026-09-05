@@ -26,12 +26,17 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 
 const COOKIE: &str = "bashkitten_session";
+mod llama_api;
 
 #[derive(Clone)]
 pub struct WebState {
     pub paths: AppPaths,
     pub config: Arc<RwLock<AppConfig>>,
+    bound_port: u16,
+    csrf_tokens: Arc<RwLock<std::collections::BTreeMap<String, String>>>,
+    restart_pending: Arc<std::sync::atomic::AtomicBool>,
     pub oauth: crate::oauth::LoginManager,
+    pub llama_operation: llama_api::Operations,
 }
 
 #[derive(Debug)]
@@ -105,6 +110,8 @@ struct AttachmentQuery {
 #[derive(Deserialize)]
 struct FolderQuery {
     path: Option<PathBuf>,
+    #[serde(default)]
+    nearest: bool,
 }
 
 #[derive(Deserialize)]
@@ -122,13 +129,18 @@ struct Bootstrap {
     version: &'static str,
 }
 
-pub fn router(paths: AppPaths, config: AppConfig) -> Router {
+pub fn router(paths: AppPaths, config: AppConfig) -> Result<Router> {
+    let csrf_tokens = Arc::new(RwLock::new(auth::prepare_csrf_tokens(&paths)?));
     let state = WebState {
         paths,
+        csrf_tokens,
+        bound_port: config.web_port,
+        restart_pending: Default::default(),
         config: Arc::new(RwLock::new(config)),
         oauth: crate::oauth::LoginManager::default(),
+        llama_operation: Default::default(),
     };
-    Router::new()
+    Ok(Router::new()
         .route("/", get(index))
         .route("/api/bootstrap", get(bootstrap))
         .route("/api/signup", post(signup))
@@ -137,6 +149,10 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
         .route("/api/models", get(list_models))
         .route("/api/sessions", get(list_sessions).post(create_session))
         .route("/api/sessions/{id}/segments/{segment}", get(read_segment))
+        .route(
+            "/api/sessions/{id}/segments/current",
+            get(read_current_segment),
+        )
         .route("/api/sessions/{id}/events", get(events))
         .route("/api/sessions/{id}/messages", post(send_message))
         .route("/api/sessions/{id}/fork", post(fork_session))
@@ -147,6 +163,7 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
         .route("/api/sessions/{id}/status", get(session_status))
         .route("/api/sessions/{id}/queue", post(mutate_queue))
         .route("/api/sessions/{id}/stop", post(stop_session))
+        .route("/api/sessions/{id}/compact", post(compact_session))
         .route("/api/sessions/{id}/model", post(change_model))
         .route("/api/sessions/{id}/cwd", post(change_cwd))
         .route("/api/folders", get(list_folders).post(create_folder))
@@ -159,6 +176,7 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
         .route("/api/provider/login/cancel", post(provider_login_cancel))
         .route("/api/provider/logout", post(provider_logout))
         .route("/api/llama/restart", post(restart_llama))
+        .merge(llama_api::routes())
         .layer(DefaultBodyLimit::max(32 * 1024 * 1024))
         .layer(axum::middleware::from_fn(
             |request: axum::extract::Request, next: axum::middleware::Next| async move {
@@ -169,7 +187,7 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Router {
                 response
             },
         ))
-        .with_state(state)
+        .with_state(state))
 }
 
 async fn index() -> Html<&'static str> {
@@ -197,10 +215,7 @@ fn authenticated(state: &WebState, headers: &HeaderMap) -> ApiResult<(String, au
 }
 
 fn configured_origin(state: &WebState) -> String {
-    format!(
-        "http://127.0.0.1:{}",
-        state.config.read().expect("config lock").web_port
-    )
+    format!("http://127.0.0.1:{}", state.bound_port)
 }
 
 fn require_origin(state: &WebState, headers: &HeaderMap) -> ApiResult<()> {
@@ -208,7 +223,7 @@ fn require_origin(state: &WebState, headers: &HeaderMap) -> ApiResult<()> {
         .get(header::ORIGIN)
         .and_then(|v| v.to_str().ok())
         .unwrap_or_default();
-    if supplied != configured_origin(state) {
+    if headers.get_all(header::ORIGIN).iter().count() != 1 || supplied != configured_origin(state) {
         return Err(ApiError(
             StatusCode::FORBIDDEN,
             "Invalid request origin".into(),
@@ -230,7 +245,13 @@ fn require_mutation(state: &WebState, headers: &HeaderMap) -> ApiResult<String> 
     Ok(token)
 }
 
-fn login_response(login: auth::NewLogin) -> Response {
+fn login_response(state: &WebState, login: auth::NewLogin) -> ApiResult<Response> {
+    let session = auth::validate(&state.paths, &login.token)?;
+    state
+        .csrf_tokens
+        .write()
+        .expect("CSRF token lock")
+        .insert(session.token_hash, login.csrf.clone());
     let cookie = format!(
         "{COOKIE}={}; HttpOnly; SameSite=Strict; Path=/; Max-Age={}",
         login.token,
@@ -241,18 +262,21 @@ fn login_response(login: auth::NewLogin) -> Response {
         header::SET_COOKIE,
         HeaderValue::from_str(&cookie).expect("cookie"),
     );
-    response
+    Ok(response)
 }
 
 async fn bootstrap(State(state): State<WebState>, headers: HeaderMap) -> Json<Bootstrap> {
     let has_user = auth::has_user(&state.paths);
     let csrf = cookie_token(&headers)
-        .and_then(|token| {
-            auth::validate(&state.paths, token)
-                .ok()
-                .map(|_| token.to_owned())
-        })
-        .and_then(|token| auth::rotate_csrf(&state.paths, &token).ok());
+        .and_then(|token| auth::validate(&state.paths, token).ok())
+        .and_then(|session| {
+            state
+                .csrf_tokens
+                .read()
+                .expect("CSRF token lock")
+                .get(&session.token_hash)
+                .cloned()
+        });
     Json(Bootstrap {
         has_user,
         authenticated: csrf.is_some(),
@@ -267,11 +291,10 @@ async fn signup(
     Json(body): Json<Credentials>,
 ) -> ApiResult<Response> {
     require_origin(&state, &headers)?;
-    Ok(login_response(auth::signup(
-        &state.paths,
-        &body.username,
-        &body.password,
-    )?))
+    login_response(
+        &state,
+        auth::signup(&state.paths, &body.username, &body.password)?,
+    )
 }
 
 async fn login(
@@ -280,16 +303,21 @@ async fn login(
     Json(body): Json<Credentials>,
 ) -> ApiResult<Response> {
     require_origin(&state, &headers)?;
-    Ok(login_response(auth::login(
-        &state.paths,
-        &body.username,
-        &body.password,
-    )?))
+    login_response(
+        &state,
+        auth::login(&state.paths, &body.username, &body.password)?,
+    )
 }
 
 async fn logout(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<Response> {
     let token = require_mutation(&state, &headers)?;
+    let session = auth::validate(&state.paths, &token)?;
     auth::logout(&state.paths, &token)?;
+    state
+        .csrf_tokens
+        .write()
+        .expect("CSRF token lock")
+        .remove(&session.token_hash);
     let mut response = Json(json!({"ok": true})).into_response();
     response.headers_mut().insert(
         header::SET_COOKIE,
@@ -309,7 +337,7 @@ fn codex_authenticated(paths: &AppPaths) -> bool {
 }
 
 fn llama_available() -> bool {
-    std::path::Path::new("/usr/bin/llama-server").is_file()
+    crate::llama::detect_installation().is_some()
 }
 
 async fn list_models(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<Json<Value>> {
@@ -445,28 +473,18 @@ async fn create_session(
     if form.cwd.is_empty() {
         form.cwd = config.default_cwd.to_string_lossy().into_owned();
     }
-    let model = models::find_model(
+    let model_info = models::resolve_model(
         &config,
         &form.model,
+        &form.thinking,
         codex_authenticated(&state.paths),
         llama_available(),
-    )
-    .ok_or_else(|| {
-        ApiError(
-            StatusCode::BAD_REQUEST,
-            "Unknown or unavailable model".into(),
-        )
-    })?;
-    if !model.thinking_levels.iter().any(|v| v == &form.thinking) {
-        return Err(ApiError(
-            StatusCode::BAD_REQUEST,
-            "Thinking level is not supported by this model".into(),
-        ));
-    }
+    )?;
     let request = NewSession {
         cwd: PathBuf::from(form.cwd),
         model: form.model,
         thinking: form.thinking,
+        model_parameters: model_info.parameters,
         prompt: form.prompt.clone(),
         attachments: Vec::new(),
         parent: form.parent,
@@ -488,6 +506,20 @@ async fn read_segment(
     Ok(Json(
         json!({"entries": session::read_segment(&state.paths, &id, segment)?}),
     ))
+}
+
+async fn read_current_segment(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+) -> ApiResult<Json<Value>> {
+    authenticated(&state, &headers)?;
+    session::validate_id(&id)?;
+    let (segment, _) = session::current_segment(&state.paths.session_dir(&id))?;
+    Ok(Json(json!({
+        "segment": segment,
+        "entries": session::read_segment(&state.paths, &id, segment)?
+    })))
 }
 
 async fn send_message(
@@ -624,11 +656,39 @@ async fn session_status(
                 "steering": 0,
                 "queued": 0,
                 "steeringMessages": [],
-                "queuedMessages": []
+                "queuedMessages": [],
+                "usage": crate::worker::saved_usage(&state.paths, &id, &state.config.read().expect("config lock"))?
             }
         })));
     }
     let reply = session::send(&state.paths, &id, &ControlRequest::Status)?;
+    Ok(Json(serde_json::to_value(reply).expect("reply")))
+}
+
+#[derive(Deserialize)]
+struct CompactBody {
+    #[serde(default)]
+    instructions: Option<String>,
+}
+
+async fn compact_session(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+    Json(body): Json<CompactBody>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let socket = session::control_socket(&state.paths, &id)?;
+    if !session::socket_is_live(&socket) {
+        session::start_worker(&state.paths, &id)?;
+    }
+    let reply = session::send(
+        &state.paths,
+        &id,
+        &ControlRequest::Compact {
+            custom_instructions: body.instructions,
+        },
+    )?;
     Ok(Json(serde_json::to_value(reply).expect("reply")))
 }
 
@@ -672,16 +732,28 @@ async fn list_folders(
             .default_cwd
             .clone()
     });
-    let current = fs::canonicalize(&requested)
-        .with_context(|| format!("open folder {}", requested.display()))?;
-    if !current.is_dir() {
-        return Err(ApiError(
-            StatusCode::BAD_REQUEST,
-            format!("Not a folder: {}", current.display()),
-        ));
+    Ok(Json(folder_listing(&requested, query.nearest)?))
+}
+
+fn folder_listing(requested: &Path, nearest: bool) -> Result<Value> {
+    if !requested.is_absolute() {
+        anyhow::bail!("Folder path must be absolute");
     }
-    let mut folders = fs::read_dir(&current)
-        .with_context(|| format!("read folder {}", current.display()))?
+    let mut candidate = requested;
+    let (current, entries) = loop {
+        let opened = fs::canonicalize(candidate)
+            .and_then(|path| fs::read_dir(&path).map(|entries| (path, entries)));
+        match opened {
+            Ok(value) => break value,
+            Err(_) if nearest && candidate.parent().is_some() => {
+                candidate = candidate.parent().unwrap();
+            }
+            Err(error) => {
+                return Err(error).with_context(|| format!("open folder {}", requested.display()));
+            }
+        }
+    };
+    let mut folders = entries
         .filter_map(|entry| entry.ok())
         .filter(|entry| entry.file_type().is_ok_and(|kind| kind.is_dir()))
         .map(|entry| {
@@ -699,11 +771,11 @@ async fn list_folders(
             .to_lowercase()
     });
     folders.truncate(500);
-    Ok(Json(json!({
+    Ok(json!({
         "path": current,
         "parent": current.parent(),
         "folders": folders
-    })))
+    }))
 }
 
 async fn create_folder(
@@ -757,24 +829,13 @@ async fn change_model(
 ) -> ApiResult<Json<Value>> {
     require_mutation(&state, &headers)?;
     let config = state.config.read().expect("config lock").clone();
-    let model = models::find_model(
+    models::resolve_model(
         &config,
         &body.model,
+        &body.thinking,
         codex_authenticated(&state.paths),
         llama_available(),
-    )
-    .ok_or_else(|| {
-        ApiError(
-            StatusCode::BAD_REQUEST,
-            "Unknown or unavailable model".into(),
-        )
-    })?;
-    if !model.thinking_levels.iter().any(|v| v == &body.thinking) {
-        return Err(ApiError(
-            StatusCode::BAD_REQUEST,
-            "Thinking level is not supported by this model".into(),
-        ));
-    }
+    )?;
     let socket = session::control_socket(&state.paths, &id)?;
     if !session::socket_is_live(&socket) {
         session::start_worker(&state.paths, &id)?;
@@ -818,8 +879,9 @@ async fn events(
     if !session::socket_is_live(&socket) {
         session::start_worker(&state.paths, &id)?;
     }
+    let address = session::socket_address(&socket)?;
     let output = stream! {
-        match UnixStream::connect(socket).await {
+        match UnixStream::connect(address.as_ref()).await {
             Ok(mut connection) => {
                 let request = serde_json::to_vec(&ControlRequest::Subscribe).unwrap_or_default();
                 if connection.write_all(&request).await.is_ok() && connection.write_all(b"\n").await.is_ok() {
@@ -843,22 +905,178 @@ async fn events(
         .into_response())
 }
 
+// Cgroups identify candidate units; MainPID ensures we never restart a shell,
+// controller, desktop application or another process that launched this server.
+fn own_web_service() -> Option<String> {
+    let cgroups = fs::read_to_string("/proc/self/cgroup").ok()?;
+    for line in cgroups.lines() {
+        let path = line.splitn(3, ':').nth(2)?;
+        for unit in path
+            .split('/')
+            .rev()
+            .filter(|part| part.ends_with(".service"))
+        {
+            if unit.starts_with('-') {
+                continue;
+            }
+            let output = std::process::Command::new("systemctl")
+                .args(["--user", "show", "--property=MainPID", "--value", unit])
+                .output()
+                .ok()?;
+            if output.status.success()
+                && String::from_utf8_lossy(&output.stdout)
+                    .trim()
+                    .parse::<u32>()
+                    .ok()
+                    == Some(std::process::id())
+            {
+                return Some(unit.to_owned());
+            }
+        }
+    }
+    None
+}
+
 async fn get_settings(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<Json<Value>> {
     authenticated(&state, &headers)?;
+    let mut config = serde_json::to_value(state.config.read().expect("config lock").clone())
+        .expect("serialize config");
+    config["llama"].as_object_mut().unwrap().remove("api_key");
+    let extra: Vec<String> = serde_json::from_value(config["llama"]["extra_arguments"].clone())
+        .expect("configured argument list");
+    config["llama"]["extra_arguments"] = json!(crate::llama::redact_extra_arguments(&extra));
+    for provider in config["compatible_providers"].as_array_mut().unwrap() {
+        for auth in ["bearer", "header"] {
+            if let Some(value) = provider["auth"]
+                .get_mut(auth)
+                .and_then(Value::as_object_mut)
+            {
+                value.remove("secret");
+            }
+        }
+    }
     Ok(Json(
-        json!({"config": state.config.read().expect("config lock").clone(), "llamaInstalled": llama_available(), "codexAuthenticated": codex_authenticated(&state.paths)}),
+        json!({"config": config, "llamaInstalled": llama_available(), "codexAuthenticated": codex_authenticated(&state.paths)}),
     ))
 }
 
 async fn save_settings(
     State(state): State<WebState>,
     headers: HeaderMap,
-    Json(config): Json<AppConfig>,
+    Json(mut config): Json<Value>,
 ) -> ApiResult<Json<Value>> {
     require_mutation(&state, &headers)?;
+    let mut current = state.config.write().expect("config lock");
+    if state
+        .restart_pending
+        .load(std::sync::atomic::Ordering::SeqCst)
+    {
+        return Err(ApiError(
+            StatusCode::CONFLICT,
+            "Web UI is restarting; retry after reconnecting".into(),
+        ));
+    }
+    // A missing credential means preserve it. An explicitly supplied credential
+    // replaces it (an empty string clears it); stored values never round-trip
+    // through browser code. Match compatible credentials by provider ID and mode.
+    let stored = serde_json::to_value(&*current).expect("serialize config");
+    if let Some(llama) = config.get_mut("llama").and_then(Value::as_object_mut) {
+        llama
+            .entry("api_key")
+            .or_insert_with(|| stored["llama"]["api_key"].clone());
+    }
+    if let Some(providers) = config
+        .get_mut("compatible_providers")
+        .and_then(Value::as_array_mut)
+    {
+        for provider in providers {
+            let previous = stored["compatible_providers"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|old| old["id"] == provider["id"]);
+            for mode in ["bearer", "header"] {
+                if let Some(auth) = provider
+                    .get_mut("auth")
+                    .and_then(|auth| auth.get_mut(mode))
+                    .and_then(Value::as_object_mut)
+                {
+                    auth.entry("secret").or_insert_with(|| {
+                        previous
+                            .and_then(|old| old["auth"][mode].get("secret"))
+                            .cloned()
+                            .unwrap_or_else(|| json!(""))
+                    });
+                }
+            }
+        }
+    }
+    let mut config: AppConfig = serde_json::from_value(config).map_err(anyhow::Error::from)?;
+    crate::llama::restore_extra_arguments(
+        &mut config.llama.extra_arguments,
+        &current.llama.extra_arguments,
+    )?;
+    // Catalog updates belong to the router path and may race a settings form.
+    // Never overwrite fresh metadata with the form's older snapshot.
+    if config.llama.port == current.llama.port {
+        config.llama.catalog = current.llama.catalog.clone();
+        config.llama.router_autoload = current.llama.router_autoload;
+    } else {
+        config.llama.catalog.clear();
+        config.llama.router_autoload = false;
+    }
+    config
+        .validate_models()
+        .map_err(|error| ApiError(StatusCode::BAD_REQUEST, error.to_string()))?;
+    crate::llama::launch_arguments(&config.llama, false, true)?;
+    if config.web_port == 0 {
+        return Err(ApiError(
+            StatusCode::BAD_REQUEST,
+            "Web port must be between 1 and 65535".into(),
+        ));
+    }
+    let restart = if config.web_port != state.bound_port {
+        let probe = std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, config.web_port))
+            .map_err(|_| {
+            ApiError(
+                StatusCode::BAD_REQUEST,
+                format!("Web port {} is unavailable", config.web_port),
+            )
+        })?;
+        drop(probe);
+        let unit = own_web_service().ok_or_else(|| {
+            ApiError(
+                StatusCode::BAD_REQUEST,
+                "Port changes require the Web UI to run as its own systemd user service".into(),
+            )
+        })?;
+        Some((unit, format!("http://127.0.0.1:{}", config.web_port)))
+    } else {
+        None
+    };
     config.save(&state.paths)?;
-    *state.config.write().expect("config lock") = config;
-    Ok(Json(json!({"ok": true, "restartRequired": true})))
+    *current = config;
+    if let Some((unit, url)) = restart {
+        state
+            .restart_pending
+            .store(true, std::sync::atomic::Ordering::SeqCst);
+        let pending = state.restart_pending.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_millis(200)).await;
+            let result = tokio::process::Command::new("systemctl")
+                .args(["--user", "--no-block", "restart", &unit])
+                .status()
+                .await;
+            if !result.is_ok_and(|status| status.success()) {
+                pending.store(false, std::sync::atomic::Ordering::SeqCst);
+                eprintln!("Could not restart Web UI service {unit}");
+            }
+        });
+        return Ok(Json(
+            json!({"ok":true,"restartRequired":true,"restartUrl":url}),
+        ));
+    }
+    Ok(Json(json!({"ok": true, "restartRequired": false})))
 }
 
 async fn provider_login_status(
@@ -886,7 +1104,17 @@ async fn provider_login(
             crate::providers::ProviderAuthStore::for_paths(&state.paths),
         )
         .await?;
-    Ok(Json(json!({"ok":true,"login":status})))
+    let browser_opened = if body.method == "browser" {
+        status
+            .url
+            .as_deref()
+            .map(|url| crate::oauth::open_browser(url).is_ok())
+    } else {
+        None
+    };
+    Ok(Json(
+        json!({"ok":true,"login":status,"browserOpened":browser_opened}),
+    ))
 }
 
 async fn provider_login_code(
@@ -945,7 +1173,7 @@ pub async fn serve(paths: AppPaths, config: AppConfig) -> Result<()> {
     let listener = tokio::net::TcpListener::bind(&address)
         .await
         .with_context(|| format!("bind {address}"))?;
-    axum::serve(listener, router(paths, config)).await?;
+    axum::serve(listener, router(paths, config)?).await?;
     Ok(())
 }
 
@@ -954,6 +1182,357 @@ const INDEX_HTML: &str = include_str!("web_ui.html");
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn bootstrap_is_read_only_and_open_tabs_work_across_web_restarts() {
+        async fn start(paths: &AppPaths) -> (String, tokio::task::JoinHandle<()>) {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+            let port = listener.local_addr().unwrap().port();
+            let app = router(
+                paths.clone(),
+                AppConfig {
+                    web_port: port,
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+            let server = tokio::spawn(async move {
+                axum::serve(listener, app).await.unwrap();
+            });
+            (format!("http://127.0.0.1:{port}"), server)
+        }
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let (origin, server) = start(&paths).await;
+        let client = reqwest::Client::builder().no_proxy().build().unwrap();
+        let signup = client
+            .post(format!("{origin}/api/signup"))
+            .header("origin", &origin)
+            .json(&json!({"username":"test","password":"fixture-password"}))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(signup.status(), StatusCode::OK);
+        let cookie = signup.headers()["set-cookie"]
+            .to_str()
+            .unwrap()
+            .split(';')
+            .next()
+            .unwrap()
+            .to_owned();
+        let login: Value = signup.json().await.unwrap();
+        let before = fs::read(paths.web_auth_file()).unwrap();
+        let tabs = futures_util::future::join_all((0..8).map(|_| async {
+            client
+                .get(format!("{origin}/api/bootstrap"))
+                .header("cookie", &cookie)
+                .send()
+                .await
+                .unwrap()
+                .json::<Value>()
+                .await
+                .unwrap()
+        }))
+        .await;
+        assert!(
+            tabs.iter()
+                .all(|tab| tab["authenticated"] == true && tab["csrf"] == login["csrf"])
+        );
+        assert_eq!(fs::read(paths.web_auth_file()).unwrap(), before);
+        server.abort();
+        server.await.unwrap_err();
+        let (origin, restarted) = start(&paths).await;
+        let before = fs::read(paths.web_auth_file()).unwrap();
+        let bootstrap: Value = client
+            .get(format!("{origin}/api/bootstrap"))
+            .header("cookie", &cookie)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(bootstrap["authenticated"], true);
+        assert_ne!(bootstrap["csrf"], login["csrf"]);
+        assert_eq!(fs::read(paths.web_auth_file()).unwrap(), before);
+        for (name, token) in [("old-tab", &login["csrf"]), ("new-tab", &bootstrap["csrf"])] {
+            let response = client
+                .post(format!("{origin}/api/folders"))
+                .header("cookie", &cookie)
+                .header("origin", &origin)
+                .header("x-bashkitten-csrf", token.as_str().unwrap())
+                .json(&json!({"parent":root.path(), "name":name}))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::OK);
+            assert!(root.path().join(name).is_dir());
+        }
+        for (name, request_origin, token) in [
+            ("wrong-token", origin.as_str(), "wrong"),
+            (
+                "wrong-origin",
+                "http://127.0.0.1:1",
+                login["csrf"].as_str().unwrap(),
+            ),
+        ] {
+            let response = client
+                .post(format!("{origin}/api/folders"))
+                .header("cookie", &cookie)
+                .header("origin", request_origin)
+                .header("x-bashkitten-csrf", token)
+                .json(&json!({"parent":root.path(), "name":name}))
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::FORBIDDEN);
+            assert!(!root.path().join(name).exists());
+        }
+        restarted.abort();
+    }
+
+    #[test]
+    fn shared_folder_picker_opens_nearest_parent_but_explicit_paths_stay_strict() {
+        let root = tempfile::tempdir().unwrap();
+        let child = root.path().join("existing child");
+        fs::create_dir(&child).unwrap();
+        fs::write(root.path().join("ordinary-file"), "fixture").unwrap();
+        let missing = child.join("missing/deeper");
+        let listing = folder_listing(&missing, true).unwrap();
+        assert_eq!(listing["path"], child.to_str().unwrap());
+        assert_eq!(listing["parent"], root.path().to_str().unwrap());
+        assert!(!missing.exists());
+        assert!(folder_listing(&missing, false).is_err());
+        assert!(folder_listing(Path::new("relative/path"), true).is_err());
+        let parent = folder_listing(root.path(), false).unwrap();
+        assert_eq!(parent["folders"].as_array().unwrap().len(), 1);
+        assert_eq!(parent["folders"][0]["name"], "existing child");
+    }
+
+    #[tokio::test]
+    async fn history_opens_latest_segment_and_sidebar_paginates_without_parsing_messages() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: temp.path().join("config"),
+            data: temp.path().join("data"),
+            runtime: temp.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let mut ids = Vec::new();
+        for index in 0..3 {
+            let id = session::create(
+                &paths,
+                &NewSession {
+                    cwd: temp.path().to_owned(),
+                    model: "fixture/model".into(),
+                    thinking: "off".into(),
+                    model_parameters: json!({}),
+                    prompt: format!("Page {index}"),
+                    attachments: vec![],
+                    parent: None,
+                },
+            )
+            .unwrap();
+            ids.push(id);
+        }
+        let dir = paths.session_dir(&ids[0]);
+        let header = session::read_header(&dir).unwrap();
+        session::rotate_compaction(&paths, &header, &[]).unwrap();
+        // Listing is header/title/stat-only, even when a message body is damaged.
+        // Opening that specific damaged history still reports the read failure.
+        let damaged = paths.session_dir(&ids[1]).join("000001.jsonl");
+        use std::io::Write;
+        std::fs::OpenOptions::new()
+            .append(true)
+            .open(damaged)
+            .unwrap()
+            .write_all(b"invalid history\n")
+            .unwrap();
+        let login = auth::signup(&paths, "fixture", "fixture-password").unwrap();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let app = router(
+            paths,
+            AppConfig {
+                web_port: port,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let origin = format!("http://127.0.0.1:{port}");
+        let cookie = format!("{COOKIE}={}", login.token);
+        let endpoint = format!("{origin}/api/sessions/{}/segments/current", ids[0]);
+        assert_eq!(
+            client.get(&endpoint).send().await.unwrap().status(),
+            StatusCode::UNAUTHORIZED
+        );
+        let current: Value = client
+            .get(endpoint)
+            .header(header::COOKIE, &cookie)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(current["segment"], 2);
+        assert_eq!(current["entries"].as_array().unwrap().len(), 1);
+        let mut listed = Vec::new();
+        for offset in [0, 2] {
+            let page: Value = client
+                .get(format!("{origin}/api/sessions?limit=2&offset={offset}"))
+                .header(header::COOKIE, &cookie)
+                .send()
+                .await
+                .unwrap()
+                .json()
+                .await
+                .unwrap();
+            assert_eq!(
+                page["nextOffset"],
+                if offset == 0 { json!(2) } else { Value::Null }
+            );
+            listed.extend(
+                page["sessions"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|item| item["id"].as_str().unwrap().to_owned()),
+            );
+        }
+        listed.sort();
+        ids.sort();
+        assert_eq!(listed, ids);
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn settings_never_return_credentials_and_saving_preserves_or_replaces_them() {
+        use crate::config::{CompatibleAuth, CompatibleProvider};
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let mut config = AppConfig {
+            web_port: port,
+            ..Default::default()
+        };
+        config.llama.api_key = "fixture-router-secret".into();
+        config.llama.extra_arguments = vec![
+            "--hf-token".into(),
+            "fixture-hf-secret".into(),
+            "--api-key=fixture-advanced-secret".into(),
+            "--verbose".into(),
+        ];
+        config.compatible_providers.push(CompatibleProvider {
+            id: "local".into(),
+            name: "Local".into(),
+            base_url: "http://127.0.0.1:9876/v1".into(),
+            auth: CompatibleAuth::Bearer {
+                secret: "fixture-provider-secret".into(),
+            },
+            models: vec![],
+        });
+        config.save(&paths).unwrap();
+        let login = auth::signup(&paths, "tester", "test-password-123").unwrap();
+        let app = router(paths.clone(), config).unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = reqwest::Client::new();
+        let origin = format!("http://127.0.0.1:{port}");
+        let cookie = format!("{COOKIE}={}", login.token);
+        let settings = client
+            .get(format!("{origin}/api/settings"))
+            .header(header::COOKIE, &cookie)
+            .send()
+            .await
+            .unwrap()
+            .text()
+            .await
+            .unwrap();
+        assert!(
+            !settings.contains("fixture-router-secret")
+                && !settings.contains("fixture-provider-secret")
+                && !settings.contains("fixture-hf-secret")
+                && !settings.contains("fixture-advanced-secret")
+        );
+        let mut config = serde_json::from_str::<Value>(&settings).unwrap()["config"].clone();
+        for replace in [false, true] {
+            if replace {
+                config["llama"]["api_key"] = json!("");
+                config["compatible_providers"][0]["auth"]["bearer"]["secret"] =
+                    json!("replacement-secret");
+                config["llama"]["extra_arguments"] = json!([
+                    "--verbose",
+                    "--hf-token",
+                    "replacement-hf-secret",
+                    "--api-key=<stored secret>"
+                ]);
+            }
+            let response = client
+                .post(format!("{origin}/api/settings"))
+                .header(header::COOKIE, &cookie)
+                .header(header::ORIGIN, &origin)
+                .header("x-bashkitten-csrf", &login.csrf)
+                .json(&config)
+                .send()
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::OK);
+            let saved = AppConfig::load(&paths).unwrap();
+            assert!(saved.llama.extra_arguments.iter().any(|v| v
+                == if replace {
+                    "replacement-hf-secret"
+                } else {
+                    "fixture-hf-secret"
+                }));
+            assert!(
+                saved
+                    .llama
+                    .extra_arguments
+                    .iter()
+                    .any(|v| v == "--api-key=fixture-advanced-secret")
+            );
+            assert!(
+                !saved
+                    .llama
+                    .extra_arguments
+                    .iter()
+                    .any(|v| v.contains("<stored secret>"))
+            );
+            assert_eq!(
+                saved.llama.api_key,
+                if replace { "" } else { "fixture-router-secret" }
+            );
+            let CompatibleAuth::Bearer { secret } = &saved.compatible_providers[0].auth else {
+                panic!("missing credential");
+            };
+            assert_eq!(
+                secret,
+                if replace {
+                    "replacement-secret"
+                } else {
+                    "fixture-provider-secret"
+                }
+            );
+        }
+        server.abort();
+    }
 
     #[tokio::test]
     async fn subscription_routes_require_auth_origin_csrf_and_logout_removes_only_provider_login() {
@@ -975,7 +1554,7 @@ mod tests {
         let login = auth::signup(&paths, "test", "test-password-123").unwrap();
         let store = crate::providers::ProviderAuthStore::for_paths(&paths);
         store.set_codex(Some(serde_json::from_value(json!({"type":"oauth","access":"test-access","refresh":"test-refresh","expires":0})).unwrap())).await.unwrap();
-        let app = router(paths.clone(), config);
+        let app = router(paths.clone(), config).unwrap();
         let server = tokio::spawn(async move {
             axum::serve(listener, app).await.unwrap();
         });

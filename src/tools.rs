@@ -1,18 +1,18 @@
-//! Pi v0.84.4-compatible implementations of the seven built-in Linux tools.
+//! Pinned Pi-compatible implementations of the seven built-in Linux tools.
 //!
 //! The model-visible contracts in [`tool_definitions`] intentionally mirror Pi.
 //! Tool failures are returned as [`ToolError`] so the caller can expose them as
 //! an `isError` tool result without losing the useful error text.
 
-use base64::Engine as _;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+#[cfg(test)]
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read as _, Write as _};
+use std::io::{self, Write as _};
 use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
@@ -23,7 +23,8 @@ use std::time::Duration;
 use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 use tokio::sync::{Mutex as AsyncMutex, Notify, mpsc};
-use tokio::time::{Instant, sleep_until, timeout};
+use tokio::time::{Instant, sleep_until};
+use unicode_normalization::UnicodeNormalization;
 
 pub const DEFAULT_MAX_LINES: usize = 2_000;
 pub const DEFAULT_MAX_BYTES: usize = 50 * 1024;
@@ -49,6 +50,14 @@ fn number_schema(description: &str) -> Value {
     json!({ "type": "number", "description": description })
 }
 
+fn number_value(value: f64) -> Value {
+    if value.fract() == 0.0 && value >= i64::MIN as f64 && value < i64::MAX as f64 {
+        json!(value as i64)
+    } else {
+        json!(value)
+    }
+}
+
 fn bool_schema(description: &str) -> Value {
     json!({ "type": "boolean", "description": description })
 }
@@ -62,7 +71,7 @@ fn object_schema(properties: Value, required: &[&str]) -> Value {
 }
 
 /// The exact model-visible tool descriptions, schemas, snippets, and guidelines
-/// from Pi v0.84.4. BashKitten exposes all seven tools at once.
+/// from the commit in PI_UPSTREAM.md. BashKitten exposes all seven tools at once.
 pub fn tool_definitions() -> Vec<ToolDefinition> {
     vec![
         ToolDefinition {
@@ -494,12 +503,7 @@ fn normalize_input_path(path: &str) -> String {
     let path = path.strip_prefix('@').unwrap_or(path);
     path.chars()
         .map(|character| match character {
-            '\u{00a0}'
-            | '\u{1680}'
-            | '\u{2000}'..='\u{200a}'
-            | '\u{202f}'
-            | '\u{205f}'
-            | '\u{3000}' => ' ',
+            '\u{00a0}' | '\u{2000}'..='\u{200a}' | '\u{202f}' | '\u{205f}' | '\u{3000}' => ' ',
             other => other,
         })
         .collect()
@@ -519,34 +523,92 @@ fn expand_tilde(path: &str) -> PathBuf {
 }
 
 pub fn resolve_tool_path(path: &str, cwd: &Path) -> PathBuf {
-    let path = expand_tilde(&normalize_input_path(path));
-    if path.is_absolute() {
+    let normalized = normalize_input_path(path);
+    let path = if normalized.starts_with("file://") {
+        url::Url::parse(&normalized)
+            .ok()
+            .and_then(|url| url.to_file_path().ok())
+            .unwrap_or_else(|| PathBuf::from(&normalized))
+    } else {
+        expand_tilde(&normalized)
+    };
+    let absolute = if path.is_absolute() {
         path
     } else {
         cwd.join(path)
+    };
+    let mut result = PathBuf::new();
+    for component in absolute.components() {
+        match component {
+            std::path::Component::CurDir => {}
+            std::path::Component::ParentDir => {
+                result.pop();
+            }
+            other => result.push(other.as_os_str()),
+        }
     }
+    result
+}
+
+fn resolve_read_path(path: &str, cwd: &Path) -> PathBuf {
+    let resolved = resolve_tool_path(path, cwd);
+    if resolved.exists() {
+        return resolved;
+    }
+    let text = resolved.to_string_lossy();
+    let am_pm = regex::Regex::new(r"(?i) (AM|PM)\.")
+        .unwrap()
+        .replace_all(&text, "\u{202f}$1.")
+        .into_owned();
+    let nfd: String = text.nfd().collect();
+    for variant in [
+        am_pm,
+        nfd.clone(),
+        text.replace('\'', "\u{2019}"),
+        nfd.replace('\'', "\u{2019}"),
+    ] {
+        let candidate = PathBuf::from(variant);
+        if candidate != resolved && candidate.exists() {
+            return candidate;
+        }
+    }
+    resolved
+}
+
+fn reject_nul_path(path: &Path) -> Result<(), ToolError> {
+    if path.as_os_str().as_encoded_bytes().contains(&0) {
+        Err(ToolError::new(format!(
+            "The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received {}",
+            crate::ecmascript::inspect_argument_string(&path.to_string_lossy())
+        )))
+    } else {
+        Ok(())
+    }
+}
+
+fn node_fs_error(error: io::Error, operation: &str, path: Option<&Path>) -> ToolError {
+    let description = match error.raw_os_error() {
+        Some(libc::ENOENT) => "ENOENT: no such file or directory",
+        Some(libc::EISDIR) => "EISDIR: illegal operation on a directory",
+        Some(libc::ENOTDIR) => "ENOTDIR: not a directory",
+        Some(libc::EACCES) => "EACCES: permission denied",
+        Some(libc::EPERM) => "EPERM: operation not permitted",
+        Some(libc::ELOOP) => "ELOOP: too many symbolic links encountered",
+        Some(libc::ENOSPC) => "ENOSPC: no space left on device",
+        Some(libc::EROFS) => "EROFS: read-only file system",
+        Some(libc::ENAMETOOLONG) => "ENAMETOOLONG: name too long",
+        _ => return ToolError::new(error.to_string()),
+    };
+    ToolError::new(format!(
+        "{description}, {operation}{}",
+        path.map(|path| format!(" '{}'", path.display()))
+            .unwrap_or_default()
+    ))
 }
 
 fn parse_args<T: for<'de> Deserialize<'de>>(arguments: Value) -> Result<T, ToolError> {
     serde_json::from_value(arguments)
         .map_err(|error| ToolError::new(format!("Invalid tool arguments: {error}")))
-}
-
-fn usize_number(
-    value: Option<f64>,
-    default: usize,
-    minimum: usize,
-    name: &str,
-) -> Result<usize, ToolError> {
-    match value {
-        None => Ok(default),
-        Some(number) if number.is_finite() && number.fract() == 0.0 && number >= minimum as f64 => {
-            Ok(number as usize)
-        }
-        Some(_) => Err(ToolError::new(format!(
-            "{name} must be an integer greater than or equal to {minimum}"
-        ))),
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -620,10 +682,11 @@ pub async fn execute_tool_with_updates(
     context: &ToolContext,
     on_update: Option<&ToolUpdateCallback>,
 ) -> Result<ToolResult, ToolError> {
+    let arguments = crate::tool_validation::prepare(name, arguments)?;
     match name {
         "read" => read(parse_args(arguments)?, context).await,
         "write" => write(parse_args(arguments)?, context).await,
-        "edit" => edit(parse_edit_args(arguments)?, context).await,
+        "edit" => edit(parse_args(arguments)?, context).await,
         "grep" => grep(parse_args(arguments)?, context).await,
         "find" => find(parse_args(arguments)?, context).await,
         "ls" => ls(parse_args(arguments)?, context).await,
@@ -645,185 +708,73 @@ fn mutation_lock(path: &Path) -> Arc<AsyncMutex<()>> {
     lock
 }
 
-fn mutation_key(path: &Path) -> PathBuf {
-    if let Ok(path) = fs::canonicalize(path) {
-        return path;
-    }
-    if let (Some(parent), Some(name)) = (path.parent(), path.file_name())
-        && let Ok(parent) = fs::canonicalize(parent)
-    {
-        return parent.join(name);
-    }
-    path.to_path_buf()
-}
-
-fn image_mime(bytes: &[u8]) -> Option<&'static str> {
-    if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
-        Some("image/png")
-    } else if bytes.starts_with(&[0xff, 0xd8, 0xff]) {
-        Some("image/jpeg")
-    } else if bytes.starts_with(b"GIF87a") || bytes.starts_with(b"GIF89a") {
-        Some("image/gif")
-    } else if bytes.len() >= 12 && &bytes[..4] == b"RIFF" && &bytes[8..12] == b"WEBP" {
-        Some("image/webp")
-    } else if bytes.starts_with(b"BM") {
-        Some("image/bmp")
-    } else {
-        None
-    }
-}
-
-fn read_u16_le(bytes: &[u8], at: usize) -> Option<u16> {
-    Some(u16::from_le_bytes(bytes.get(at..at + 2)?.try_into().ok()?))
-}
-
-fn read_u32_le(bytes: &[u8], at: usize) -> Option<u32> {
-    Some(u32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?))
-}
-
-fn read_i32_le(bytes: &[u8], at: usize) -> Option<i32> {
-    Some(i32::from_le_bytes(bytes.get(at..at + 4)?.try_into().ok()?))
-}
-
-fn crc32(bytes: &[u8]) -> u32 {
-    let mut crc = !0u32;
-    for &byte in bytes {
-        crc ^= byte as u32;
-        for _ in 0..8 {
-            crc = (crc >> 1) ^ (0xedb8_8320 & (0u32.wrapping_sub(crc & 1)));
+fn mutation_key(path: &Path) -> Result<PathBuf, ToolError> {
+    // Pinned file-mutation-queue.ts resolves the complete path before entering
+    // the operation (including its first cancellation check). Only missing-path
+    // failures fall back to the lexical absolute path; other errors propagate.
+    reject_nul_path(path)?;
+    match fs::canonicalize(path) {
+        Ok(path) => Ok(path),
+        Err(error) if matches!(error.raw_os_error(), Some(libc::ENOENT | libc::ENOTDIR)) => {
+            Ok(path.to_path_buf())
         }
+        Err(error) => Err(node_fs_error(error, "realpath", Some(path))),
     }
-    !crc
-}
-
-fn adler32(bytes: &[u8]) -> u32 {
-    let (mut a, mut b) = (1u32, 0u32);
-    for &byte in bytes {
-        a = (a + byte as u32) % 65_521;
-        b = (b + a) % 65_521;
-    }
-    (b << 16) | a
-}
-
-fn png_chunk(output: &mut Vec<u8>, kind: &[u8; 4], data: &[u8]) {
-    output.extend_from_slice(&(data.len() as u32).to_be_bytes());
-    output.extend_from_slice(kind);
-    output.extend_from_slice(data);
-    let mut checked = Vec::with_capacity(4 + data.len());
-    checked.extend_from_slice(kind);
-    checked.extend_from_slice(data);
-    output.extend_from_slice(&crc32(&checked).to_be_bytes());
-}
-
-/// Convert ordinary uncompressed 24/32-bit BMPs to PNG, matching Pi's rule that
-/// BMP is never passed directly to model APIs.
-fn bmp_to_png(bytes: &[u8]) -> Result<Vec<u8>, ToolError> {
-    let pixel_offset =
-        read_u32_le(bytes, 10).ok_or_else(|| ToolError::new("Invalid BMP image"))? as usize;
-    let dib_size = read_u32_le(bytes, 14).ok_or_else(|| ToolError::new("Invalid BMP image"))?;
-    let width = read_i32_le(bytes, 18).ok_or_else(|| ToolError::new("Invalid BMP image"))?;
-    let height = read_i32_le(bytes, 22).ok_or_else(|| ToolError::new("Invalid BMP image"))?;
-    let planes = read_u16_le(bytes, 26).ok_or_else(|| ToolError::new("Invalid BMP image"))?;
-    let bits = read_u16_le(bytes, 28).ok_or_else(|| ToolError::new("Invalid BMP image"))?;
-    let compression = read_u32_le(bytes, 30).ok_or_else(|| ToolError::new("Invalid BMP image"))?;
-    if dib_size < 40
-        || width <= 0
-        || height == 0
-        || planes != 1
-        || !matches!(bits, 24 | 32)
-        || compression != 0
-    {
-        return Err(ToolError::new(
-            "Unsupported BMP image; expected uncompressed 24-bit or 32-bit pixels",
-        ));
-    }
-    let width = width as usize;
-    let rows = height.unsigned_abs() as usize;
-    let bytes_per_pixel = (bits / 8) as usize;
-    let stride = (width * bytes_per_pixel + 3) & !3;
-    let image_end = pixel_offset
-        .checked_add(
-            stride
-                .checked_mul(rows)
-                .ok_or_else(|| ToolError::new("Invalid BMP image"))?,
-        )
-        .ok_or_else(|| ToolError::new("Invalid BMP image"))?;
-    if image_end > bytes.len() {
-        return Err(ToolError::new("Invalid BMP image"));
-    }
-
-    let mut raw = Vec::with_capacity(rows * (1 + width * 4));
-    for output_row in 0..rows {
-        raw.push(0); // PNG filter type: None.
-        let source_row = if height > 0 {
-            rows - 1 - output_row
-        } else {
-            output_row
-        };
-        let row = pixel_offset + source_row * stride;
-        for column in 0..width {
-            let pixel = row + column * bytes_per_pixel;
-            raw.extend_from_slice(&[
-                bytes[pixel + 2],
-                bytes[pixel + 1],
-                bytes[pixel],
-                if bytes_per_pixel == 4 {
-                    bytes[pixel + 3]
-                } else {
-                    255
-                },
-            ]);
-        }
-    }
-    // A standards-compliant zlib stream using uncompressed DEFLATE blocks.
-    let mut zlib = vec![0x78, 0x01];
-    let mut remaining = raw.as_slice();
-    while !remaining.is_empty() {
-        let take = remaining.len().min(u16::MAX as usize);
-        let final_block = take == remaining.len();
-        zlib.push(u8::from(final_block));
-        let length = take as u16;
-        zlib.extend_from_slice(&length.to_le_bytes());
-        zlib.extend_from_slice(&(!length).to_le_bytes());
-        zlib.extend_from_slice(&remaining[..take]);
-        remaining = &remaining[take..];
-    }
-    zlib.extend_from_slice(&adler32(&raw).to_be_bytes());
-    let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
-    let mut header = Vec::with_capacity(13);
-    header.extend_from_slice(&(width as u32).to_be_bytes());
-    header.extend_from_slice(&(rows as u32).to_be_bytes());
-    header.extend_from_slice(&[8, 6, 0, 0, 0]);
-    png_chunk(&mut png, b"IHDR", &header);
-    png_chunk(&mut png, b"IDAT", &zlib);
-    png_chunk(&mut png, b"IEND", &[]);
-    Ok(png)
 }
 
 pub async fn read(args: ReadArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
     throw_if_cancelled(context)?;
-    let path = resolve_tool_path(&args.path, &context.cwd);
-    let bytes = fs::read(&path).map_err(|error| ToolError::new(error.to_string()))?;
-    throw_if_cancelled(context)?;
-    if let Some(mut mime_type) = image_mime(&bytes) {
-        let processed = if mime_type == "image/bmp" {
-            mime_type = "image/png";
-            bmp_to_png(&bytes)?
+    let path = resolve_read_path(&args.path, &context.cwd);
+    reject_nul_path(&path)?;
+    let access_path =
+        std::ffi::CString::new(path.as_os_str().as_encoded_bytes()).expect("NUL checked above");
+    if unsafe { libc::access(access_path.as_ptr(), libc::R_OK) } != 0 {
+        return Err(node_fs_error(
+            io::Error::last_os_error(),
+            "access",
+            Some(&path),
+        ));
+    }
+    let bytes = fs::read(&path).map_err(|error| {
+        if error.raw_os_error() == Some(libc::EISDIR) {
+            node_fs_error(error, "read", None)
         } else {
-            bytes
+            node_fs_error(error, "open", Some(&path))
+        }
+    })?;
+    throw_if_cancelled(context)?;
+    if let Some(mime_type) = crate::image::detect_mime(&bytes) {
+        let processing = tokio::task::spawn_blocking(move || {
+            crate::image::process(&bytes, mime_type, true, Default::default())
+        });
+        let processed = tokio::select! {
+            result = processing => result.map_err(|error| ToolError::new(error.to_string()))?,
+            _ = context.cancellation.cancelled() => return Err(ToolError::new("Operation aborted")),
         };
-        let mut note = format!("Read image file [{mime_type}]");
+        let (mut note, image) = match processed {
+            Ok(image) => {
+                let mut note = format!("Read image file [{}]", image.mime_type);
+                for hint in image.hints {
+                    note.push('\n');
+                    note.push_str(&hint);
+                }
+                (
+                    note,
+                    Some(ContentBlock::Image {
+                        data: image.data,
+                        mime_type: image.mime_type,
+                    }),
+                )
+            }
+            Err(message) => (format!("Read image file [{mime_type}]\n{message}"), None),
+        };
         if !context.model_supports_images {
             note.push_str("\n[Current model does not support images. The image will be omitted from this request.]");
         }
+        let mut content = vec![ContentBlock::Text { text: note }];
+        content.extend(image);
         return Ok(ToolResult {
-            content: vec![
-                ContentBlock::Text { text: note },
-                ContentBlock::Image {
-                    data: BASE64_STANDARD.encode(processed),
-                    mime_type: mime_type.into(),
-                },
-            ],
+            content,
             details: None,
         });
     }
@@ -831,34 +782,58 @@ pub async fn read(args: ReadArgs, context: &ToolContext) -> Result<ToolResult, T
     let text = String::from_utf8_lossy(&bytes).into_owned();
     let all_lines: Vec<&str> = text.split('\n').collect();
     let total_file_lines = all_lines.len();
-    let offset = usize_number(args.offset, 1, 1, "offset")?;
-    let start = offset - 1;
-    if start >= all_lines.len() {
+    let start = (args.offset.unwrap_or(0.0) - 1.0).max(0.0);
+    let offset = start + 1.0;
+    if start >= all_lines.len() as f64 {
         return Err(ToolError::new(format!(
-            "Offset {offset} is beyond end of file ({} lines total)",
+            "Offset {} is beyond end of file ({} lines total)",
+            crate::ecmascript::number_string(args.offset.unwrap_or(0.0)),
             all_lines.len()
         )));
     }
     let (selected, user_limited_lines) = if let Some(limit) = args.limit {
-        let limit = usize_number(Some(limit), 0, 0, "limit")?;
-        let end = start.saturating_add(limit).min(all_lines.len());
-        (all_lines[start..end].join("\n"), Some(end - start))
+        let end = (start + limit).min(all_lines.len() as f64);
+        let index = if end.trunc() < 0.0 {
+            (all_lines.len() as f64 + end.trunc()).max(0.0) as usize
+        } else {
+            end as usize
+        };
+        (
+            all_lines
+                .get(start as usize..index)
+                .unwrap_or_default()
+                .join("\n"),
+            Some(end - start),
+        )
     } else {
-        (all_lines[start..].join("\n"), None)
+        (all_lines[start as usize..].join("\n"), None)
     };
     let truncation = truncate_head(&selected, DEFAULT_MAX_LINES, DEFAULT_MAX_BYTES);
     let mut details = None;
     let output = if truncation.first_line_exceeds_limit {
+        if start.fract() != 0.0 {
+            // Pi indexes allLines[startLine] here without Array.slice's integer
+            // coercion, then passes undefined to Buffer.byteLength.
+            return Err(ToolError::new(
+                "The \"string\" argument must be of type string or an instance of Buffer or ArrayBuffer. Received undefined",
+            ));
+        }
         details = Some(json!({ "truncation": truncation }));
+        let offset = crate::ecmascript::number_string(offset);
         format!(
             "[Line {offset} is {}, exceeds {} limit. Use bash: sed -n '{offset}p' {} | head -c {DEFAULT_MAX_BYTES}]",
-            format_size(all_lines[start].len()),
+            format_size(all_lines[start as usize].len()),
             format_size(DEFAULT_MAX_BYTES),
             args.path
         )
     } else if truncation.truncated {
-        let end = offset + truncation.output_lines.saturating_sub(1);
-        let next = end + 1;
+        let end = offset + truncation.output_lines as f64 - 1.0;
+        let next = end + 1.0;
+        let (offset, end, next) = (
+            crate::ecmascript::number_string(offset),
+            crate::ecmascript::number_string(end),
+            crate::ecmascript::number_string(next),
+        );
         let notice = if truncation.truncated_by == Some(TruncatedBy::Lines) {
             format!(
                 "[Showing lines {offset}-{end} of {total_file_lines}. Use offset={next} to continue.]"
@@ -873,9 +848,11 @@ pub async fn read(args: ReadArgs, context: &ToolContext) -> Result<ToolResult, T
         details = Some(json!({ "truncation": truncation }));
         content
     } else if let Some(limited) = user_limited_lines {
-        if start + limited < all_lines.len() {
-            let remaining = all_lines.len() - (start + limited);
-            let next = start + limited + 1;
+        if start + limited < all_lines.len() as f64 {
+            let remaining = all_lines.len() as f64 - (start + limited);
+            let next = start + limited + 1.0;
+            let remaining = crate::ecmascript::number_string(remaining);
+            let next = crate::ecmascript::number_string(next);
             format!(
                 "{}\n\n[{remaining} more lines in file. Use offset={next} to continue.]",
                 truncation.content
@@ -894,20 +871,19 @@ pub async fn read(args: ReadArgs, context: &ToolContext) -> Result<ToolResult, T
 
 pub async fn write(args: WriteArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
     let path = resolve_tool_path(&args.path, &context.cwd);
-    let lock = mutation_lock(&mutation_key(&path));
+    let lock = mutation_lock(&mutation_key(&path)?);
     let _guard = lock.lock().await;
     throw_if_cancelled(context)?;
+    reject_nul_path(&path)?;
     if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
+        fs::create_dir_all(parent).map_err(|error| node_fs_error(error, "mkdir", Some(parent)))?;
     }
     throw_if_cancelled(context)?;
-    fs::write(&path, args.content.as_bytes())?;
+    fs::write(&path, args.content.as_bytes())
+        .map_err(|error| node_fs_error(error, "open", Some(&path)))?;
     throw_if_cancelled(context)?;
-    // Pi uses JavaScript string length here, which is UTF-16 code units despite
-    // the wording saying bytes.
     Ok(ToolResult::text(format!(
-        "Successfully wrote {} bytes to {}",
-        args.content.encode_utf16().count(),
+        "Successfully wrote to {}",
         args.path
     )))
 }
@@ -928,23 +904,26 @@ pub async fn ls(args: LsArgs, context: &ToolContext) -> Result<ToolResult, ToolE
             path.display()
         )));
     }
-    let effective_limit = usize_number(args.limit, 500, 0, "limit")?;
+    let effective_limit = args.limit.unwrap_or(500.0);
     let entries = fs::read_dir(&path)
         .map_err(|error| ToolError::new(format!("Cannot read directory: {error}")))?;
     let mut entries: Vec<OsString> = entries
         .filter_map(Result::ok)
         .map(|entry| entry.file_name())
         .collect();
+    let collator = icu_collator::Collator::try_new(Default::default(), Default::default())
+        .expect("compiled ICU collation data");
     entries.sort_by(|left, right| {
-        left.to_string_lossy()
-            .to_lowercase()
-            .cmp(&right.to_string_lossy().to_lowercase())
+        collator.compare(
+            &left.to_string_lossy().to_lowercase(),
+            &right.to_string_lossy().to_lowercase(),
+        )
     });
     let mut results = Vec::new();
     let mut entry_limit_reached = false;
     for entry in entries {
         throw_if_cancelled(context)?;
-        if results.len() >= effective_limit {
+        if results.len() as f64 >= effective_limit {
             entry_limit_reached = true;
             break;
         }
@@ -961,16 +940,21 @@ pub async fn ls(args: LsArgs, context: &ToolContext) -> Result<ToolResult, ToolE
     if results.is_empty() {
         return Ok(ToolResult::text("(empty directory)"));
     }
-    let truncation = truncate_head(&results.join("\n"), usize::MAX, DEFAULT_MAX_BYTES);
+    let truncation = truncate_head(
+        &results.join("\n"),
+        9_007_199_254_740_991,
+        DEFAULT_MAX_BYTES,
+    );
     let mut output = truncation.content.clone();
     let mut notices = Vec::new();
     let mut detail = serde_json::Map::new();
     if entry_limit_reached {
         notices.push(format!(
-            "{effective_limit} entries limit reached. Use limit={} for more",
-            effective_limit.saturating_mul(2)
+            "{} entries limit reached. Use limit={} for more",
+            crate::ecmascript::number_string(effective_limit),
+            crate::ecmascript::number_string(effective_limit * 2.0)
         ));
-        detail.insert("entryLimitReached".into(), json!(effective_limit));
+        detail.insert("entryLimitReached".into(), number_value(effective_limit));
     }
     if truncation.truncated {
         notices.push(format!("{} limit reached", format_size(DEFAULT_MAX_BYTES)));
@@ -1008,6 +992,19 @@ struct CapturedProcess {
     status: std::process::ExitStatus,
     stdout: Vec<u8>,
     stderr: Vec<u8>,
+    stopped_at_limit: bool,
+}
+
+fn reject_nul_arguments(arguments: &[OsString]) -> Result<(), ToolError> {
+    for (i, argument) in arguments.iter().enumerate() {
+        if argument.as_encoded_bytes().contains(&0) {
+            return Err(ToolError::new(format!(
+                "The argument 'args[{i}]' must be a string without null bytes. Received {}",
+                crate::ecmascript::inspect_argument_string(&argument.to_string_lossy())
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn kill_process_group(pid: Option<u32>) {
@@ -1023,6 +1020,7 @@ async fn capture_process(
     arguments: &[OsString],
     cwd: &Path,
     cancellation: &CancellationToken,
+    match_limit: Option<f64>,
 ) -> Result<CapturedProcess, ToolError> {
     if cancellation.is_cancelled() {
         return Err(ToolError::new("Operation aborted"));
@@ -1043,7 +1041,34 @@ async fn capture_process(
     let mut stderr = child.stderr.take().expect("stderr was piped");
     let stdout_task = tokio::spawn(async move {
         let mut data = Vec::new();
-        stdout.read_to_end(&mut data).await.map(|_| data)
+        if let Some(limit) = match_limit {
+            use tokio::io::AsyncBufReadExt as _;
+            let mut reader = tokio::io::BufReader::new(stdout);
+            let mut count = 0;
+            loop {
+                let start = data.len();
+                if reader.read_until(b'\n', &mut data).await? == 0 {
+                    break;
+                }
+                if serde_json::from_slice::<Value>(&data[start..])
+                    .ok()
+                    .is_some_and(|value| value["type"] == "match")
+                {
+                    count += 1;
+                    if count as f64 >= limit {
+                        if let Some(pid) = pid {
+                            unsafe {
+                                libc::kill(pid as i32, libc::SIGTERM);
+                            }
+                        }
+                        return Ok::<_, io::Error>((data, true));
+                    }
+                }
+            }
+            Ok((data, false))
+        } else {
+            stdout.read_to_end(&mut data).await.map(|_| (data, false))
+        }
     });
     let stderr_task = tokio::spawn(async move {
         let mut data = Vec::new();
@@ -1057,7 +1082,7 @@ async fn capture_process(
             return Err(ToolError::new("Operation aborted"));
         }
     };
-    let stdout = stdout_task
+    let (stdout, stopped_at_limit) = stdout_task
         .await
         .map_err(|error| ToolError::new(error.to_string()))??;
     let stderr = stderr_task
@@ -1067,34 +1092,35 @@ async fn capture_process(
         status,
         stdout,
         stderr,
+        stopped_at_limit,
     })
 }
 
 fn truncate_line(line: &str) -> (String, bool) {
-    // Pi counts JavaScript UTF-16 code units. These tools overwhelmingly receive
-    // ASCII source; this preserves Unicode scalar boundaries for safe Rust text.
-    if line.chars().count() <= GREP_MAX_LINE_LENGTH {
+    if line.encode_utf16().count() <= GREP_MAX_LINE_LENGTH {
         return (line.into(), false);
     }
-    let prefix: String = line.chars().take(GREP_MAX_LINE_LENGTH).collect();
+    let prefix = String::from_utf16_lossy(
+        &line
+            .encode_utf16()
+            .take(GREP_MAX_LINE_LENGTH)
+            .collect::<Vec<_>>(),
+    );
     (format!("{prefix}... [truncated]"), true)
 }
 
 pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
     throw_if_cancelled(context)?;
-    let rg =
-        find_program(&["rg"]).ok_or_else(|| ToolError::new("ripgrep (rg) is not available"))?;
+    let rg = find_program(&["rg"]).ok_or_else(|| {
+        ToolError::new("ripgrep (rg) is not available and could not be downloaded")
+    })?;
     let raw_search_path = args.path.as_deref().unwrap_or(".");
     let search_path = resolve_tool_path(raw_search_path, &context.cwd);
     let metadata = fs::metadata(&search_path)
         .map_err(|_| ToolError::new(format!("Path not found: {}", search_path.display())))?;
     let is_directory = metadata.is_dir();
-    let context_lines = if args.context.unwrap_or(0.0) > 0.0 {
-        usize_number(args.context, 0, 0, "context")?
-    } else {
-        0
-    };
-    let effective_limit = usize_number(args.limit, 100, 1, "limit")?;
+    let context_lines = args.context.unwrap_or(0.0).max(0.0);
+    let effective_limit = args.limit.unwrap_or(100.0).max(1.0);
     let mut command_args: Vec<OsString> = ["--json", "--line-number", "--color=never", "--hidden"]
         .into_iter()
         .map(Into::into)
@@ -1105,7 +1131,9 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
     if args.literal.unwrap_or(false) {
         command_args.push("--fixed-strings".into());
     }
-    if let Some(glob) = &args.glob {
+    if let Some(glob) = &args.glob
+        && !glob.is_empty()
+    {
         command_args.extend(["--glob".into(), glob.into()]);
     }
     command_args.extend([
@@ -1113,17 +1141,24 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
         args.pattern.clone().into(),
         search_path.as_os_str().into(),
     ]);
-    let captured = capture_process(&rg, &command_args, &context.cwd, &context.cancellation)
-        .await
-        .map_err(|error| {
-            if error.to_string() == "Operation aborted" {
-                error
-            } else {
-                ToolError::new(format!("Failed to run ripgrep: {error}"))
-            }
-        })?;
+    reject_nul_arguments(&command_args)?;
+    let captured = capture_process(
+        &rg,
+        &command_args,
+        &context.cwd,
+        &context.cancellation,
+        Some(effective_limit),
+    )
+    .await
+    .map_err(|error| {
+        if error.to_string() == "Operation aborted" {
+            error
+        } else {
+            ToolError::new(format!("Failed to run ripgrep: {error}"))
+        }
+    })?;
     let code = captured.status.code().unwrap_or(0);
-    if code != 0 && code != 1 {
+    if !captured.stopped_at_limit && code != 0 && code != 1 {
         let stderr = String::from_utf8_lossy(&captured.stderr).trim().to_string();
         return Err(ToolError::new(if stderr.is_empty() {
             format!("ripgrep exited with code {code}")
@@ -1138,6 +1173,7 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
         text: Option<String>,
     }
     let mut matches = Vec::new();
+    let mut match_count = 0;
     for line in String::from_utf8_lossy(&captured.stdout).lines() {
         let Ok(event) = serde_json::from_str::<Value>(line) else {
             continue;
@@ -1145,6 +1181,7 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
         if event.get("type").and_then(Value::as_str) != Some("match") {
             continue;
         }
+        match_count += 1;
         let Some(path) = event.pointer("/data/path/text").and_then(Value::as_str) else {
             continue;
         };
@@ -1160,14 +1197,14 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
             line: line_number as usize,
             text,
         });
-        if matches.len() >= effective_limit {
+        if match_count as f64 >= effective_limit {
             break;
         }
     }
-    if matches.is_empty() {
+    if match_count == 0 {
         return Ok(ToolResult::text("No matches found"));
     }
-    let match_limit_reached = matches.len() >= effective_limit;
+    let match_limit_reached = match_count as f64 >= effective_limit;
     let mut file_cache: HashMap<PathBuf, Option<Vec<String>>> = HashMap::new();
     let mut lines_truncated = false;
     let mut output_lines = Vec::new();
@@ -1187,7 +1224,7 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
                 .to_string_lossy()
                 .into_owned()
         };
-        if context_lines == 0 {
+        if context_lines == 0.0 && matched.text.is_some() {
             let value = matched
                 .text
                 .unwrap_or_default()
@@ -1199,8 +1236,8 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
             output_lines.push(format!("{shown_path}:{}: {value}", matched.line));
         } else {
             let file_lines = file_cache.entry(matched.path.clone()).or_insert_with(|| {
-                fs::read_to_string(&matched.path).ok().map(|content| {
-                    content
+                fs::read(&matched.path).ok().map(|content| {
+                    String::from_utf8_lossy(&content)
                         .replace("\r\n", "\n")
                         .replace('\r', "\n")
                         .split('\n')
@@ -1215,37 +1252,49 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
                 ));
                 continue;
             };
-            let start = matched.line.saturating_sub(context_lines).max(1);
-            let end = matched
-                .line
-                .saturating_add(context_lines)
-                .min(file_lines.len());
-            for current in start..=end {
-                let (value, truncated) = truncate_line(
+            let mut current = (matched.line as f64 - context_lines).max(1.0);
+            let end = (matched.line as f64 + context_lines).min(file_lines.len() as f64);
+            while current <= end {
+                let value = if current.fract() == 0.0 {
                     file_lines
-                        .get(current - 1)
+                        .get(current as usize - 1)
                         .map(String::as_str)
-                        .unwrap_or(""),
-                );
-                lines_truncated |= truncated;
-                if current == matched.line {
-                    output_lines.push(format!("{shown_path}:{current}: {value}"));
+                        .unwrap_or("")
                 } else {
-                    output_lines.push(format!("{shown_path}-{current}- {value}"));
+                    ""
+                };
+                let (value, truncated) = truncate_line(&value.replace('\r', ""));
+                lines_truncated |= truncated;
+                if current == matched.line as f64 {
+                    output_lines.push(format!(
+                        "{shown_path}:{}: {value}",
+                        crate::ecmascript::number_string(current)
+                    ));
+                } else {
+                    output_lines.push(format!(
+                        "{shown_path}-{}- {value}",
+                        crate::ecmascript::number_string(current)
+                    ));
                 }
+                current += 1.0;
             }
         }
     }
-    let truncation = truncate_head(&output_lines.join("\n"), usize::MAX, DEFAULT_MAX_BYTES);
+    let truncation = truncate_head(
+        &output_lines.join("\n"),
+        9_007_199_254_740_991,
+        DEFAULT_MAX_BYTES,
+    );
     let mut output = truncation.content.clone();
     let mut notices = Vec::new();
     let mut detail = serde_json::Map::new();
     if match_limit_reached {
         notices.push(format!(
-            "{effective_limit} matches limit reached. Use limit={} for more, or refine pattern",
-            effective_limit.saturating_mul(2)
+            "{} matches limit reached. Use limit={} for more, or refine pattern",
+            crate::ecmascript::number_string(effective_limit),
+            crate::ecmascript::number_string(effective_limit * 2.0)
         ));
-        detail.insert("matchLimitReached".into(), json!(effective_limit));
+        detail.insert("matchLimitReached".into(), number_value(effective_limit));
     }
     if truncation.truncated {
         notices.push(format!("{} limit reached", format_size(DEFAULT_MAX_BYTES)));
@@ -1287,16 +1336,10 @@ fn program_help_contains(program: &Path, option: &str) -> bool {
 
 pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
     throw_if_cancelled(context)?;
-    let fd =
-        find_program(&["fd", "fdfind"]).ok_or_else(|| ToolError::new("fd is not available"))?;
+    let fd = find_program(&["fd", "fdfind"])
+        .ok_or_else(|| ToolError::new("fd is not available and could not be downloaded"))?;
     let search_path = resolve_tool_path(args.path.as_deref().unwrap_or("."), &context.cwd);
-    if !search_path.exists() {
-        return Err(ToolError::new(format!(
-            "Path not found: {}",
-            search_path.display()
-        )));
-    }
-    let effective_limit = usize_number(args.limit, 1_000, 0, "limit")?;
+    let effective_limit = args.limit.unwrap_or(1_000.0);
     let mut command_args: Vec<OsString> = ["--glob", "--color=never", "--hidden"]
         .into_iter()
         .map(Into::into)
@@ -1306,7 +1349,10 @@ pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, T
     if !inside_git_repository(&search_path) && program_help_contains(&fd, "--no-require-git") {
         command_args.push("--no-require-git".into());
     }
-    command_args.extend(["--max-results".into(), effective_limit.to_string().into()]);
+    command_args.extend([
+        "--max-results".into(),
+        crate::ecmascript::number_string(effective_limit).into(),
+    ]);
     let mut effective_pattern = args.pattern;
     if effective_pattern.contains('/') {
         command_args.push("--full-path".into());
@@ -1322,15 +1368,22 @@ pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, T
         effective_pattern.into(),
         search_path.as_os_str().into(),
     ]);
-    let captured = capture_process(&fd, &command_args, &context.cwd, &context.cancellation)
-        .await
-        .map_err(|error| {
-            if error.to_string() == "Operation aborted" {
-                error
-            } else {
-                ToolError::new(format!("Failed to run fd: {error}"))
-            }
-        })?;
+    reject_nul_arguments(&command_args)?;
+    let captured = capture_process(
+        &fd,
+        &command_args,
+        &context.cwd,
+        &context.cancellation,
+        None,
+    )
+    .await
+    .map_err(|error| {
+        if error.to_string() == "Operation aborted" {
+            error
+        } else {
+            ToolError::new(format!("Failed to run fd: {error}"))
+        }
+    })?;
     let raw = String::from_utf8_lossy(&captured.stdout);
     if !captured.status.success() && raw.trim().is_empty() {
         let stderr = String::from_utf8_lossy(&captured.stderr).trim().to_string();
@@ -1366,17 +1419,18 @@ pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, T
     if lines.is_empty() {
         return Ok(ToolResult::text("No files found matching pattern"));
     }
-    let result_limit_reached = lines.len() >= effective_limit;
-    let truncation = truncate_head(&lines.join("\n"), usize::MAX, DEFAULT_MAX_BYTES);
+    let result_limit_reached = lines.len() as f64 >= effective_limit;
+    let truncation = truncate_head(&lines.join("\n"), 9_007_199_254_740_991, DEFAULT_MAX_BYTES);
     let mut output = truncation.content.clone();
     let mut notices = Vec::new();
     let mut detail = serde_json::Map::new();
     if result_limit_reached {
         notices.push(format!(
-            "{effective_limit} results limit reached. Use limit={} for more, or refine pattern",
-            effective_limit.saturating_mul(2)
+            "{} results limit reached. Use limit={} for more, or refine pattern",
+            crate::ecmascript::number_string(effective_limit),
+            crate::ecmascript::number_string(effective_limit * 2.0)
         ));
-        detail.insert("resultLimitReached".into(), json!(effective_limit));
+        detail.insert("resultLimitReached".into(), number_value(effective_limit));
     }
     if truncation.truncated {
         notices.push(format!("{} limit reached", format_size(DEFAULT_MAX_BYTES)));
@@ -1391,116 +1445,20 @@ pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, T
     })
 }
 
-fn parse_edit_args(mut arguments: Value) -> Result<EditArgs, ToolError> {
-    let Some(object) = arguments.as_object_mut() else {
-        return parse_args(arguments);
-    };
-    if let Some(edits) = object.get_mut("edits") {
-        if let Some(encoded) = edits.as_str() {
-            if let Ok(parsed) = serde_json::from_str::<Value>(encoded) {
-                if parsed.is_array() {
-                    *edits = parsed;
-                } else if parsed.is_object() {
-                    *edits = Value::Array(vec![parsed]);
-                }
-            }
-        } else if edits.is_object() {
-            *edits = Value::Array(vec![edits.take()]);
-        }
-    }
-    if object.get("oldText").is_some_and(Value::is_string)
-        && object.get("newText").is_some_and(Value::is_string)
-    {
-        let old_text = object.remove("oldText").unwrap();
-        let new_text = object.remove("newText").unwrap();
-        let edit = json!({ "oldText": old_text, "newText": new_text });
-        match object.entry("edits") {
-            serde_json::map::Entry::Occupied(mut entry) if entry.get().is_array() => {
-                entry.get_mut().as_array_mut().unwrap().push(edit);
-            }
-            serde_json::map::Entry::Occupied(_) => {}
-            serde_json::map::Entry::Vacant(entry) => {
-                entry.insert(Value::Array(vec![edit]));
-            }
-        }
-    }
-    parse_args(arguments)
+#[cfg(test)]
+fn parse_edit_args(arguments: Value) -> Result<EditArgs, ToolError> {
+    parse_args(crate::tool_validation::prepare("edit", arguments)?)
 }
 
 fn normalize_lf(text: &str) -> String {
     text.replace("\r\n", "\n").replace('\r', "\n")
 }
 
-fn compose_acute(base: char) -> Option<char> {
-    Some(match base {
-        'a' => 'á',
-        'e' => 'é',
-        'i' => 'í',
-        'o' => 'ó',
-        'u' => 'ú',
-        'y' => 'ý',
-        'A' => 'Á',
-        'E' => 'É',
-        'I' => 'Í',
-        'O' => 'Ó',
-        'U' => 'Ú',
-        'Y' => 'Ý',
-        _ => return None,
-    })
-}
-
-/// The compatibility forms seen in Pi's fixtures plus its explicit punctuation
-/// folding. This avoids introducing a large Unicode dependency just for edit.
-fn compatibility_normalize(text: &str) -> String {
-    let mut output = String::with_capacity(text.len());
-    for character in text.chars() {
-        if character == '\u{0301}' {
-            if let Some(previous) = output.pop() {
-                if let Some(composed) = compose_acute(previous) {
-                    output.push(composed);
-                } else {
-                    output.push(previous);
-                    output.push(character);
-                }
-            } else {
-                output.push(character);
-            }
-            continue;
-        }
-        let character = match character {
-            '\u{ff01}'..='\u{ff5e}' => char::from_u32(character as u32 - 0xfee0).unwrap(),
-            '\u{3000}' => ' ',
-            '\u{fb00}' => {
-                output.push('f');
-                'f'
-            }
-            '\u{fb01}' => {
-                output.push('f');
-                'i'
-            }
-            '\u{fb02}' => {
-                output.push('f');
-                'l'
-            }
-            '\u{fb03}' => {
-                output.extend(['f', 'f']);
-                'i'
-            }
-            '\u{fb04}' => {
-                output.extend(['f', 'f']);
-                'l'
-            }
-            other => other,
-        };
-        output.push(character);
-    }
-    output
-}
-
 pub fn normalize_for_fuzzy_match(text: &str) -> String {
-    compatibility_normalize(text)
+    text.nfkc()
+        .collect::<String>()
         .split('\n')
-        .map(str::trim_end)
+        .map(|line| line.trim_end_matches(crate::ecmascript::whitespace))
         .collect::<Vec<_>>()
         .join("\n")
         .chars()
@@ -1729,93 +1687,7 @@ fn apply_edits(
     Ok((content.to_string(), new_content))
 }
 
-fn patch_lines(content: &str) -> Vec<&str> {
-    let mut lines: Vec<&str> = content.split('\n').collect();
-    if content.ends_with('\n') {
-        lines.pop();
-    }
-    if content.is_empty() {
-        lines.clear();
-    }
-    lines
-}
-
-fn unified_patch(path: &str, old: &str, new: &str) -> String {
-    let old_lines = patch_lines(old);
-    let new_lines = patch_lines(new);
-    let old_start = usize::from(!old_lines.is_empty());
-    let new_start = usize::from(!new_lines.is_empty());
-    let mut output = format!(
-        "--- {path}\n+++ {path}\n@@ -{old_start},{} +{new_start},{} @@\n",
-        old_lines.len(),
-        new_lines.len()
-    );
-    for line in old_lines {
-        output.push('-');
-        output.push_str(line);
-        output.push('\n');
-    }
-    if !old.is_empty() && !old.ends_with('\n') {
-        output.push_str("\\ No newline at end of file\n");
-    }
-    for line in new_lines {
-        output.push('+');
-        output.push_str(line);
-        output.push('\n');
-    }
-    if !new.is_empty() && !new.ends_with('\n') {
-        output.push_str("\\ No newline at end of file\n");
-    }
-    output
-}
-
-fn display_diff(old: &str, new: &str) -> (String, Option<usize>) {
-    let old_lines = patch_lines(old);
-    let new_lines = patch_lines(new);
-    let mut first = 0;
-    while first < old_lines.len().min(new_lines.len()) && old_lines[first] == new_lines[first] {
-        first += 1;
-    }
-    let first_changed = Some(first + 1);
-    let mut old_tail = old_lines.len();
-    let mut new_tail = new_lines.len();
-    while old_tail > first && new_tail > first && old_lines[old_tail - 1] == new_lines[new_tail - 1]
-    {
-        old_tail -= 1;
-        new_tail -= 1;
-    }
-    let context_start = first.saturating_sub(4);
-    let old_context_end = (old_tail + 4).min(old_lines.len());
-    let new_context_end = (new_tail + 4).min(new_lines.len());
-    let width = old_lines.len().max(new_lines.len()).to_string().len();
-    let mut output = Vec::new();
-    if context_start > 0 {
-        output.push(format!(" {} ...", " ".repeat(width)));
-    }
-    for (index, line) in old_lines[context_start..first].iter().enumerate() {
-        output.push(format!(" {:>width$} {line}", context_start + index + 1));
-    }
-    for (index, line) in old_lines[first..old_tail].iter().enumerate() {
-        output.push(format!("-{:>width$} {line}", first + index + 1));
-    }
-    for (index, line) in new_lines[first..new_tail].iter().enumerate() {
-        output.push(format!("+{:>width$} {line}", first + index + 1));
-    }
-    let common_after = (old_lines.len() - old_tail)
-        .min(new_lines.len() - new_tail)
-        .min(4);
-    for index in 0..common_after {
-        output.push(format!(
-            " {:>width$} {}",
-            old_tail + index + 1,
-            old_lines[old_tail + index]
-        ));
-    }
-    if old_context_end < old_lines.len() || new_context_end < new_lines.len() {
-        output.push(format!(" {} ...", " ".repeat(width)));
-    }
-    (output.join("\n"), first_changed)
-}
+use crate::edit_diff::{display_diff, unified_patch};
 
 pub async fn edit(args: EditArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
     if args.edits.is_empty() {
@@ -1824,25 +1696,32 @@ pub async fn edit(args: EditArgs, context: &ToolContext) -> Result<ToolResult, T
         ));
     }
     let path = resolve_tool_path(&args.path, &context.cwd);
-    let lock = mutation_lock(&mutation_key(&path));
+    let lock = mutation_lock(&mutation_key(&path)?);
     let _guard = lock.lock().await;
     throw_if_cancelled(context)?;
-    let mut file = OpenOptions::new()
-        .read(true)
-        .write(true)
-        .open(&path)
-        .map_err(|error| {
-            let code = error
-                .raw_os_error()
-                .map(errno_name)
-                .unwrap_or_else(|| error.to_string());
-            ToolError::new(format!(
-                "Could not edit file: {}. Error code: {code}.",
-                args.path
-            ))
-        })?;
-    let mut raw_bytes = Vec::new();
-    file.read_to_end(&mut raw_bytes)?;
+    reject_nul_path(&path)?;
+    let access_path = std::ffi::CString::new(path.as_os_str().as_encoded_bytes())
+        .expect("NUL checked by mutation queue");
+    if unsafe { libc::access(access_path.as_ptr(), libc::R_OK | libc::W_OK) } != 0 {
+        let error = io::Error::last_os_error();
+        throw_if_cancelled(context)?;
+        let code = error
+            .raw_os_error()
+            .map(errno_name)
+            .unwrap_or_else(|| error.to_string());
+        return Err(ToolError::new(format!(
+            "Could not edit file: {}. Error code: {code}.",
+            args.path
+        )));
+    }
+    throw_if_cancelled(context)?;
+    let raw_bytes = fs::read(&path).map_err(|error| {
+        if error.raw_os_error() == Some(libc::EISDIR) {
+            node_fs_error(error, "read", None)
+        } else {
+            node_fs_error(error, "open", Some(&path))
+        }
+    })?;
     let raw = String::from_utf8_lossy(&raw_bytes).into_owned();
     throw_if_cancelled(context)?;
     let (bom, content) = raw
@@ -1865,7 +1744,8 @@ pub async fn edit(args: EditArgs, context: &ToolContext) -> Result<ToolResult, T
     } else {
         changed.clone()
     };
-    fs::write(&path, format!("{bom}{restored}"))?;
+    fs::write(&path, format!("{bom}{restored}"))
+        .map_err(|error| node_fs_error(error, "open", Some(&path)))?;
     throw_if_cancelled(context)?;
     let (diff, first_changed_line) = display_diff(&base, &changed);
     Ok(ToolResult {
@@ -2094,14 +1974,18 @@ fn emit_bash_update(
         return Ok(());
     };
     let snapshot = accumulator.snapshot(true)?;
+    let mut details = serde_json::Map::new();
+    if snapshot.truncation.truncated {
+        details.insert("truncation".into(), json!(snapshot.truncation));
+    }
+    if let Some(path) = snapshot.full_output_path {
+        details.insert("fullOutputPath".into(), json!(path));
+    }
     callback(ToolResult {
         content: vec![ContentBlock::Text {
             text: snapshot.content,
         }],
-        details: Some(json!({
-            "truncation": snapshot.truncation.truncated.then_some(snapshot.truncation.clone()),
-            "fullOutputPath": snapshot.full_output_path,
-        })),
+        details: Some(Value::Object(details)),
     });
     Ok(())
 }
@@ -2137,6 +2021,13 @@ pub async fn bash(
     on_update: Option<&ToolUpdateCallback>,
 ) -> Result<ToolResult, ToolError> {
     const MAX_TIMEOUT_SECONDS: f64 = 2_147_483_647.0 / 1000.0;
+    const UPDATE_INTERVAL: Duration = Duration::from_millis(100);
+    if let Some(callback) = on_update {
+        callback(ToolResult {
+            content: vec![],
+            details: None,
+        });
+    }
     let timeout_seconds = match args.timeout {
         None => None,
         Some(value) if !value.is_finite() || value <= 0.0 => {
@@ -2151,7 +2042,9 @@ pub async fn bash(
         }
         Some(value) => Some(value),
     };
-    throw_if_cancelled(context)?;
+    if context.cancellation.is_cancelled() {
+        return Err(ToolError::new("Command aborted"));
+    }
     if !context.cwd.exists() {
         return Err(ToolError::new(format!(
             "Working directory does not exist: {}\nCannot execute bash commands.",
@@ -2168,6 +2061,7 @@ pub async fn bash(
         .as_ref()
         .map(|prefix| format!("{prefix}\n{}", args.command))
         .unwrap_or(args.command);
+    reject_nul_arguments(&["-c".into(), command_text.clone().into()])?;
     let mut command = Command::new(shell);
     command
         .arg("-c")
@@ -2196,29 +2090,53 @@ pub async fn bash(
     let (sender, mut receiver) = mpsc::unbounded_channel();
     let stdout_task = tokio::spawn(read_pipe(stdout, sender.clone()));
     let stderr_task = tokio::spawn(read_pipe(stderr, sender));
-    if let Some(callback) = on_update {
-        callback(ToolResult {
-            content: vec![],
-            details: None,
-        });
-    }
     let mut accumulator = OutputAccumulator::new();
     let deadline = timeout_seconds.map(|seconds| Instant::now() + Duration::from_secs_f64(seconds));
     let mut stop_reason: Option<&'static str> = None;
     let mut last_update = Instant::now()
-        .checked_sub(Duration::from_millis(100))
+        .checked_sub(UPDATE_INTERVAL)
         .unwrap_or_else(Instant::now);
+    let mut update_dirty = false;
+    let mut update_deadline = None;
+    let mut idle_deadline = None;
+    let mut status = None;
+    let mut pipes_closed = false;
     let mut wait = Box::pin(child.wait());
-    let status = loop {
+    loop {
+        if status.is_some() && pipes_closed {
+            break;
+        }
         tokio::select! {
-            result = &mut wait => break result?,
-            Some(chunk) = receiver.recv() => {
-                accumulator.append(&chunk)?;
-                if on_update.is_some() && last_update.elapsed() >= Duration::from_millis(100) {
-                    emit_bash_update(&mut accumulator, on_update)?;
-                    last_update = Instant::now();
+            result = &mut wait, if status.is_none() => {
+                status = Some(result?);
+                idle_deadline = Some(Instant::now() + UPDATE_INTERVAL);
+            }
+            chunk = receiver.recv(), if !pipes_closed => {
+                if let Some(chunk) = chunk {
+                    accumulator.append(&chunk)?;
+                    if status.is_some() { idle_deadline = Some(Instant::now() + UPDATE_INTERVAL); }
+                    if on_update.is_some() {
+                        update_dirty = true;
+                        if last_update.elapsed() >= UPDATE_INTERVAL {
+                            emit_bash_update(&mut accumulator, on_update)?;
+                            update_dirty = false;
+                            last_update = Instant::now();
+                            update_deadline = None;
+                        } else {
+                            update_deadline = Some(last_update + UPDATE_INTERVAL);
+                        }
+                    }
+                } else {
+                    pipes_closed = true;
                 }
             }
+            _ = wait_for_deadline(update_deadline), if update_dirty => {
+                emit_bash_update(&mut accumulator, on_update)?;
+                update_dirty = false;
+                last_update = Instant::now();
+                update_deadline = None;
+            }
+            _ = wait_for_deadline(idle_deadline), if status.is_some() => break,
             _ = context.cancellation.cancelled(), if stop_reason.is_none() => {
                 stop_reason = Some("aborted");
                 kill_process_group(pid);
@@ -2228,17 +2146,14 @@ pub async fn bash(
                 kill_process_group(pid);
             }
         }
-    };
-    drop(wait);
-    // Detached descendants can retain inherited descriptors forever. Pi waits
-    // only while data continues to arrive, then stops after 100 ms of silence.
-    while let Ok(Some(chunk)) = timeout(Duration::from_millis(100), receiver.recv()).await {
-        accumulator.append(&chunk)?;
     }
+    drop(wait);
+    // Match Pi's 100 ms post-exit idle grace while retaining live updates,
+    // cancellation and timeout handling during descendant output above.
     stdout_task.abort();
     stderr_task.abort();
     accumulator.finish()?;
-    if on_update.is_some() {
+    if update_dirty {
         emit_bash_update(&mut accumulator, on_update)?;
     }
     let snapshot = accumulator.snapshot(true)?;
@@ -2254,7 +2169,7 @@ pub async fn bash(
         }
         Some("timeout") => {
             let text = format_bash_output(&snapshot, last_line_bytes, "");
-            let seconds = timeout_seconds.unwrap();
+            let seconds = crate::ecmascript::number_string(timeout_seconds.unwrap());
             let status = format!("Command timed out after {seconds} seconds");
             return Err(ToolError::new(if text.is_empty() {
                 status
@@ -2265,7 +2180,11 @@ pub async fn bash(
         _ => {}
     }
     let output = format_bash_output(&snapshot, last_line_bytes, "(no output)");
-    if let Some(code) = status.code().filter(|code| *code != 0) {
+    if let Some(code) = status
+        .expect("loop waits for shell exit")
+        .code()
+        .filter(|code| *code != 0)
+    {
         return Err(ToolError::new(format!(
             "{output}\n\nCommand exited with code {code}"
         )));
@@ -2380,8 +2299,8 @@ mod tests {
             "Offset 10 is beyond end of file (4 lines total)"
         );
 
-        let png = b"\x89PNG\r\n\x1a\nrest";
-        fs::write(directory.path().join("image.bin"), png).unwrap();
+        let png = include_bytes!("../tests/fixtures/images/small.png").to_vec();
+        fs::write(directory.path().join("image.bin"), &png).unwrap();
         let image = read(
             ReadArgs {
                 path: "image.bin".into(),
@@ -2450,7 +2369,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn write_creates_parents_overwrites_and_uses_js_string_length() {
+    async fn write_creates_parents_and_overwrites() {
         let directory = tempdir().unwrap();
         let context = ToolContext::new(directory.path());
         let result = write(
@@ -2462,10 +2381,7 @@ mod tests {
         )
         .await
         .unwrap();
-        assert_eq!(
-            text(&result),
-            "Successfully wrote 3 bytes to nested/file.txt"
-        );
+        assert_eq!(text(&result), "Successfully wrote to nested/file.txt");
         assert_eq!(
             fs::read_to_string(directory.path().join("nested/file.txt")).unwrap(),
             "a😀"

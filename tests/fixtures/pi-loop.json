@@ -1,0 +1,622 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "chunks": [
+    {
+      "choices": [
+        {
+          "delta": {
+            "tool_calls": [
+              {
+                "index": 0,
+                "id": "cut-write",
+                "function": {
+                  "name": "write",
+                  "arguments": "{\"path\":\"blocked.txt\",\"content\":\"blocked\"}"
+                }
+              },
+              {
+                "index": 1,
+                "id": "cut-read",
+                "function": {
+                  "name": "read",
+                  "arguments": "{\"path\":\"other.txt\"}"
+                }
+              }
+            ]
+          },
+          "finish_reason": "length"
+        }
+      ]
+    },
+    {
+      "choices": [
+        {
+          "delta": {
+            "tool_calls": [
+              {
+                "index": 0,
+                "id": "repair-write",
+                "function": {
+                  "name": "write",
+                  "arguments": "{\"path\":\"recovered.txt\",\"content\":\"recovered"
+                }
+              }
+            ]
+          },
+          "finish_reason": "tool_calls"
+        }
+      ]
+    },
+    {
+      "choices": [
+        {
+          "delta": {
+            "content": "done"
+          },
+          "finish_reason": "stop"
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "role": "user",
+      "content": "test"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "cut-write",
+          "name": "write",
+          "arguments": {
+            "path": "blocked.txt",
+            "content": "blocked"
+          }
+        },
+        {
+          "type": "toolCall",
+          "id": "cut-read",
+          "name": "read",
+          "arguments": {
+            "path": "other.txt"
+          }
+        }
+      ],
+      "api": "openai-completions",
+      "provider": "fixture",
+      "model": "model",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "length",
+      "rawStopReason": "length"
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "cut-write",
+      "toolName": "write",
+      "content": [
+        {
+          "type": "text",
+          "text": "Tool call \"write\" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments."
+        }
+      ],
+      "details": {},
+      "isError": true
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "cut-read",
+      "toolName": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "Tool call \"read\" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments."
+        }
+      ],
+      "details": {},
+      "isError": true
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "repair-write",
+          "name": "write",
+          "arguments": {
+            "path": "recovered.txt",
+            "content": "recovered"
+          }
+        }
+      ],
+      "api": "openai-completions",
+      "provider": "fixture",
+      "model": "model",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "rawStopReason": "tool_calls"
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "repair-write",
+      "toolName": "write",
+      "content": [
+        {
+          "type": "text",
+          "text": "Successfully wrote to recovered.txt"
+        }
+      ],
+      "isError": false
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "done"
+        }
+      ],
+      "api": "openai-completions",
+      "provider": "fixture",
+      "model": "model",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "stop",
+      "rawStopReason": "stop"
+    }
+  ],
+  "events": [
+    {
+      "type": "agent_start"
+    },
+    {
+      "type": "turn_start"
+    },
+    {
+      "type": "message_start"
+    },
+    {
+      "type": "message_end"
+    },
+    {
+      "type": "message_start"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_end"
+    },
+    {
+      "type": "tool_execution_start",
+      "toolCallId": "cut-write"
+    },
+    {
+      "type": "tool_execution_end",
+      "toolCallId": "cut-write"
+    },
+    {
+      "type": "message_start"
+    },
+    {
+      "type": "message_end"
+    },
+    {
+      "type": "tool_execution_start",
+      "toolCallId": "cut-read"
+    },
+    {
+      "type": "tool_execution_end",
+      "toolCallId": "cut-read"
+    },
+    {
+      "type": "message_start"
+    },
+    {
+      "type": "message_end"
+    },
+    {
+      "type": "turn_end"
+    },
+    {
+      "type": "turn_start"
+    },
+    {
+      "type": "message_start"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_end"
+    },
+    {
+      "type": "tool_execution_start",
+      "toolCallId": "repair-write"
+    },
+    {
+      "type": "tool_execution_end",
+      "toolCallId": "repair-write"
+    },
+    {
+      "type": "message_start"
+    },
+    {
+      "type": "message_end"
+    },
+    {
+      "type": "turn_end"
+    },
+    {
+      "type": "turn_start"
+    },
+    {
+      "type": "message_start"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_update"
+    },
+    {
+      "type": "message_end"
+    },
+    {
+      "type": "turn_end"
+    },
+    {
+      "type": "agent_end"
+    }
+  ],
+  "requests": [
+    {
+      "model": "model",
+      "messages": [
+        {
+          "role": "system",
+          "content": "System"
+        },
+        {
+          "role": "user",
+          "content": "test"
+        }
+      ],
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "store": false,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "write",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": false
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "read",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": false
+          }
+        }
+      ]
+    },
+    {
+      "model": "model",
+      "messages": [
+        {
+          "role": "system",
+          "content": "System"
+        },
+        {
+          "role": "user",
+          "content": "test"
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "cut-write",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{\"path\":\"blocked.txt\",\"content\":\"blocked\"}"
+              }
+            },
+            {
+              "id": "cut-read",
+              "type": "function",
+              "function": {
+                "name": "read",
+                "arguments": "{\"path\":\"other.txt\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "content": "Tool call \"write\" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments.",
+          "tool_call_id": "cut-write"
+        },
+        {
+          "role": "tool",
+          "content": "Tool call \"read\" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments.",
+          "tool_call_id": "cut-read"
+        }
+      ],
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "store": false,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "write",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": false
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "read",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": false
+          }
+        }
+      ]
+    },
+    {
+      "model": "model",
+      "messages": [
+        {
+          "role": "system",
+          "content": "System"
+        },
+        {
+          "role": "user",
+          "content": "test"
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "cut-write",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{\"path\":\"blocked.txt\",\"content\":\"blocked\"}"
+              }
+            },
+            {
+              "id": "cut-read",
+              "type": "function",
+              "function": {
+                "name": "read",
+                "arguments": "{\"path\":\"other.txt\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "content": "Tool call \"write\" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments.",
+          "tool_call_id": "cut-write"
+        },
+        {
+          "role": "tool",
+          "content": "Tool call \"read\" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments.",
+          "tool_call_id": "cut-read"
+        },
+        {
+          "role": "assistant",
+          "content": null,
+          "tool_calls": [
+            {
+              "id": "repair-write",
+              "type": "function",
+              "function": {
+                "name": "write",
+                "arguments": "{\"path\":\"recovered.txt\",\"content\":\"recovered\"}"
+              }
+            }
+          ]
+        },
+        {
+          "role": "tool",
+          "content": "Successfully wrote to recovered.txt",
+          "tool_call_id": "repair-write"
+        }
+      ],
+      "stream": true,
+      "stream_options": {
+        "include_usage": true
+      },
+      "store": false,
+      "tools": [
+        {
+          "type": "function",
+          "function": {
+            "name": "write",
+            "description": "write",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": false
+          }
+        },
+        {
+          "type": "function",
+          "function": {
+            "name": "read",
+            "description": "read",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "content": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": false
+          }
+        }
+      ]
+    }
+  ],
+  "executed": [
+    {
+      "id": "repair-write",
+      "name": "write",
+      "args": {
+        "path": "recovered.txt",
+        "content": "recovered"
+      }
+    }
+  ]
+}

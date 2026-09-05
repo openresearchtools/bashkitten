@@ -1,0 +1,85 @@
+{
+  "date": "2026-09-05T22:55:30.317238+00:00",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "checks": {
+    "rustTests": 103,
+    "libraryTests": 81,
+    "toolFixtures": 187,
+    "bookwormFdFixtures": 5,
+    "imageFixtures": 24,
+    "allTargetsClippyWarningsDenied": true,
+    "hostFdToolFixtureRunPassed": true
+  },
+  "package": {
+    "path": "/run/media/user/Data/bashkitten-builds/artifacts/bashkitten_0.1.0_amd64.deb",
+    "bytes": 12184264,
+    "sha256": "2de74b5448a2336ad065dfc2b58da53106ac7ba0c81ed61aa2f1de47e1bb2058",
+    "installation": {
+      "installed": "install ok installed\n0.1.0",
+      "version": "bashkitten 0.1.0",
+      "catalogModels": 8,
+      "astraPresent": true,
+      "allDynamicLibrariesResolved": true,
+      "controllerServiceUsesDbus": true,
+      "embeddedSettingsAndSharedPickerPresent": true,
+      "anonymousModelsStatus": 401,
+      "bootstrap": {
+        "hasUser": false,
+        "authenticated": false,
+        "csrf": null,
+        "version": "0.1.0"
+      },
+      "webPid": 206,
+      "nodeRuntimeInstalled": false,
+      "webStopped": true
+    },
+    "buildLog": "/run/media/user/Data/bashkitten-builds/package-build-tool-streaming-2026-09-05.log",
+    "installationLog": "/run/media/user/Data/bashkitten-builds/package-proof-tool-streaming-2026-09-05/install.log"
+  },
+  "deployment": {
+    "before": {
+      "bashkitten-web.service": {
+        "ActiveState": "active",
+        "MainPID": "4079364"
+      },
+      "bashkitten-controller.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "bashkitten-llama.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "agents": ""
+    },
+    "after": {
+      "bashkitten-web.service": {
+        "ActiveState": "active",
+        "MainPID": "114039"
+      },
+      "bashkitten-controller.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "bashkitten-llama.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "agents": ""
+    },
+    "binaries": {
+      "bashkitten": "cd5973e391ccc4a10fc63fd2a6233f69574ec27dedcf01dd231ac98523fae299",
+      "bashkitten-agent": "4e2800930aae34c50ac3187f8ab1ab5f39d2c33411925304bd41f60b530f766f",
+      "bashkitten-web": "cc641fbaea719bb889e2e5c87758f5881d7daadb8b45ba3573b8551011941021",
+      "bashkitten-controller": "f9befc62ff1d455b691bd71426b75f8f2315fc2fb025d99d6b8d3159d665dd56"
+    },
+    "directory": "/home/user/.local/lib/bashkitten/current",
+    "sharedPickerServedOn3939": true,
+    "systemPackageUnmodified": true
+  },
+  "remaining": [
+    "Lossless unpaired UTF-16 preservation through tool results, logical history, live output and provider sanitization remains open.",
+    "Other completion gates remain tracked in PARITY_STATUS.md.",
+    "The host system package and old port-18761 preview remain unchanged."
+  ]
+}

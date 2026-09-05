@@ -1,0 +1,13 @@
+// Actual pinned HTTP dispatcher and provider timeout/abort behavior, loopback only.
+import {createServer} from 'node:http';import {execFileSync} from 'node:child_process';import {writeFileSync} from 'node:fs';import {pathToFileURL} from 'node:url';
+const root=process.env.PI_REFERENCE!,pin='9841914c71a74d81abe07f751aefd271fd924e63';if(execFileSync('git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8'}).trim()!==pin)throw Error('Wrong pin');
+const {configureHttpDispatcher}=await import(pathToFileURL(`${root}/packages/coding-agent/src/core/http-dispatcher.ts`).href);configureHttpDispatcher(10);
+const codex=await import(pathToFileURL(`${root}/packages/ai/src/api/openai-codex-responses.ts`).href),chat=await import(pathToFileURL(`${root}/packages/ai/src/api/openai-completions.ts`).href);
+const token='e30.'+Buffer.from(JSON.stringify({'https://api.openai.com/auth':{chatgpt_account_id:'fixture-account'}})).toString('base64url')+'.fixture';
+let payload='';const server=createServer((request,response)=>{request.resume();response.writeHead(200,{'content-type':'text/event-stream'});response.write(payload);});await new Promise<void>(resolve=>server.listen(0,'127.0.0.1',resolve));const port=(server.address() as any).port;
+const cases=[];for(const kind of ['codex','compatible'])for(const abort of [false,true]){
+ const model={id:kind==='codex'?'gpt-5.5':'fixture',provider:kind==='codex'?'openai-codex':'fixture',api:kind==='codex'?'openai-codex-responses':'openai-completions',baseUrl:`http://127.0.0.1:${port}/${kind==='codex'?'backend-api':'v1'}`,name:'Fixture',contextWindow:100000,maxTokens:1000,input:['text'],reasoning:false,cost:{input:0,output:0,cacheRead:0,cacheWrite:0}};
+ const chunks=kind==='codex'?[{type:'response.output_item.added',output_index:0,item:{id:'msg_partial',type:'message',content:[]}},{type:'response.output_text.delta',output_index:0,delta:'Partial answer'}]:[{id:'partial',choices:[{index:0,delta:{content:'Partial answer'}}]}];payload=chunks.map(v=>'data: '+JSON.stringify(v)+'\n\n').join('');
+ const controller=new AbortController();const options={apiKey:token,transport:'sse' as const,signal:controller.signal};const result=(kind==='codex'?codex:chat).stream(model as any,{messages:[]},options);for await(const event of result){if(abort&&event.type==='text_delta')controller.abort();}const expected=await result.result();delete expected.timestamp;cases.push({name:`${kind}-${abort?'abort':'idle'}`,kind,abort,chunks,model,expected});
+}
+server.closeAllConnections();await new Promise<void>(resolve=>server.close(()=>resolve()));writeFileSync(process.argv[2],JSON.stringify({pin,token,cases},null,2)+'\n');console.log('Captured 4 native Pi HTTP idle/abort cases.');

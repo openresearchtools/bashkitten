@@ -1,0 +1,16 @@
+{
+  "date": "2026-09-05",
+  "session": "01a072fe-4699-7872-805e-c724050c5a68",
+  "web_before": 3463467,
+  "agent_before": 3469887,
+  "occupied_port_rejected": true,
+  "web_after": 3469926,
+  "agent_after": 3469887,
+  "login_survived": true,
+  "active_tool_survived": true,
+  "initial_model_parameters_recorded": true,
+  "proof_file_verified": true,
+  "final_answer_persisted": true,
+  "production_web_untouched": true,
+  "limits": "Local deterministic SSE fixture; browser verified reconnection separately."
+}

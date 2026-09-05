@@ -1,0 +1,75 @@
+{
+  "date": "2026-09-05T19:36:15.998618+00:00",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "scope": "Explicit user-requested Settings tabs, local GGUF discovery, custom folders, and llama.cpp GPU visibility",
+  "isolatedRoot": "/run/media/user/Data/bashkitten-builds/settings-browser-parity",
+  "webPort": 49721,
+  "routerPort": 18821,
+  "browserChecks": {
+    "onlySelectedSettingsPanelVisible": true,
+    "tabs": [
+      "App",
+      "Subscriptions",
+      "APIs",
+      "llama.cpp"
+    ],
+    "keyboardEndSelectsLlama": true,
+    "tabsRemainVisibleWhileScrolling": true,
+    "subscriptionAndApiControlsPreserved": true,
+    "downloadsWithinLlamaTabOnly": true,
+    "hfCacheGgufDiscovered": true,
+    "customFolderSelectedWithExistingPicker": true,
+    "folderParentNavigationAbsoluteEntryCreationAndCancel": true,
+    "modelFolderDoesNotChangeWorkingDirectory": true,
+    "companionMmprojExcluded": true,
+    "localModelFilter": true,
+    "nativePresetSavedFromDiscoveredFile": true,
+    "routerCatalogShowsSavedLocalModelUnloadedAfterRefresh": true,
+    "gpuEnvironmentAndCustomFoldersSurviveWebRestart": true,
+    "generatedEnvironmentArgumentsAndIniDisplayed": true,
+    "consoleErrorsOrWarnings": []
+  },
+  "preset": {
+    "id": "local-custom-model-Q5_K_M-a3479a535d15",
+    "path": "/run/media/user/Data/bashkitten-builds/settings-browser-parity/custom models/custom-model-Q5_K_M.gguf",
+    "contextWindow": 4096,
+    "maxTokens": 1024
+  },
+  "realLlamaProcess": {
+    "pid": 3513723,
+    "environment": {
+      "CUDA_VISIBLE_DEVICES": "1,0",
+      "GGML_VK_VISIBLE_DEVICES": ""
+    },
+    "routerModeWithoutSingleModelFlag": true,
+    "discoveredPresetIds": [
+      "local-custom-model-Q5_K_M-a3479a535d15"
+    ]
+  },
+  "webRestart": {
+    "oldWebPid": 3504968,
+    "newWebPid": 3526814,
+    "unchangedRouterPid": 3513723
+  },
+  "validation": [
+    "8 llama-filtered lib tests (5 local model/environment/auth additions)",
+    "3 Pi llama integration tests",
+    "cargo build --locked --bins",
+    "cargo clippy --locked --all-targets -- -D warnings",
+    "Embedded JavaScript parse"
+  ],
+  "limitations": [
+    "GGUF files were deliberate invalid small fixtures; no successful local inference was claimed.",
+    "LM Studio fallback source resolution is covered by native tests; neither conventional directory was present in this browser environment.",
+    "No Hugging Face network search/download was initiated during local discovery checks."
+  ],
+  "cleanup": {
+    "isolatedWebStopped": true,
+    "isolatedRouterStopped": true,
+    "browserTabClosed": true,
+    "productionPidsUntouched": [
+      1695844,
+      2928289
+    ]
+  }
+}

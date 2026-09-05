@@ -1,0 +1,89 @@
+{
+  "date": "2026-09-05T22:33:01.726018+00:00",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "checks": {
+    "rustTests": 103,
+    "libraryTests": 81,
+    "toolFixtures": 146,
+    "bookwormFdFixtures": 5,
+    "imageFixtures": 24,
+    "allTargetsClippyWarningsDenied": true,
+    "hostFdToolFixtureRunPassed": true,
+    "hostFdVersion": "fdfind 10.3.0",
+    "oracleFdVersion": "fd 10.5.0",
+    "bookwormFdVersion": "fdfind 8.6.0"
+  },
+  "package": {
+    "path": "/run/media/user/Data/bashkitten-builds/artifacts/bashkitten_0.1.0_amd64.deb",
+    "bytes": 12182512,
+    "sha256": "454b7992455acbbfabea13051ae34d6cff7dbbe0d1b230bce300af87490f9d4b",
+    "installation": {
+      "installed": "install ok installed\n0.1.0",
+      "version": "bashkitten 0.1.0",
+      "catalogModels": 8,
+      "astraPresent": true,
+      "allDynamicLibrariesResolved": true,
+      "controllerServiceUsesDbus": true,
+      "embeddedSettingsAndSharedPickerPresent": true,
+      "anonymousModelsStatus": 401,
+      "bootstrap": {
+        "hasUser": false,
+        "authenticated": false,
+        "csrf": null,
+        "version": "0.1.0"
+      },
+      "webPid": 206,
+      "nodeRuntimeInstalled": false,
+      "webStopped": true
+    },
+    "buildLog": "/run/media/user/Data/bashkitten-builds/package-build-2026-09-05.log",
+    "installationLog": "/run/media/user/Data/bashkitten-builds/package-proof-2026-09-05/install.log"
+  },
+  "deployment": {
+    "before": {
+      "bashkitten-web.service": {
+        "ActiveState": "active",
+        "MainPID": "3955580"
+      },
+      "bashkitten-controller.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "bashkitten-llama.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "agents": ""
+    },
+    "after": {
+      "bashkitten-web.service": {
+        "ActiveState": "active",
+        "MainPID": "4079364"
+      },
+      "bashkitten-controller.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "bashkitten-llama.service": {
+        "ActiveState": "inactive",
+        "MainPID": "0"
+      },
+      "agents": ""
+    },
+    "binaries": {
+      "bashkitten": "cd5973e391ccc4a10fc63fd2a6233f69574ec27dedcf01dd231ac98523fae299",
+      "bashkitten-agent": "2f30a636dc8750d904194293e6a0246c7c6785ee43551e444af35b7a2ef02cdf",
+      "bashkitten-web": "cc641fbaea719bb889e2e5c87758f5881d7daadb8b45ba3573b8551011941021",
+      "bashkitten-controller": "f9befc62ff1d455b691bd71426b75f8f2315fc2fb025d99d6b8d3159d665dd56"
+    },
+    "directory": "/home/user/.local/lib/bashkitten/current",
+    "sharedPickerServedOn3939": true,
+    "systemPackageUnmodified": true
+  },
+  "limits": [
+    "Full parity is not certified; remaining gates are tracked in PARITY_STATUS.md.",
+    "The system Debian package is not installed on the host; current release binaries use the user-local installation.",
+    "No current agent services existed during this Web-only restart.",
+    "The old port-18761 preview was left unchanged."
+  ]
+}

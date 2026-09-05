@@ -1,35 +1,117 @@
-use anyhow::Result;
+use anyhow::{Context, Result, bail};
 use bashkitten::config::AppConfig;
 use bashkitten::paths::AppPaths;
 use gtk4::glib;
 use gtk4::prelude::*;
-use std::fs;
 use std::process::Command;
 
-fn systemctl(args: &[&str]) {
-    let _ = Command::new("systemctl").arg("--user").args(args).status();
+fn systemctl(args: &[&str]) -> Result<()> {
+    let status = Command::new("systemctl")
+        .arg("--user")
+        .args(args)
+        .status()
+        .context("run systemctl")?;
+    if !status.success() {
+        bail!("systemctl {} failed: {status}", args.join(" "));
+    }
+    Ok(())
+}
+
+fn save_settings(paths: &AppPaths, startup: bool, restart: bool, port: u16) -> Result<()> {
+    let mut config = AppConfig::load(paths)?;
+    let old_port = config.web_port;
+    if port != old_port {
+        std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, port))
+            .with_context(|| format!("Port {port} is unavailable"))?;
+    }
+    let service = Command::new("systemctl")
+        .args([
+            "--user",
+            "show",
+            "bashkitten-web.service",
+            "--property=Id",
+            "--value",
+        ])
+        .output()
+        .context("resolve Web UI service")?;
+    let service_name = String::from_utf8(service.stdout)?.trim().to_owned();
+    if !service.status.success()
+        || !service_name.ends_with(".service")
+        || service_name.contains('/')
+    {
+        bail!("Could not resolve the Web UI service");
+    }
+    let user_config = std::env::var_os("XDG_CONFIG_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".config"))
+        })
+        .context("User configuration directory is unavailable")?;
+    let dropin = user_config
+        .join("systemd/user")
+        .join(format!("{service_name}.d/restart.conf"));
+    config.start_at_login = startup;
+    config.web_restart_on_failure = restart;
+    config.web_port = port;
+    config.save(paths)?;
+    bashkitten::config::atomic_private_bytes(
+        &dropin,
+        format!(
+            "[Service]\nRestart={}\n",
+            if restart { "on-failure" } else { "no" }
+        )
+        .as_bytes(),
+    )?;
+    systemctl(&[
+        if startup { "enable" } else { "disable" },
+        "bashkitten-controller.service",
+    ])?;
+    systemctl(&["daemon-reload"])?;
+    if old_port != port {
+        systemctl(&["restart", "bashkitten-web.service"])?;
+    }
+    Ok(())
 }
 
 fn main() -> Result<()> {
-    let paths = AppPaths::discover()?;
-    paths.ensure()?;
-    systemctl(&["start", "bashkitten.target"]);
     let app = gtk4::Application::builder()
         .application_id("org.openresearchtools.BashKitten")
         .build();
+    if !std::env::args().any(|argument| argument == "--service") {
+        systemctl(&["start", "bashkitten-controller.service"])?;
+        app.register(None::<&gtk4::gio::Cancellable>)?;
+        if !app.is_remote() {
+            bail!("The supervised BashKitten controller did not register its GTK application");
+        }
+        app.activate();
+        return Ok(());
+    }
+    let paths = AppPaths::discover()?;
+    paths.ensure()?;
+    systemctl(&["start", "bashkitten.target"])?;
     app.connect_activate(move |app| build_window(app, paths.clone()));
-    app.connect_shutdown(|_| systemctl(&["stop", "bashkitten.target"]));
+    app.connect_shutdown(|_| {
+        if let Err(error) = systemctl(&["stop", "bashkitten.target"]) {
+            eprintln!("Could not stop BashKitten: {error}");
+        }
+    });
     let app_for_signal = app.clone();
     glib::unix_signal_add_local(libc::SIGTERM, move || {
-        systemctl(&["stop", "bashkitten.target"]);
         app_for_signal.quit();
         glib::ControlFlow::Break
     });
-    app.run();
+    let exit = app.run_with_args(&["bashkitten-controller"]);
+    if exit != glib::ExitCode::SUCCESS {
+        bail!("GTK controller exited with {exit:?}");
+    }
     Ok(())
 }
 
 fn build_window(app: &gtk4::Application, paths: AppPaths) {
+    if let Some(window) = app.active_window() {
+        window.present();
+        return;
+    }
     let config = AppConfig::load(&paths).unwrap_or_default();
     let window = gtk4::ApplicationWindow::builder()
         .application(app)
@@ -69,6 +151,10 @@ fn build_window(app: &gtk4::Application, paths: AppPaths) {
     let save = gtk4::Button::with_label("Save settings");
     save.add_css_class("suggested-action");
     panel.append(&save);
+    let status = gtk4::Label::new(None);
+    status.set_wrap(true);
+    status.set_xalign(0.0);
+    panel.append(&status);
     let quit = gtk4::Button::with_label("Quit BashKitten");
     quit.add_css_class("destructive-action");
     panel.append(&quit);
@@ -78,49 +164,37 @@ fn build_window(app: &gtk4::Application, paths: AppPaths) {
     let startup_for_save = startup.clone();
     let restart_for_save = restart.clone();
     let port_for_save = port.clone();
+    let save_status = status.clone();
     save.connect_clicked(move |_| {
-        if let Ok(mut config) = AppConfig::load(&path_for_save) {
-            let old_port = config.web_port;
-            config.start_at_login = startup_for_save.is_active();
-            config.web_restart_on_failure = restart_for_save.is_active();
-            config.web_port = port_for_save.value_as_int() as u16;
-            let _ = config.save(&path_for_save);
-            if config.start_at_login {
-                systemctl(&["enable", "bashkitten-controller.service"]);
-            } else {
-                systemctl(&["disable", "bashkitten-controller.service"]);
-            }
-            let dropin = std::env::var_os("HOME")
-                .map(std::path::PathBuf::from)
-                .unwrap_or_else(|| path_for_save.config.clone())
-                .join(".config/systemd/user/bashkitten-web.service.d");
-            let _ = fs::create_dir_all(&dropin);
-            let _ = fs::write(
-                dropin.join("restart.conf"),
-                format!(
-                    "[Service]\nRestart={}\n",
-                    if config.web_restart_on_failure {
-                        "on-failure"
-                    } else {
-                        "no"
-                    }
-                ),
-            );
-            systemctl(&["daemon-reload"]);
-            if old_port != config.web_port {
-                systemctl(&["restart", "bashkitten-web.service"]);
-            }
+        match save_settings(
+            &path_for_save,
+            startup_for_save.is_active(),
+            restart_for_save.is_active(),
+            port_for_save.value_as_int() as u16,
+        ) {
+            Ok(()) => save_status.set_text("Settings saved."),
+            Err(error) => save_status.set_text(&format!("Could not save settings: {error:#}")),
         }
     });
-    let open_config = config.clone();
+    let open_paths = paths.clone();
+    let open_status = status.clone();
     open.connect_clicked(move |_| {
-        let _ = Command::new("xdg-open")
-            .arg(format!("http://127.0.0.1:{}", open_config.web_port))
-            .spawn();
+        let result = (|| -> Result<()> {
+            let config = AppConfig::load(&open_paths)?;
+            systemctl(&["start", "bashkitten-web.service"])?;
+            Command::new("xdg-open")
+                .arg(format!("http://127.0.0.1:{}", config.web_port))
+                .spawn()?;
+            Ok(())
+        })();
+        if let Err(error) = result {
+            open_status.set_text(&format!("Could not open Web UI: {error:#}"));
+        }
     });
     let reset_paths = paths.clone();
-    reset.connect_clicked(move |_| {
-        let _ = bashkitten::auth::reset(&reset_paths);
+    reset.connect_clicked(move |_| match bashkitten::auth::reset(&reset_paths) {
+        Ok(()) => status.set_text("Web user reset. The next visit will show signup."),
+        Err(error) => status.set_text(&format!("Could not reset Web user: {error:#}")),
     });
     let about_parent = window.clone();
     about.connect_clicked(move |_| {
@@ -137,12 +211,10 @@ fn build_window(app: &gtk4::Application, paths: AppPaths) {
     });
     let app_for_quit = app.clone();
     quit.connect_clicked(move |_| {
-        systemctl(&["stop", "bashkitten.target"]);
         app_for_quit.quit();
     });
     let app_for_close = app.clone();
     window.connect_close_request(move |_| {
-        systemctl(&["stop", "bashkitten.target"]);
         app_for_close.quit();
         glib::Propagation::Proceed
     });

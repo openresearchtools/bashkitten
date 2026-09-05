@@ -1,0 +1,1943 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "cases": [
+    {
+      "name": "http-400-0",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":{\"message\":\"bad input\",\"type\":\"invalid_request_error\",\"param\":\"messages\"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "400: {\"message\":\"bad input\",\"type\":\"invalid_request_error\",\"param\":\"messages\"}",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-429-1",
+      "responses": [
+        {
+          "status": 429,
+          "body": "{\"error\":{\"message\":\"Quota exhausted\",\"code\":\"insufficient_quota\"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "429: {\"message\":\"Quota exhausted\",\"code\":\"insufficient_quota\"}",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-503-2",
+      "responses": [
+        {
+          "status": 503,
+          "body": "upstream unavailable"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "503 upstream unavailable",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-401-3",
+      "responses": [
+        {
+          "status": 401,
+          "body": ""
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "401 status code (no body)",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-422-4",
+      "responses": [
+        {
+          "status": 422,
+          "body": "{\"detail\":\"Invalid\",\"message\":\"Top level error\"}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "422 status code (no body)",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-400-5",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":\"plain string\"}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "400 \"plain string\"",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-400-6",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":{\"message\":{\"field\":\"bad\"}}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "400: {\"message\":{\"field\":\"bad\"}}",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-500-7",
+      "responses": [
+        {
+          "status": 500,
+          "body": "{\"error\":{\"message\":\"  preserve\\nspaces  \"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "500: {\"message\":\"  preserve\\nspaces  \"}",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-400-8",
+      "responses": [
+        {
+          "status": 400,
+          "body": "{\"error\":{\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "400: {\"message\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx... [truncated 1014 chars]",
+      "expectedStop": "error"
+    },
+    {
+      "name": "http-502-9",
+      "responses": [
+        {
+          "status": 502,
+          "body": "{\"error\":{\"message\":\"Provider returned error\",\"metadata\":{\"raw\":\"Upstream detail\"}}}"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "502: {\"message\":\"Provider returned error\",\"metadata\":{\"raw\":\"Upstream detail\"}}",
+      "expectedStop": "error"
+    },
+    {
+      "name": "retry-400",
+      "responses": [
+        {
+          "status": 400,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "400 temporary",
+      "expectedStop": "error"
+    },
+    {
+      "name": "retry-408",
+      "responses": [
+        {
+          "status": 408,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-409",
+      "responses": [
+        {
+          "status": 409,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-429",
+      "responses": [
+        {
+          "status": 429,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-500",
+      "responses": [
+        {
+          "status": 500,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-503",
+      "responses": [
+        {
+          "status": 503,
+          "body": "temporary",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-disabled-header",
+      "responses": [
+        {
+          "status": 503,
+          "body": "no retry",
+          "headers": {
+            "x-should-retry": "false"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "503 no retry",
+      "expectedStop": "error"
+    },
+    {
+      "name": "retry-enabled-header",
+      "responses": [
+        {
+          "status": 400,
+          "body": "retry",
+          "headers": {
+            "x-should-retry": "true",
+            "retry-after": "0"
+          }
+        },
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "retry-limit",
+      "responses": [
+        {
+          "status": 503,
+          "body": "overloaded",
+          "headers": {
+            "retry-after-ms": "0"
+          }
+        }
+      ],
+      "options": {
+        "maxRetries": 2
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        },
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "503 overloaded",
+      "expectedStop": "error"
+    },
+    {
+      "name": "retry-delay-cap",
+      "responses": [
+        {
+          "status": 429,
+          "body": "wait",
+          "headers": {
+            "retry-after-ms": "61000"
+          }
+        }
+      ],
+      "options": {
+        "maxRetries": 1
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": "Server requested 61s retry delay (max: 60s). 429 wait",
+      "expectedStop": "error"
+    },
+    {
+      "name": "affinity-openai",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "sendSessionAffinityHeaders": true,
+          "sessionAffinityFormat": "openai"
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "session_id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "x-session-affinity": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "affinity-openrouter",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "sendSessionAffinityHeaders": true,
+          "sessionAffinityFormat": "openrouter"
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-session-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "affinity-generic",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {},
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "sendSessionAffinityHeaders": true,
+          "sessionAffinityFormat": "generic"
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "x-session-affinity": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "affinity-no-cache",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "cacheRetention": "none"
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "compat": {
+          "sendSessionAffinityHeaders": true
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer fixture-key",
+            "content-type": "application/json",
+            "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    },
+    {
+      "name": "options-headers-last",
+      "responses": [
+        {
+          "status": 200,
+          "body": "data: {\"choices\":[{\"delta\":{\"content\":\"ok\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n"
+        }
+      ],
+      "options": {
+        "headers": {
+          "Authorization": "Bearer replacement",
+          "session_id": "replacement-session",
+          "x-session-affinity": "replacement-affinity",
+          "User-Agent": "fixture-agent"
+        }
+      },
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 1000,
+        "reasoning": false,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "headers": {
+          "x-fixture": "model-default"
+        },
+        "compat": {
+          "sendSessionAffinityHeaders": true
+        }
+      },
+      "requests": [
+        {
+          "url": "http://localhost/v1/chat/completions",
+          "headers": {
+            "accept": "application/json",
+            "authorization": "Bearer replacement",
+            "content-type": "application/json",
+            "session_id": "replacement-session",
+            "user-agent": "fixture-agent",
+            "x-client-request-id": "session-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "x-fixture": "model-default",
+            "x-session-affinity": "replacement-affinity",
+            "x-stainless-arch": "x64",
+            "x-stainless-lang": "js",
+            "x-stainless-os": "Linux",
+            "x-stainless-package-version": "6.40.0",
+            "x-stainless-retry-count": "0",
+            "x-stainless-runtime": "node",
+            "x-stainless-runtime-version": "v22.22.1"
+          },
+          "body": {
+            "model": "fixture",
+            "messages": [
+              {
+                "role": "user",
+                "content": "test"
+              }
+            ],
+            "stream": true,
+            "stream_options": {
+              "include_usage": true
+            },
+            "store": false
+          }
+        }
+      ],
+      "expectedError": null,
+      "expectedStop": "stop"
+    }
+  ]
+}

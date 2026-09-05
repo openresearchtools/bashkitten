@@ -1,0 +1,365 @@
+{
+  "started": "2026-09-05T20:00:02Z",
+  "root": "/tmp/bashkitten-live-h9dxl1m1",
+  "tasks": [
+    {
+      "name": "csv-inventory-repair",
+      "model": "openai-codex/gpt-5.6-luna",
+      "thinking": "medium",
+      "folder": "/tmp/bashkitten-live-h9dxl1m1/csv-inventory-repair",
+      "oracle": "/tmp/bashkitten-live-h9dxl1m1/oracles/csv-inventory-repair",
+      "testHashes": {
+        "tests/test_inventory.py": "98fbdbbc0d4a311d20931766584433ced819ae23e8e6716dc75c4be8adf17204"
+      },
+      "required": [
+        "README.md"
+      ],
+      "allToolsRequired": true,
+      "status": "passed",
+      "session": "01a07328-1643-79a2-9855-0735163b0770",
+      "launchError": "",
+      "tools": [
+        "ls",
+        "find",
+        "grep",
+        "read",
+        "read",
+        "read",
+        "read",
+        "edit",
+        "write",
+        "bash",
+        "bash"
+      ],
+      "errors": [],
+      "checks": [
+        {
+          "name": "supplied",
+          "exitCode": 0,
+          "output": "test_accumulate (test_inventory.InventoryTests.test_accumulate) ... ok\ntest_empty (test_inventory.InventoryTests.test_empty) ... ok\ntest_invalid (test_inventory.InventoryTests.test_invalid) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n"
+        },
+        {
+          "name": "independent",
+          "exitCode": 0,
+          "output": "test_bad_value (test_independent.IndependentTests.test_bad_value) ... ok\ntest_generator (test_independent.IndependentTests.test_generator) ... ok\ntest_separate_buckets_and_signed_integers (test_independent.IndependentTests.test_separate_buckets_and_signed_integers) ... ok\n\n----------------------------------------------------------------------\nRan 3 tests in 0.000s\n\nOK\n"
+        }
+      ],
+      "testsUnchanged": true,
+      "missingFiles": [],
+      "allToolsUsed": true,
+      "usage": [
+        {
+          "input": 1588,
+          "output": 117,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 40,
+          "totalTokens": 1705,
+          "cost": {
+            "input": 0.0003176,
+            "output": 0.0001404,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.000458
+          }
+        },
+        {
+          "input": 2000,
+          "output": 80,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 2080,
+          "cost": {
+            "input": 0.0004,
+            "output": 9.6e-05,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.000496
+          }
+        },
+        {
+          "input": 839,
+          "output": 326,
+          "cacheRead": 1536,
+          "cacheWrite": 0,
+          "reasoning": 162,
+          "totalTokens": 2701,
+          "cost": {
+            "input": 0.0001678,
+            "output": 0.00039119999999999997,
+            "cacheRead": 3.0720000000000004e-05,
+            "cacheWrite": 0.0,
+            "total": 0.0005897200000000001
+          }
+        },
+        {
+          "input": 2722,
+          "output": 143,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 2865,
+          "cost": {
+            "input": 0.0005444,
+            "output": 0.0001716,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.0007160000000000001
+          }
+        },
+        {
+          "input": 320,
+          "output": 43,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "reasoning": 10,
+          "totalTokens": 2923,
+          "cost": {
+            "input": 6.400000000000001e-05,
+            "output": 5.16e-05,
+            "cacheRead": 5.12e-05,
+            "cacheWrite": 0.0,
+            "total": 0.00016680000000000002
+          }
+        },
+        {
+          "input": 393,
+          "output": 50,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "reasoning": 16,
+          "totalTokens": 3003,
+          "cost": {
+            "input": 7.860000000000001e-05,
+            "output": 5.9999999999999995e-05,
+            "cacheRead": 5.12e-05,
+            "cacheWrite": 0.0,
+            "total": 0.0001898
+          }
+        },
+        {
+          "input": 510,
+          "output": 84,
+          "cacheRead": 2560,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 3154,
+          "cost": {
+            "input": 0.00010200000000000001,
+            "output": 0.0001008,
+            "cacheRead": 5.12e-05,
+            "cacheWrite": 0.0,
+            "total": 0.000254
+          }
+        }
+      ],
+      "finalText": "Implemented:\n\n- Trim category whitespace\n- Parse signed base-10 amounts\n- Accumulate duplicate categories\n- Return `{}` for empty input\n- Propagate `ValueError` for invalid amounts\n- Added `README.md`\n\nTests: **3 passed** via `python3 -m unittest discover -s tests -v`.\n\nNote: `python` was unavailable; `python3` succeeded.",
+      "transportEvidence": {
+        "configuredTransport": "auto",
+        "fallbackDiagnostics": [],
+        "cachedInputTokens": 9216,
+        "responses": 7
+      }
+    },
+    {
+      "name": "config-parser-refactor",
+      "model": "openai-codex/gpt-5.6-sol",
+      "thinking": "medium",
+      "folder": "/tmp/bashkitten-live-h9dxl1m1/config-parser-refactor",
+      "oracle": "/tmp/bashkitten-live-h9dxl1m1/oracles/config-parser-refactor",
+      "testHashes": {
+        "tests/test_parser.py": "cb17735aa98308e1af791603b5b1544ba3f85e0733e412c6cc71d5b9a3ea2fd6"
+      },
+      "required": [
+        "README.md"
+      ],
+      "allToolsRequired": false,
+      "status": "passed",
+      "session": "01a07328-16a4-7f71-8105-7ed247e71847",
+      "launchError": "",
+      "tools": [
+        "ls",
+        "read",
+        "read",
+        "find",
+        "read",
+        "read",
+        "ls",
+        "write",
+        "write",
+        "write",
+        "bash",
+        "edit",
+        "bash"
+      ],
+      "errors": [],
+      "checks": [
+        {
+          "name": "supplied",
+          "exitCode": 0,
+          "output": "test_basic (test_parser.ParserTests.test_basic) ... ok\ntest_comments (test_parser.ParserTests.test_comments) ... ok\ntest_empty (test_parser.ParserTests.test_empty) ... ok\ntest_bom_crlf_comments_and_blank_lines (test_parser_edge_cases.ParserEdgeCaseTests.test_bom_crlf_comments_and_blank_lines) ... ok\ntest_empty_key_reports_original_line_number (test_parser_edge_cases.ParserEdgeCaseTests.test_empty_key_reports_original_line_number) ... ok\ntest_empty_value_and_last_duplicate_wins (test_parser_edge_cases.ParserEdgeCaseTests.test_empty_value_and_last_duplicate_wins) ... ok\ntest_missing_equals_reports_original_line_number (test_parser_edge_cases.ParserEdgeCaseTests.test_missing_equals_reports_original_line_number) ... ok\ntest_only_one_initial_bom_is_removed (test_parser_edge_cases.ParserEdgeCaseTests.test_only_one_initial_bom_is_removed) ... ok\ntest_values_keep_hashes_and_additional_equals (test_parser_edge_cases.ParserEdgeCaseTests.test_values_keep_hashes_and_additional_equals) ... ok\n\n----------------------------------------------------------------------\nRan 9 tests in 0.000s\n\nOK\n"
+        },
+        {
+          "name": "independent",
+          "exitCode": 0,
+          "output": "test_bom_crlf_duplicate_equals (test_independent.IndependentTests.test_bom_crlf_duplicate_equals) ... ok\ntest_comments_and_value (test_independent.IndependentTests.test_comments_and_value) ... ok\ntest_empty_key (test_independent.IndependentTests.test_empty_key) ... ok\ntest_error_line (test_independent.IndependentTests.test_error_line) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.000s\n\nOK\n"
+        }
+      ],
+      "testsUnchanged": true,
+      "missingFiles": [],
+      "allToolsUsed": true,
+      "usage": [
+        {
+          "input": 1612,
+          "output": 91,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 8,
+          "totalTokens": 1703,
+          "cost": {
+            "input": 0.008060000000000001,
+            "output": 0.0027300000000000002,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.010790000000000001
+          }
+        },
+        {
+          "input": 394,
+          "output": 75,
+          "cacheRead": 1408,
+          "cacheWrite": 0,
+          "reasoning": 9,
+          "totalTokens": 1877,
+          "cost": {
+            "input": 0.00197,
+            "output": 0.0022500000000000003,
+            "cacheRead": 0.000704,
+            "cacheWrite": 0.0,
+            "total": 0.0049239999999999996
+          }
+        },
+        {
+          "input": 461,
+          "output": 380,
+          "cacheRead": 1664,
+          "cacheWrite": 0,
+          "reasoning": 175,
+          "totalTokens": 2505,
+          "cost": {
+            "input": 0.002305,
+            "output": 0.0114,
+            "cacheRead": 0.000832,
+            "cacheWrite": 0.0,
+            "total": 0.014537
+          }
+        },
+        {
+          "input": 2520,
+          "output": 378,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 2898,
+          "cost": {
+            "input": 0.012600000000000002,
+            "output": 0.011340000000000001,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.023940000000000003
+          }
+        },
+        {
+          "input": 485,
+          "output": 246,
+          "cacheRead": 2432,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 3163,
+          "cost": {
+            "input": 0.002425,
+            "output": 0.00738,
+            "cacheRead": 0.0012159999999999999,
+            "cacheWrite": 0.0,
+            "total": 0.011021000000000001
+          }
+        },
+        {
+          "input": 3178,
+          "output": 41,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 10,
+          "totalTokens": 3219,
+          "cost": {
+            "input": 0.01589,
+            "output": 0.00123,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.01712
+          }
+        },
+        {
+          "input": 3249,
+          "output": 76,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 26,
+          "totalTokens": 3325,
+          "cost": {
+            "input": 0.016245000000000002,
+            "output": 0.00228,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.018525000000000003
+          }
+        },
+        {
+          "input": 274,
+          "output": 30,
+          "cacheRead": 3072,
+          "cacheWrite": 0,
+          "reasoning": 0,
+          "totalTokens": 3376,
+          "cost": {
+            "input": 0.0013700000000000001,
+            "output": 0.0009,
+            "cacheRead": 0.001536,
+            "cacheWrite": 0.0,
+            "total": 0.0038060000000000004
+          }
+        },
+        {
+          "input": 3404,
+          "output": 248,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "reasoning": 156,
+          "totalTokens": 3652,
+          "cost": {
+            "input": 0.01702,
+            "output": 0.00744,
+            "cacheRead": 0.0,
+            "cacheWrite": 0.0,
+            "total": 0.024460000000000003
+          }
+        }
+      ],
+      "finalText": "Implemented the configuration parser refactor.\n\n- Added BOM, LF/CRLF, comments, blank lines, whitespace, duplicate keys, and empty-value handling.\n- Added line-numbered `ValueError` messages.\n- Added edge-case tests in `tests/test_parser_edge_cases.py`.\n- Documented behavior in `README.md`.\n- Tests pass: **9/9** via `python3 -m unittest discover -s tests`.",
+      "transportEvidence": {
+        "configuredTransport": "auto",
+        "fallbackDiagnostics": [],
+        "cachedInputTokens": 8576,
+        "responses": 9
+      }
+    }
+  ],
+  "checked": "2026-09-05T20:02:12Z",
+  "phases": [
+    {
+      "name": "codex-transport-and-cache",
+      "result": "Both real sessions used the new native auto transport with no fallback diagnostics. Luna reported 9,216 cached input tokens; Sol reported 8,576. The corresponding JSON contains per-task transport evidence. Both worker processes completed. These runs verify normal transport/tool/replay behavior; they do not certify all error, proxy, or lifecycle edge cases."
+    }
+  ]
+}

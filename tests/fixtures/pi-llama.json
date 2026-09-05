@@ -1,0 +1,903 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "cases": [
+    {
+      "name": "url-0",
+      "kind": "url",
+      "input": " http://localhost:8080/v1///?x=1#abc ",
+      "expected": "http://localhost:8080"
+    },
+    {
+      "name": "url-1",
+      "kind": "url",
+      "input": "https://example.org/prefix/v1",
+      "expected": "https://example.org/prefix"
+    },
+    {
+      "name": "url-2",
+      "kind": "url",
+      "input": "https://example.org/v1/v1/",
+      "expected": "https://example.org/v1"
+    },
+    {
+      "name": "url-3",
+      "kind": "url",
+      "input": "ftp://localhost",
+      "error": "Server URL must use http or https"
+    },
+    {
+      "name": "url-4",
+      "kind": "url",
+      "input": "bad",
+      "error": "Invalid URL"
+    },
+    {
+      "name": "url-5",
+      "kind": "url",
+      "input": "http://LOCALHOST:80/a/../v1",
+      "expected": "http://localhost"
+    },
+    {
+      "name": "bytes-0",
+      "kind": "bytes",
+      "input": 0,
+      "expected": "0 B"
+    },
+    {
+      "name": "bytes-1023",
+      "kind": "bytes",
+      "input": 1023,
+      "expected": "1023 B"
+    },
+    {
+      "name": "bytes-1024",
+      "kind": "bytes",
+      "input": 1024,
+      "expected": "1.00 KiB"
+    },
+    {
+      "name": "bytes-10240",
+      "kind": "bytes",
+      "input": 10240,
+      "expected": "10.0 KiB"
+    },
+    {
+      "name": "bytes-1048575",
+      "kind": "bytes",
+      "input": 1048575,
+      "expected": "1024.0 KiB"
+    },
+    {
+      "name": "bytes-1048576",
+      "kind": "bytes",
+      "input": 1048576,
+      "expected": "1.00 MiB"
+    },
+    {
+      "name": "bytes-1099511627776",
+      "kind": "bytes",
+      "input": 1099511627776,
+      "expected": "1.00 TiB"
+    },
+    {
+      "name": "bytes-1125899906842624",
+      "kind": "bytes",
+      "input": 1125899906842624,
+      "expected": "1024.0 TiB"
+    },
+    {
+      "name": "bytes--1",
+      "kind": "bytes",
+      "input": -1,
+      "expected": "-1 B"
+    },
+    {
+      "name": "bytes-1234.567",
+      "kind": "bytes",
+      "input": 1234.567,
+      "expected": "1.21 KiB"
+    },
+    {
+      "name": "load-progress-16",
+      "kind": "loadProgress",
+      "input": null,
+      "expected": null
+    },
+    {
+      "name": "load-progress-17",
+      "kind": "loadProgress",
+      "input": {},
+      "expected": null
+    },
+    {
+      "name": "load-progress-18",
+      "kind": "loadProgress",
+      "input": {
+        "progress": {}
+      },
+      "expected": {
+        "message": "Loading model"
+      }
+    },
+    {
+      "name": "load-progress-19",
+      "kind": "loadProgress",
+      "input": {
+        "progress": {
+          "current": "load_tensors",
+          "value": 0.2,
+          "stages": [
+            "load_model",
+            "load_tensors"
+          ]
+        }
+      },
+      "expected": {
+        "message": "Loading load tensors",
+        "ratio": 0.6
+      }
+    },
+    {
+      "name": "load-progress-20",
+      "kind": "loadProgress",
+      "input": {
+        "progress": {
+          "stage": "x",
+          "value": 7,
+          "stages": [
+            1,
+            "x"
+          ]
+        }
+      },
+      "expected": {
+        "message": "Loading x",
+        "ratio": 1
+      }
+    },
+    {
+      "name": "load-progress-21",
+      "kind": "loadProgress",
+      "input": {
+        "progress": {
+          "stage": "unknown",
+          "value": -2
+        }
+      },
+      "expected": {
+        "message": "Loading unknown",
+        "ratio": 0
+      }
+    },
+    {
+      "name": "load-progress-22",
+      "kind": "loadProgress",
+      "input": {
+        "progress": {
+          "current": "",
+          "stage": "other",
+          "value": 0.5
+        }
+      },
+      "expected": {
+        "message": "Loading model",
+        "ratio": 0.5
+      }
+    },
+    {
+      "name": "download-progress-23",
+      "kind": "downloadProgress",
+      "input": null,
+      "expected": null
+    },
+    {
+      "name": "download-progress-24",
+      "kind": "downloadProgress",
+      "input": {},
+      "expected": null
+    },
+    {
+      "name": "download-progress-25",
+      "kind": "downloadProgress",
+      "input": {
+        "x": {
+          "done": 1024,
+          "total": 4096
+        },
+        "y": {
+          "done": 512,
+          "total": 1024
+        }
+      },
+      "expected": {
+        "message": "Downloading model",
+        "ratio": 0.3,
+        "detail": "1.50 KiB / 5.00 KiB"
+      }
+    },
+    {
+      "name": "download-progress-26",
+      "kind": "downloadProgress",
+      "input": {
+        "progress": {
+          "x": {
+            "done": 99,
+            "total": 50
+          }
+        }
+      },
+      "expected": {
+        "message": "Downloading model",
+        "ratio": 1.98,
+        "detail": "99 B / 50 B"
+      }
+    },
+    {
+      "name": "download-progress-27",
+      "kind": "downloadProgress",
+      "input": {
+        "progress": {
+          "x": {
+            "done": 1,
+            "total": 0
+          }
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "download-progress-28",
+      "kind": "downloadProgress",
+      "input": {
+        "a": {
+          "done": "1",
+          "total": 20
+        }
+      },
+      "expected": null
+    },
+    {
+      "name": "list-29",
+      "kind": "list",
+      "input": {
+        "payload": {
+          "data": []
+        }
+      },
+      "expected": [],
+      "requests": [
+        {
+          "url": "http://router:8080/models?reload=1",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "list-30",
+      "kind": "list",
+      "input": {
+        "payload": {
+          "data": [
+            {
+              "id": "a",
+              "status": {
+                "value": "loaded"
+              },
+              "extra": 7
+            }
+          ]
+        }
+      },
+      "expected": [
+        {
+          "id": "a",
+          "status": {
+            "value": "loaded"
+          },
+          "extra": 7
+        }
+      ],
+      "requests": [
+        {
+          "url": "http://router:8080/models?reload=1",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "list-31",
+      "kind": "list",
+      "input": {
+        "payload": []
+      },
+      "error": "llama.cpp returned an invalid model catalog",
+      "requests": [
+        {
+          "url": "http://router:8080/models?reload=1",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "list-32",
+      "kind": "list",
+      "input": {
+        "payload": {}
+      },
+      "error": "llama.cpp returned an invalid model catalog",
+      "requests": [
+        {
+          "url": "http://router:8080/models?reload=1",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "list-33",
+      "kind": "list",
+      "input": {
+        "payload": null
+      },
+      "error": "llama.cpp returned an invalid model catalog",
+      "requests": [
+        {
+          "url": "http://router:8080/models?reload=1",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "list-34",
+      "kind": "list",
+      "input": {
+        "payload": {
+          "data": [
+            {
+              "id": "a"
+            }
+          ]
+        }
+      },
+      "error": "Server is not running in llama.cpp router mode",
+      "requests": [
+        {
+          "url": "http://router:8080/models?reload=1",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "list-35",
+      "kind": "list",
+      "input": {
+        "payload": {
+          "data": [
+            {
+              "id": 4,
+              "status": {
+                "value": "loaded"
+              }
+            }
+          ]
+        }
+      },
+      "error": "Server is not running in llama.cpp router mode",
+      "requests": [
+        {
+          "url": "http://router:8080/models?reload=1",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "props-36",
+      "kind": "props",
+      "input": {
+        "payload": null
+      },
+      "expected": {},
+      "requests": [
+        {
+          "url": "http://router:8080/props",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "props-37",
+      "kind": "props",
+      "input": {
+        "payload": {
+          "models_autoload": true
+        }
+      },
+      "expected": {
+        "models_autoload": true
+      },
+      "requests": [
+        {
+          "url": "http://router:8080/props",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "props-38",
+      "kind": "props",
+      "input": {
+        "payload": {
+          "models_autoload": "true"
+        }
+      },
+      "expected": {},
+      "requests": [
+        {
+          "url": "http://router:8080/props",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "props-39",
+      "kind": "props",
+      "input": {
+        "payload": {
+          "models_autoload": false
+        }
+      },
+      "expected": {
+        "models_autoload": false
+      },
+      "requests": [
+        {
+          "url": "http://router:8080/props",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "props-40",
+      "kind": "props",
+      "input": {
+        "payload": []
+      },
+      "expected": {},
+      "requests": [
+        {
+          "url": "http://router:8080/props",
+          "method": "GET",
+          "authorization": "Bearer fixture-key",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "load",
+      "kind": "load",
+      "input": {},
+      "expected": null,
+      "requests": [
+        {
+          "url": "http://router:8080/models/load",
+          "method": "POST",
+          "authorization": "Bearer fixture-key",
+          "body": {
+            "model": "test/model:Q4_K_M"
+          }
+        }
+      ]
+    },
+    {
+      "name": "unload",
+      "kind": "unload",
+      "input": {},
+      "expected": null,
+      "requests": [
+        {
+          "url": "http://router:8080/models/unload",
+          "method": "POST",
+          "authorization": "Bearer fixture-key",
+          "body": {
+            "model": "test/model:Q4_K_M"
+          }
+        }
+      ]
+    },
+    {
+      "name": "download",
+      "kind": "download",
+      "input": {},
+      "expected": null,
+      "requests": [
+        {
+          "url": "http://router:8080/models",
+          "method": "POST",
+          "authorization": "Bearer fixture-key",
+          "body": {
+            "model": "test/model:Q4_K_M"
+          }
+        }
+      ]
+    },
+    {
+      "name": "hf-details-44",
+      "kind": "hfDetails",
+      "input": {
+        "payload": null
+      },
+      "error": "Hugging Face returned invalid model details",
+      "requests": [
+        {
+          "url": "http://hf/api/models/a%20b/model!?blobs=true",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-details-45",
+      "kind": "hfDetails",
+      "input": {
+        "payload": {}
+      },
+      "expected": {
+        "id": "a b/model!",
+        "gated": false,
+        "quantizations": []
+      },
+      "requests": [
+        {
+          "url": "http://hf/api/models/a%20b/model!?blobs=true",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-details-46",
+      "kind": "hfDetails",
+      "input": {
+        "payload": []
+      },
+      "expected": {
+        "id": "a b/model!",
+        "gated": false,
+        "quantizations": []
+      },
+      "requests": [
+        {
+          "url": "http://hf/api/models/a%20b/model!?blobs=true",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-details-47",
+      "kind": "hfDetails",
+      "input": {
+        "payload": {
+          "id": "org/name",
+          "gated": "manual",
+          "siblings": [
+            {
+              "rfilename": "model.Q4_K_M-00001-of-00002.gguf",
+              "size": 300
+            },
+            {
+              "rfilename": "model.Q4_K_M-00002-of-00002.gguf",
+              "size": 350
+            },
+            {
+              "rfilename": "model.IQ2_XXS.gguf",
+              "size": 90
+            },
+            {
+              "rfilename": "model.Q8_0.gguf"
+            },
+            {
+              "rfilename": "model.F16.gguf",
+              "size": 1500
+            },
+            {
+              "rfilename": "mmproj-Q4_K_M.gguf",
+              "size": 20
+            },
+            {
+              "rfilename": "folder/model.UD-IQ1_S.gguf",
+              "size": 80
+            },
+            {
+              "rfilename": "README.md",
+              "size": 9
+            },
+            {
+              "rfilename": "unknown.gguf",
+              "size": 30
+            }
+          ]
+        }
+      },
+      "expected": {
+        "id": "org/name",
+        "gated": "manual",
+        "quantizations": [
+          {
+            "name": "Q4_K_M",
+            "size": 650
+          },
+          {
+            "name": "UD-IQ1_S",
+            "size": 80
+          },
+          {
+            "name": "IQ2_XXS",
+            "size": 90
+          },
+          {
+            "name": "F16",
+            "size": 1500
+          },
+          {
+            "name": "Q8_0"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "http://hf/api/models/a%20b/model!?blobs=true",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-details-48",
+      "kind": "hfDetails",
+      "input": {
+        "payload": {
+          "gated": "auto",
+          "siblings": [
+            {
+              "rfilename": "a.MXFP4.gguf",
+              "size": 20
+            }
+          ]
+        }
+      },
+      "expected": {
+        "id": "a b/model!",
+        "gated": "auto",
+        "quantizations": [
+          {
+            "name": "MXFP4",
+            "size": 20
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "http://hf/api/models/a%20b/model!?blobs=true",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-details-49",
+      "kind": "hfDetails",
+      "input": {
+        "payload": {
+          "gated": true,
+          "siblings": [
+            {
+              "rfilename": "A.q4_k_m.GGUF",
+              "size": 8
+            },
+            {
+              "rfilename": "B.Q4_K_M.gguf"
+            }
+          ]
+        }
+      },
+      "expected": {
+        "id": "a b/model!",
+        "gated": false,
+        "quantizations": [
+          {
+            "name": "Q4_K_M"
+          }
+        ]
+      },
+      "requests": [
+        {
+          "url": "http://hf/api/models/a%20b/model!?blobs=true",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-search-50",
+      "kind": "hfSearch",
+      "input": {
+        "payload": [
+          {
+            "id": "a",
+            "downloads": 3
+          },
+          {
+            "id": "b",
+            "downloads": "3"
+          },
+          null,
+          {},
+          7
+        ]
+      },
+      "expected": [
+        {
+          "id": "a",
+          "downloads": 3
+        },
+        {
+          "id": "b",
+          "downloads": 0
+        }
+      ],
+      "requests": [
+        {
+          "url": "http://hf/api/models?search=tiny+model%2Fgguf&filter=gguf&sort=downloads&direction=-1&limit=20",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-search-51",
+      "kind": "hfSearch",
+      "input": {
+        "payload": {}
+      },
+      "error": "Hugging Face returned invalid search results",
+      "requests": [
+        {
+          "url": "http://hf/api/models?search=tiny+model%2Fgguf&filter=gguf&sort=downloads&direction=-1&limit=20",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-search-52",
+      "kind": "hfSearch",
+      "input": {
+        "payload": null
+      },
+      "error": "Hugging Face returned invalid search results",
+      "requests": [
+        {
+          "url": "http://hf/api/models?search=tiny+model%2Fgguf&filter=gguf&sort=downloads&direction=-1&limit=20",
+          "method": "GET",
+          "authorization": "Bearer fixture-token",
+          "body": null
+        }
+      ]
+    },
+    {
+      "name": "hf-error-53",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "15"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 15s"
+    },
+    {
+      "name": "hf-error-54",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "0",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 37s"
+    },
+    {
+      "name": "hf-error-55",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {}
+      },
+      "error": "Hugging Face rate limit reached"
+    },
+    {
+      "name": "hf-error-56",
+      "kind": "hfError",
+      "input": {
+        "status": 401,
+        "payload": {
+          "error": "Gated repository"
+        }
+      },
+      "error": "Gated repository"
+    },
+    {
+      "name": "hf-error-57",
+      "kind": "hfError",
+      "input": {
+        "status": 503,
+        "raw": "not json"
+      },
+      "error": "Hugging Face returned HTTP 503"
+    },
+    {
+      "name": "router-error-58",
+      "kind": "routerError",
+      "input": {
+        "status": 500,
+        "payload": {
+          "error": {
+            "message": "Router failed"
+          }
+        }
+      },
+      "error": "Router failed"
+    },
+    {
+      "name": "router-error-59",
+      "kind": "routerError",
+      "input": {
+        "status": 503,
+        "raw": "bad json"
+      },
+      "error": "llama.cpp returned HTTP 503"
+    },
+    {
+      "name": "router-error-60",
+      "kind": "routerError",
+      "input": {
+        "status": 404,
+        "payload": {
+          "error": "ignored"
+        }
+      },
+      "error": "llama.cpp returned HTTP 404"
+    }
+  ]
+}

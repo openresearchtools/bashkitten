@@ -33,8 +33,20 @@ pub struct SessionHeader {
     pub model_id: String,
     #[serde(rename = "thinkingLevel")]
     pub thinking_level: String,
+    #[serde(
+        rename = "modelParameters",
+        default,
+        skip_serializing_if = "Value::is_null"
+    )]
+    pub model_parameters: Value,
     #[serde(rename = "parentSession", skip_serializing_if = "Option::is_none")]
     pub parent_session: Option<String>,
+    #[serde(
+        rename = "usageBefore",
+        default,
+        skip_serializing_if = "crate::agent::UsageTotals::is_zero"
+    )]
+    pub usage_before: crate::agent::UsageTotals,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -42,6 +54,8 @@ pub struct NewSession {
     pub cwd: PathBuf,
     pub model: String,
     pub thinking: String,
+    #[serde(default)]
+    pub model_parameters: Value,
     pub prompt: String,
     #[serde(default)]
     pub attachments: Vec<PathBuf>,
@@ -74,6 +88,10 @@ pub enum ControlRequest {
     Subscribe,
     Status,
     Stop,
+    Compact {
+        #[serde(default)]
+        custom_instructions: Option<String>,
+    },
     ChangeModel {
         model: String,
         thinking: String,
@@ -92,6 +110,8 @@ pub enum ControlRequest {
 #[derive(Clone, Copy, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum QueueAction {
+    BeginEdit,
+    CancelEdit,
     Edit,
     Promote,
     Remove,
@@ -173,7 +193,9 @@ pub fn create(paths: &AppPaths, request: &NewSession) -> Result<String> {
         provider,
         model_id,
         thinking_level: request.thinking.clone(),
+        model_parameters: request.model_parameters.clone(),
         parent_session: request.parent.clone(),
+        usage_before: Default::default(),
     };
     let segment = dir.join("000001.jsonl");
     let mut file = OpenOptions::new()
@@ -190,6 +212,36 @@ pub fn create(paths: &AppPaths, request: &NewSession) -> Result<String> {
 pub fn control_socket(paths: &AppPaths, id: &str) -> Result<PathBuf> {
     validate_id(id)?;
     Ok(paths.session_dir(id).join("control.sock"))
+}
+
+/// Keep the required on-disk socket location even when its absolute path exceeds
+/// Linux sockaddr_un.sun_path. The descriptor must outlive bind/connect.
+pub struct SocketAddress {
+    path: PathBuf,
+    _directory: Option<fs::File>,
+}
+
+impl AsRef<Path> for SocketAddress {
+    fn as_ref(&self) -> &Path {
+        &self.path
+    }
+}
+
+pub fn socket_address(path: &Path) -> Result<SocketAddress> {
+    use std::os::fd::AsRawFd;
+    if path.as_os_str().as_encoded_bytes().len() < 108 {
+        return Ok(SocketAddress {
+            path: path.to_owned(),
+            _directory: None,
+        });
+    }
+    let directory = fs::File::open(path.parent().context("Socket has no parent directory")?)?;
+    let address = PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd()))
+        .join(path.file_name().context("Socket has no filename")?);
+    Ok(SocketAddress {
+        path: address,
+        _directory: Some(directory),
+    })
 }
 
 pub fn current_segment(dir: &Path) -> Result<(u32, PathBuf)> {
@@ -211,21 +263,15 @@ pub fn current_segment(dir: &Path) -> Result<(u32, PathBuf)> {
 
 pub fn read_header(dir: &Path) -> Result<SessionHeader> {
     let (_, file) = current_segment(dir)?;
-    let reader = BufReader::new(fs::File::open(file)?);
-    for line in reader.lines() {
-        let line = line?;
-        let value: Value = serde_json::from_str(&line)?;
-        if value.get("type").and_then(Value::as_str) == Some("session") {
-            return Ok(serde_json::from_value(value)?);
-        }
-    }
-    // New compaction segments contain a compacted header rather than the original session header.
-    let (_, first) = (1_u32, dir.join("000001.jsonl"));
-    let line = BufReader::new(fs::File::open(first)?)
+    let line = BufReader::new(fs::File::open(file)?)
         .lines()
         .next()
         .context("Empty session")??;
-    Ok(serde_json::from_str(&line)?)
+    let header: SessionHeader = serde_json::from_str(&line)?;
+    if header.kind != "session" {
+        bail!("Current segment does not begin with a session header");
+    }
+    Ok(header)
 }
 
 pub fn validate_cwd(cwd: &Path) -> Result<PathBuf> {
@@ -293,10 +339,11 @@ fn restore_fork_cwd(dir: &Path) -> Result<()> {
         let (_, segment) = current_segment(dir)?;
         for line in BufReader::new(fs::File::open(segment)?).lines() {
             let value: Value = serde_json::from_str(&line?)?;
-            if value["type"] == "custom" && value["customType"] == "bashkitten.cwd" {
-                if let Some(cwd) = value["data"]["cwd"].as_str() {
-                    header.cwd = cwd.into();
-                }
+            if value["type"] == "custom"
+                && value["customType"] == "bashkitten.cwd"
+                && let Some(cwd) = value["data"]["cwd"].as_str()
+            {
+                header.cwd = cwd.into();
             }
         }
         replace_current_header(dir, &header, None)?;
@@ -304,7 +351,7 @@ fn restore_fork_cwd(dir: &Path) -> Result<()> {
     Ok(())
 }
 
-fn effective_model(dir: &Path, header: &SessionHeader) -> (String, String) {
+pub fn effective_model(dir: &Path, header: &SessionHeader) -> (String, String) {
     let Ok((_, file)) = current_segment(dir) else {
         return (
             format!("{}/{}", header.provider, header.model_id),
@@ -366,7 +413,6 @@ pub fn list(paths: &AppPaths) -> Result<Vec<SessionSummary>> {
             .trim()
             .to_owned();
         let header = read_header(&dir).ok();
-        let effective = header.as_ref().map(|header| effective_model(&dir, header));
         sessions.push(SessionSummary {
             id: id.clone(),
             title,
@@ -374,16 +420,23 @@ pub fn list(paths: &AppPaths) -> Result<Vec<SessionSummary>> {
             modified,
             current_segment: segment,
             cwd: header.as_ref().map(|h| h.cwd.clone()),
-            model: effective.as_ref().map(|(model, _)| model.clone()),
-            thinking: effective.map(|(_, thinking)| thinking),
+            model: header
+                .as_ref()
+                .map(|h| format!("{}/{}", h.provider, h.model_id)),
+            thinking: header.as_ref().map(|h| h.thinking_level.clone()),
         });
     }
-    sessions.sort_by_key(|s| std::cmp::Reverse(s.modified));
+    sessions.sort_by(|left, right| {
+        right
+            .modified
+            .cmp(&left.modified)
+            .then_with(|| right.id.cmp(&left.id))
+    });
     Ok(sessions)
 }
 
 pub fn socket_is_live(path: &Path) -> bool {
-    UnixStream::connect(path).is_ok()
+    socket_address(path).is_ok_and(|address| UnixStream::connect(address.as_ref()).is_ok())
 }
 
 pub fn read_segment(paths: &AppPaths, id: &str, number: u32) -> Result<Vec<Value>> {
@@ -427,23 +480,28 @@ pub fn copy_attachments(paths: &AppPaths, id: &str, sources: &[PathBuf]) -> Resu
     Ok(copied)
 }
 
-fn rewrite_attachment_paths(value: &mut Value, source: &str, destination: &str) {
+/// Upload paths are stable within forks even when the recorded absolute path
+/// still names an ancestor session. Never interpret traversal as an upload.
+pub(crate) fn attachment_relative_path(path: &str) -> Option<&Path> {
+    let (_, relative) = path.rsplit_once("/attachments/")?;
+    let relative = Path::new(relative);
+    let components = relative.components().collect::<Vec<_>>();
+    (components.len() == 2
+        && components
+            .iter()
+            .all(|part| matches!(part, std::path::Component::Normal(_))))
+    .then_some(relative)
+}
+
+fn collect_history_strings(value: &Value, strings: &mut Vec<String>) {
     match value {
-        Value::String(text) => {
-            if text.contains(source) {
-                *text = text.replace(source, destination);
-            }
-        }
-        Value::Array(values) => {
-            for value in values {
-                rewrite_attachment_paths(value, source, destination);
-            }
-        }
-        Value::Object(values) => {
-            for value in values.values_mut() {
-                rewrite_attachment_paths(value, source, destination);
-            }
-        }
+        Value::String(text) => strings.push(text.clone()),
+        Value::Array(values) => values
+            .iter()
+            .for_each(|value| collect_history_strings(value, strings)),
+        Value::Object(values) => values
+            .values()
+            .for_each(|value| collect_history_strings(value, strings)),
         _ => {}
     }
 }
@@ -451,7 +509,7 @@ fn rewrite_attachment_paths(value: &mut Value, source: &str, destination: &str) 
 fn copy_referenced_attachments(
     source_dir: &Path,
     destination_dir: &Path,
-    retained_json: &str,
+    retained_strings: &[String],
 ) -> Result<()> {
     let source_attachments = source_dir.join("attachments");
     let destination_attachments = destination_dir.join("attachments");
@@ -466,10 +524,11 @@ fn copy_referenced_attachments(
         let entry = entry?;
         let relative = entry.path().strip_prefix(&source_attachments)?;
         let destination = destination_attachments.join(relative);
-        if entry.file_type().is_dir() {
-            ensure_private_dir(&destination)?;
-        } else if entry.file_type().is_file()
-            && retained_json.contains(&entry.path().to_string_lossy().to_string())
+        let reference = format!("/attachments/{}", relative.to_string_lossy());
+        if entry.file_type().is_file()
+            && retained_strings
+                .iter()
+                .any(|text| text.contains(&reference))
         {
             if let Some(parent) = destination.parent() {
                 ensure_private_dir(parent)?;
@@ -526,12 +585,7 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
             .collect::<Vec<_>>();
         segments.sort_by(|left, right| left.0.cmp(&right.0));
 
-        let source_attachment_prefix = source_dir.join("attachments");
-        let destination_attachment_prefix = final_dir.join("attachments");
-        let source_attachment_prefix = source_attachment_prefix.to_string_lossy().into_owned();
-        let destination_attachment_prefix =
-            destination_attachment_prefix.to_string_lossy().into_owned();
-        let mut retained_json = String::new();
+        let mut retained_strings = Vec::new();
         let mut found = false;
 
         'segments: for (name, source_segment) in segments {
@@ -542,14 +596,14 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
                 .open(&destination_segment)?;
             set_private_file(&destination_segment)?;
             for line in BufReader::new(fs::File::open(&source_segment)?).lines() {
-                let mut value: Value = serde_json::from_str(&line?)?;
+                let line = line?;
+                let mut value: Value = serde_json::from_str(&line)?;
                 let is_header = value.get("type").and_then(Value::as_str) == Some("session");
                 let is_target = value.get("id").and_then(Value::as_str) == Some(target_entry_id);
                 if is_target && value.get("type").and_then(Value::as_str) != Some("message") {
                     bail!("Fork target is not a message");
                 }
-                retained_json.push_str(&serde_json::to_string(&value)?);
-                retained_json.push('\n');
+                collect_history_strings(&value, &mut retained_strings);
                 if is_header {
                     let object = value.as_object_mut().context("Invalid session header")?;
                     object.insert("id".into(), Value::String(new_id.clone()));
@@ -561,12 +615,11 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
                     );
                     object.insert("parentSession".into(), Value::String(source_id.to_owned()));
                 }
-                rewrite_attachment_paths(
-                    &mut value,
-                    &source_attachment_prefix,
-                    &destination_attachment_prefix,
-                );
-                serde_json::to_writer(&mut output, &value)?;
+                if is_header {
+                    serde_json::to_writer(&mut output, &value)?;
+                } else {
+                    output.write_all(line.as_bytes())?;
+                }
                 output.write_all(b"\n")?;
                 if is_target {
                     found = true;
@@ -586,7 +639,7 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
             .unwrap_or_else(|_| "Untitled session\n".into());
         fs::write(&title_path, title)?;
         set_private_file(&title_path)?;
-        copy_referenced_attachments(&source_dir, &temporary_dir, &retained_json)?;
+        copy_referenced_attachments(&source_dir, &temporary_dir, &retained_strings)?;
         fs::rename(&temporary_dir, &final_dir)?;
         Ok(new_id.clone())
     })();
@@ -610,10 +663,57 @@ pub fn append_values(paths: &AppPaths, id: &str, values: &[Value]) -> Result<()>
     Ok(())
 }
 
+/// Publish a complete compaction checkpoint without changing any older JSONL.
+/// A hard link provides atomic create-if-absent rather than overwriting a segment.
+pub fn rotate_compaction(
+    paths: &AppPaths,
+    header: &SessionHeader,
+    entries: &[crate::agent::SessionEntry],
+) -> Result<u32> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let dir = paths.session_dir(&header.id);
+    let (current, _) = current_segment(&dir)?;
+    let next = current
+        .checked_add(1)
+        .filter(|number| *number <= 999_999)
+        .context("session segment number overflow")?;
+    let destination = dir.join(format!("{next:06}.jsonl"));
+    let temporary = dir.join(format!(".compaction-{}", Uuid::new_v4()));
+    let result = (|| -> Result<()> {
+        let mut file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .open(&temporary)?;
+        serde_json::to_writer(&mut file, header)?;
+        file.write_all(b"\n")?;
+        for entry in entries {
+            serde_json::to_writer(&mut file, entry)?;
+            file.write_all(b"\n")?;
+        }
+        file.sync_all()?;
+        let directory = fs::File::open(&dir)?;
+        directory.sync_all()?;
+        fs::hard_link(&temporary, &destination)?;
+        if let Err(error) = directory.sync_all() {
+            // This exact file was just published by this operation. The complete
+            // pre-compaction history remains in the unchanged previous segment.
+            fs::remove_file(&destination)?;
+            let _ = directory.sync_all();
+            return Err(error.into());
+        }
+        Ok(())
+    })();
+    let _ = fs::remove_file(&temporary);
+    result?;
+    Ok(next)
+}
+
 pub fn send(paths: &AppPaths, id: &str, request: &ControlRequest) -> Result<ControlReply> {
     let socket = control_socket(paths, id)?;
-    let mut stream =
-        UnixStream::connect(&socket).with_context(|| format!("connect {}", socket.display()))?;
+    let address = socket_address(&socket)?;
+    let mut stream = UnixStream::connect(address.as_ref())
+        .with_context(|| format!("connect {}", socket.display()))?;
     serde_json::to_writer(&mut stream, request)?;
     stream.write_all(b"\n")?;
     stream.flush()?;
@@ -624,8 +724,23 @@ pub fn send(paths: &AppPaths, id: &str, request: &ControlRequest) -> Result<Cont
 
 pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {
     validate_id(id)?;
-    let binary = std::env::var("BASHKITTEN_AGENT_BIN")
-        .unwrap_or_else(|_| "/usr/bin/bashkitten-agent".into());
+    let executable = std::env::current_exe().context("locate BashKitten executable")?;
+    let binary = std::env::var_os("BASHKITTEN_AGENT_BIN")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| executable.with_file_name("bashkitten-agent"));
+    // The CLI invoked through bash must belong to the same installation as the
+    // process launching this session, including user-local installations.
+    let inherited_path = std::env::var_os("PATH").unwrap_or_default();
+    let search_path = std::env::join_paths(
+        executable
+            .parent()
+            .into_iter()
+            .map(Path::to_path_buf)
+            .chain(std::env::split_paths(&inherited_path)),
+    )
+    .context("construct session command path")?;
+    let mut path_env = std::ffi::OsString::from("PATH=");
+    path_env.push(search_path);
     let unit = format!("bashkitten-session-{id}.service");
     let header = read_header(&paths.session_dir(id))?;
     let session_env = format!("BASHKITTEN_SESSION_ID={id}");
@@ -655,10 +770,11 @@ pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {
             &data_env,
             "--setenv",
             &runtime_env,
-            &binary,
-            "--session",
-            id,
         ])
+        .arg("--setenv")
+        .arg(path_env)
+        .arg(&binary)
+        .args(["--session", id])
         .status()
         .context("start session through systemd-run")?;
     if !status.success() {
@@ -738,6 +854,7 @@ mod tests {
                 cwd: first.clone(),
                 model: "p/m".into(),
                 thinking: "off".into(),
+                model_parameters: json!({}),
                 prompt: "folder test".into(),
                 attachments: vec![],
                 parent: None,
@@ -796,6 +913,7 @@ mod tests {
                 cwd: temp.path().to_owned(),
                 model: "p/m".into(),
                 thinking: "off".into(),
+                model_parameters: json!({}),
                 prompt: "hello".into(),
                 attachments: vec![],
                 parent: None,
@@ -818,7 +936,7 @@ mod tests {
     }
 
     #[test]
-    fn fork_copies_history_only_through_target_and_rewrites_attachments() {
+    fn fork_preserves_exact_history_and_copies_attachments_through_nested_forks() {
         let temp = tempfile::tempdir().unwrap();
         let paths = AppPaths {
             config: temp.path().join("c"),
@@ -832,6 +950,7 @@ mod tests {
                 cwd: temp.path().to_owned(),
                 model: "p/m".into(),
                 thinking: "off".into(),
+                model_parameters: json!({}),
                 prompt: "fork source".into(),
                 attachments: vec![],
                 parent: None,
@@ -844,7 +963,7 @@ mod tests {
             .join("attachments")
             .join(&upload);
         ensure_private_dir(&attachment_dir).unwrap();
-        let attachment = attachment_dir.join("example.txt");
+        let attachment = attachment_dir.join("quoted \"model\".txt");
         fs::write(&attachment, "kept attachment").unwrap();
         set_private_file(&attachment).unwrap();
         append_values(
@@ -859,8 +978,8 @@ mod tests {
                     "message": {
                         "role": "user",
                         "content": [
-                            {"type": "text", "text": "first"},
-                            {"type": "attachment", "name": "example.txt", "path": attachment, "mimeType": "text/plain"}
+                            {"type": "text", "text": format!("Keep the exact historical reference: {}", attachment.display())},
+                            {"type": "attachment", "name": attachment.file_name().unwrap().to_str().unwrap(), "path": attachment, "mimeType": "text/plain"}
                         ],
                         "timestamp": 1
                     }
@@ -882,18 +1001,36 @@ mod tests {
         assert_eq!(entries[0]["id"], fork_id);
         assert_eq!(entries[0]["parentSession"], source_id);
         assert_eq!(entries[1]["id"], "first-entry");
-        let fork_attachment = entries[1]["message"]["content"][1]["path"]
-            .as_str()
-            .unwrap();
-        assert!(fork_attachment.contains(&fork_id));
-        assert!(!fork_attachment.contains(&source_id));
-        assert_eq!(
-            fs::read_to_string(fork_attachment).unwrap(),
-            "kept attachment"
-        );
-        assert_eq!(
-            fs::metadata(fork_attachment).unwrap().permissions().mode() & 0o777,
-            0o600
-        );
+        let original = read_segment(&paths, &source_id, 1).unwrap();
+        assert_eq!(entries[1], original[1]);
+        let original_line = fs::read_to_string(paths.session_dir(&source_id).join("000001.jsonl"))
+            .unwrap()
+            .lines()
+            .nth(1)
+            .unwrap()
+            .to_owned();
+        let fork_line = fs::read_to_string(paths.session_dir(&fork_id).join("000001.jsonl"))
+            .unwrap()
+            .lines()
+            .nth(1)
+            .unwrap()
+            .to_owned();
+        assert_eq!(fork_line, original_line);
+        let nested_id = fork_at(&paths, &fork_id, "first-entry").unwrap();
+        let nested = read_segment(&paths, &nested_id, 1).unwrap();
+        assert_eq!(nested[1], original[1]);
+        assert_eq!(nested[0]["parentSession"], fork_id);
+        for id in [&fork_id, &nested_id] {
+            let copied = paths
+                .session_dir(id)
+                .join("attachments")
+                .join(&upload)
+                .join(attachment.file_name().unwrap());
+            assert_eq!(fs::read_to_string(&copied).unwrap(), "kept attachment");
+            assert_eq!(
+                fs::metadata(copied).unwrap().permissions().mode() & 0o777,
+                0o600
+            );
+        }
     }
 }

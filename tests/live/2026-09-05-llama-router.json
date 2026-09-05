@@ -1,0 +1,41 @@
+{
+  "package": "llama-cpp-cuda",
+  "build": 10545,
+  "commit": "a30273376",
+  "nativeRouter": true,
+  "fixtureType": "intentionally invalid GGUF (failure-path test, not successful inference)",
+  "checks": {
+    "webSignupAndLogin": true,
+    "explicitBrowserRefresh": true,
+    "presetVisibleInWebAndCli": true,
+    "webRestartRetainsRouterPid": true,
+    "webLoginSurvivesRestart": true,
+    "loadError": "Model exited with code 1",
+    "fixtureFileUnchanged": true,
+    "nativeIniPerModelOverrides": true
+  },
+  "childArguments": [
+    "/usr/lib/llama-cpp/llama-server",
+    "--host",
+    "127.0.0.1",
+    "--jinja",
+    "--mmap",
+    "--port",
+    "0",
+    "--alias",
+    "invalid-fixture",
+    "--batch-size",
+    "64",
+    "--ctx-size",
+    "4096",
+    "--flash-attn",
+    "on",
+    "--model",
+    "/run/media/user/Data/bashkitten-builds/llama-browser-parity/models/invalid-fixture.gguf",
+    "--n-gpu-layers",
+    "9",
+    "--parallel",
+    "1"
+  ],
+  "nativeIni": "version = 1\n\n[*]\njinja = true\nctx-size = 32768\nngl = 17\nbatch-size = 2048\nparallel = 1\nmmap = true\nmlock = false\nflash-attn = on\n\n[invalid-fixture]\nctx-size = 4096\nngl = 9\nbatch-size = 64\n"
+}

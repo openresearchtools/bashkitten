@@ -1,4 +1,4 @@
-use crate::config::atomic_private_json;
+use crate::config::{atomic_private_json, atomic_private_json_create};
 use crate::paths::{AppPaths, set_private_file};
 use anyhow::{Context, Result, bail};
 use argon2::Argon2;
@@ -15,6 +15,8 @@ const SESSION_SECONDS: i64 = 30 * 24 * 60 * 60;
 pub struct LoginSession {
     pub token_hash: String,
     pub csrf_hash: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub previous_csrf_hashes: Vec<String>,
     pub expires_at: i64,
 }
 
@@ -56,6 +58,7 @@ fn lock_file(paths: &AppPaths) -> Result<std::fs::File> {
 }
 
 fn read_auth(path: &Path) -> Result<WebAuthFile> {
+    set_private_file(path)?;
     let bytes = fs::read(path).with_context(|| format!("read {}", path.display()))?;
     serde_json::from_slice(&bytes).with_context(|| format!("parse {}", path.display()))
 }
@@ -87,6 +90,7 @@ fn add_session(auth: &mut WebAuthFile) -> NewLogin {
     auth.sessions.push(LoginSession {
         token_hash: hash_secret(&token),
         csrf_hash: hash_secret(&csrf),
+        previous_csrf_hashes: Vec::new(),
         expires_at,
     });
     NewLogin {
@@ -120,7 +124,7 @@ pub fn signup(paths: &AppPaths, username: &str, password: &str) -> Result<NewLog
         sessions: Vec::new(),
     };
     let login = add_session(&mut auth);
-    atomic_private_json(&path, &auth)?;
+    atomic_private_json_create(&path, &auth)?;
     FileExt::unlock(&lock)?;
     Ok(login)
 }
@@ -151,28 +155,37 @@ pub fn validate(paths: &AppPaths, token: &str) -> Result<LoginSession> {
 }
 
 pub fn validate_csrf(session: &LoginSession, csrf: &str) -> bool {
-    constant_eq(&session.csrf_hash, &hash_secret(csrf))
+    let hash = hash_secret(csrf);
+    let mut valid = constant_eq(&session.csrf_hash, &hash);
+    for previous in &session.previous_csrf_hashes {
+        valid |= constant_eq(previous, &hash);
+    }
+    valid
 }
 
-/// Rotate the CSRF token for an authenticated login. This lets a freshly loaded
-/// page obtain an in-memory token while the server continues to persist only a
-/// hash of that token.
-pub fn rotate_csrf(paths: &AppPaths, token: &str) -> Result<String> {
+/// Called once before the Web server starts listening. Bootstrap then reads only
+/// memory. Previously issued hashes keep already-open tabs valid across restarts;
+/// all tokens share the login's expiry, logout and reset lifetime.
+pub fn prepare_csrf_tokens(paths: &AppPaths) -> Result<std::collections::BTreeMap<String, String>> {
     let lock = lock_file(paths)?;
     let path = paths.web_auth_file();
-    let mut auth = read_auth(&path)?;
-    let token_hash = hash_secret(token);
-    let now = chrono::Utc::now().timestamp();
-    let session = auth
-        .sessions
-        .iter_mut()
-        .find(|s| s.expires_at > now && constant_eq(&s.token_hash, &token_hash))
-        .context("Authentication required")?;
-    let csrf = random_token();
-    session.csrf_hash = hash_secret(&csrf);
-    atomic_private_json(&path, &auth)?;
+    let mut tokens = std::collections::BTreeMap::new();
+    if path.exists() {
+        let mut auth = read_auth(&path)?;
+        let now = chrono::Utc::now().timestamp();
+        auth.sessions.retain(|session| session.expires_at > now);
+        for session in &mut auth.sessions {
+            let csrf = random_token();
+            session.previous_csrf_hashes.push(std::mem::replace(
+                &mut session.csrf_hash,
+                hash_secret(&csrf),
+            ));
+            tokens.insert(session.token_hash.clone(), csrf);
+        }
+        atomic_private_json(&path, &auth)?;
+    }
     FileExt::unlock(&lock)?;
-    Ok(csrf)
+    Ok(tokens)
 }
 
 pub fn logout(paths: &AppPaths, token: &str) -> Result<()> {
@@ -207,6 +220,47 @@ mod tests {
     use super::*;
 
     #[test]
+    fn concurrent_signup_publishes_exactly_one_complete_identity() {
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: temp.path().join("config"),
+            data: temp.path().join("data"),
+            runtime: temp.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let barrier = std::sync::Arc::new(std::sync::Barrier::new(8));
+        let results = std::thread::scope(|scope| {
+            (0..8)
+                .map(|index| {
+                    let paths = &paths;
+                    let barrier = barrier.clone();
+                    scope.spawn(move || {
+                        barrier.wait();
+                        (
+                            index,
+                            signup(paths, &format!("user-{index}"), "fixture-password"),
+                        )
+                    })
+                })
+                .collect::<Vec<_>>()
+                .into_iter()
+                .map(|worker| worker.join().unwrap())
+                .collect::<Vec<_>>()
+        });
+        let winners = results
+            .iter()
+            .filter(|(_, result)| result.is_ok())
+            .collect::<Vec<_>>();
+        assert_eq!(winners.len(), 1);
+        let (index, result) = winners[0];
+        let auth = read_auth(&paths.web_auth_file()).unwrap();
+        assert_eq!(auth.username, format!("user-{index}"));
+        assert_eq!(auth.sessions.len(), 1);
+        assert!(auth.password_hash.starts_with("$argon2id$"));
+        assert!(validate(&paths, &result.as_ref().unwrap().token).is_ok());
+    }
+
+    #[test]
     fn signup_login_validate_reset() {
         let temp = tempfile::tempdir().unwrap();
         let paths = AppPaths {
@@ -227,5 +281,66 @@ mod tests {
         assert!(validate(&paths, &second.token).is_err());
         reset(&paths).unwrap();
         assert!(!has_user(&paths));
+    }
+
+    #[test]
+    fn restart_keeps_open_tabs_valid_and_persists_only_token_hashes() {
+        use std::os::unix::fs::PermissionsExt;
+        let temp = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: temp.path().join("config"),
+            data: temp.path().join("data"),
+            runtime: temp.path().join("run"),
+        };
+        paths.ensure().unwrap();
+        assert!(prepare_csrf_tokens(&paths).unwrap().is_empty());
+        let first = signup(&paths, "kitten", "password1").unwrap();
+        let other = login(&paths, "kitten", "password1").unwrap();
+        fs::set_permissions(paths.web_auth_file(), fs::Permissions::from_mode(0o644)).unwrap();
+        let initial = validate(&paths, &first.token).unwrap();
+        assert_eq!(
+            fs::metadata(paths.web_auth_file())
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
+        let restart = prepare_csrf_tokens(&paths).unwrap();
+        let next_restart = prepare_csrf_tokens(&paths).unwrap();
+        let current = validate(&paths, &first.token).unwrap();
+        assert_eq!(current.expires_at, initial.expires_at);
+        for token in [
+            &first.csrf,
+            &restart[&current.token_hash],
+            &next_restart[&current.token_hash],
+        ] {
+            assert!(validate_csrf(&current, token));
+            assert!(!validate_csrf(
+                &validate(&paths, &other.token).unwrap(),
+                token
+            ));
+            assert!(
+                !fs::read_to_string(paths.web_auth_file())
+                    .unwrap()
+                    .contains(token)
+            );
+        }
+        assert!(!validate_csrf(&current, "wrong"));
+        assert!(
+            !fs::read_to_string(paths.web_auth_file())
+                .unwrap()
+                .contains(&first.token)
+        );
+        logout(&paths, &first.token).unwrap();
+        assert!(validate(&paths, &first.token).is_err());
+        assert!(validate(&paths, &other.token).is_ok());
+        assert!(
+            !prepare_csrf_tokens(&paths)
+                .unwrap()
+                .contains_key(&current.token_hash)
+        );
+        reset(&paths).unwrap();
+        assert!(prepare_csrf_tokens(&paths).unwrap().is_empty());
     }
 }

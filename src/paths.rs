@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use std::env;
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
+use std::os::unix::fs::{DirBuilderExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug)]
@@ -69,7 +69,11 @@ impl AppPaths {
 }
 
 pub fn ensure_private_dir(path: &Path) -> Result<()> {
-    fs::create_dir_all(path).with_context(|| format!("create {}", path.display()))?;
+    fs::DirBuilder::new()
+        .recursive(true)
+        .mode(0o700)
+        .create(path)
+        .with_context(|| format!("create {}", path.display()))?;
     fs::set_permissions(path, fs::Permissions::from_mode(0o700))
         .with_context(|| format!("chmod 0700 {}", path.display()))?;
     Ok(())

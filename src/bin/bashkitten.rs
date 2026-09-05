@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, bail};
-use bashkitten::config::{AppConfig, GpuLayers};
+use bashkitten::config::AppConfig;
 use bashkitten::models;
 use bashkitten::paths::AppPaths;
 use bashkitten::session::{self, ControlRequest, Delivery, NewSession};
@@ -53,6 +53,11 @@ enum SessionCommand {
     },
     Stop {
         id: String,
+    },
+    Compact {
+        id: String,
+        #[arg(long)]
+        instructions: Option<String>,
     },
     Model {
         id: String,
@@ -113,7 +118,7 @@ fn codex_authenticated(paths: &AppPaths) -> bool {
 }
 
 fn llama_available() -> bool {
-    std::path::Path::new("/usr/bin/llama-server").is_file()
+    bashkitten::llama::detect_installation().is_some()
 }
 
 fn require_model(
@@ -122,16 +127,13 @@ fn require_model(
     full_id: &str,
     thinking: &str,
 ) -> Result<()> {
-    let model = models::find_model(
+    models::resolve_model(
         config,
         full_id,
+        thinking,
         codex_authenticated(paths),
         llama_available(),
-    )
-    .with_context(|| format!("Unknown or unavailable model: {full_id}"))?;
-    if !model.thinking_levels.iter().any(|level| level == thinking) {
-        bail!("Thinking level {thinking} is not supported by {full_id}");
-    }
+    )?;
     Ok(())
 }
 
@@ -169,11 +171,19 @@ async fn main() -> Result<()> {
                     .thinking
                     .unwrap_or_else(|| config.default_thinking.clone());
                 require_model(&paths, &config, &model, &thinking)?;
+                let model_info = models::find_model(
+                    &config,
+                    &model,
+                    codex_authenticated(&paths),
+                    llama_available(),
+                )
+                .expect("validated model");
                 let cwd = args.cwd.unwrap_or_else(|| config.default_cwd.clone());
                 let request = NewSession {
                     cwd,
                     model,
                     thinking,
+                    model_parameters: model_info.parameters,
                     prompt: args.prompt.clone(),
                     attachments: args.attachments.clone(),
                     parent: args.parent,
@@ -218,6 +228,20 @@ async fn main() -> Result<()> {
                 }
             }
             SessionCommand::Stop { id } => session::stop_worker(&paths, &id)?,
+            SessionCommand::Compact { id, instructions } => {
+                let socket = session::control_socket(&paths, &id)?;
+                if !session::socket_is_live(&socket) {
+                    session::start_worker(&paths, &id)?;
+                }
+                let reply = session::send(
+                    &paths,
+                    &id,
+                    &ControlRequest::Compact {
+                        custom_instructions: instructions,
+                    },
+                )?;
+                println!("{}", reply.message);
+            }
             SessionCommand::Model {
                 id,
                 model,
@@ -274,7 +298,7 @@ async fn main() -> Result<()> {
             }
         },
         Commands::Llama { command } => match command {
-            LlamaCommand::Serve => exec_llama(&config)?,
+            LlamaCommand::Serve => exec_llama(&config, &paths)?,
             LlamaCommand::Status => {
                 let status = Command::new("systemctl")
                     .args(["--user", "is-active", "bashkitten-llama.service"])
@@ -295,7 +319,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn exec_llama(config: &AppConfig) -> Result<()> {
+fn exec_llama(config: &AppConfig, paths: &AppPaths) -> Result<()> {
     if !config.llama.enabled {
         bail!("llama.cpp is disabled in BashKitten settings");
     }
@@ -303,54 +327,31 @@ fn exec_llama(config: &AppConfig) -> Result<()> {
         bail!("Neither llama-cpp nor llama-cpp-cuda is installed");
     }
     let mut command = Command::new("/usr/bin/llama-server");
-    command
-        .args([
-            "--host",
-            "127.0.0.1",
-            "--port",
-            &config.llama.port.to_string(),
-            "--models-dir",
-        ])
-        .arg(&config.llama.models_dir)
-        .args([
-            "--jinja",
-            "--ctx-size",
-            &config.llama.context_size.to_string(),
-            "--batch-size",
-            &config.llama.batch_size.to_string(),
-            "--parallel",
-            &config.llama.parallel_slots.to_string(),
-        ]);
-    if config.llama.cpu_threads > 0 {
-        command.args(["--threads", &config.llama.cpu_threads.to_string()]);
+    let flash = bashkitten::llama::flash_attention_supported();
+    if !config.llama.models.is_empty() {
+        bashkitten::config::atomic_private_bytes(
+            &paths.config.join("llama-models.ini"),
+            bashkitten::llama::preset_contents(&config.llama, flash)?.as_bytes(),
+        )?;
     }
-    let layers = match config.llama.gpu_layers {
-        GpuLayers::Auto => 999,
-        GpuLayers::Cpu => 0,
-        GpuLayers::Count(n) => n,
-    };
-    command.args([
-        "--gpu-layers",
-        &layers.to_string(),
-        "--flash-attn",
-        if config.llama.flash_attention {
-            "on"
-        } else {
-            "off"
-        },
-    ]);
-    command.arg(if config.llama.mmap {
-        "--mmap"
-    } else {
-        "--no-mmap"
-    });
-    if config.llama.mlock {
-        command.arg("--mlock");
+    command.args(bashkitten::llama::managed_launch_arguments(
+        &config.llama,
+        paths,
+        true,
+        flash,
+    )?);
+    command.envs(bashkitten::llama::launch_environment(&config.llama)?);
+    // A user's shell may configure standalone llama.cpp defaults. The managed
+    // service always starts a router; no inherited single-model setting applies.
+    for key in [
+        "LLAMA_ARG_MODEL",
+        "LLAMA_ARG_MODEL_URL",
+        "LLAMA_ARG_HF_REPO",
+        "LLAMA_ARG_HF_FILE",
+        "LLAMA_ARG_DOCKER_REPO",
+    ] {
+        command.env_remove(key);
     }
-    if !config.llama.api_key.is_empty() {
-        command.args(["--api-key", &config.llama.api_key]);
-    }
-    command.args(&config.llama.extra_arguments);
     let error = command.exec();
     Err(error).context("execute llama-server")
 }

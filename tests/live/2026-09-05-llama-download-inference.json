@@ -1,0 +1,1305 @@
+{
+  "date": "2026-09-05T20:31:03.648666+00:00",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "scope": "Actual BashKitten Hugging Face download, saved preset, separate CPU llama.cpp router, and successful native tool tasks",
+  "source": "https://huggingface.co/unsloth/Qwen3-0.6B-GGUF",
+  "model": {
+    "repository": "unsloth/Qwen3-0.6B-GGUF",
+    "quantization": "Q4_K_M",
+    "gated": false,
+    "bytes": 396705472,
+    "sha256": "ac2d97712095a558e31573f62f466a3f9d93990898b0ec79d7c974c1780d524a",
+    "retainedPath": "/run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf"
+  },
+  "transport": {
+    "webOrigin": "http://127.0.0.1:49731",
+    "routerOrigin": "http://127.0.0.1:18831",
+    "authenticated": true,
+    "csrfAndExactOrigin": true,
+    "apiPath": [
+      "POST /api/llama/hf/details",
+      "POST /api/llama/operation (download)",
+      "GET /api/llama/operation",
+      "POST /api/llama/preset",
+      "POST /api/llama/refresh",
+      "POST /api/llama/operation (load)",
+      "POST /api/sessions",
+      "POST /api/sessions/{id}/messages"
+    ]
+  },
+  "downloadProgress": [
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.0,
+        "detail": "0 B / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.0010387454398410718,
+        "detail": "402.4 KiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.03691842949925329,
+        "detail": "14.0 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.0699585585751638,
+        "detail": "26.5 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.09990117555020768,
+        "detail": "37.8 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.1401688328614736,
+        "detail": "53.0 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.18146899420636173,
+        "detail": "68.7 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.21961732859586067,
+        "detail": "83.1 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.25655957677337005,
+        "detail": "97.1 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.29682723408463596,
+        "detail": "112.3 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.3431505149492871,
+        "detail": "129.8 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.3830104970167893,
+        "detail": "144.9 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.423713053799268,
+        "detail": "160.3 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.4625392487653914,
+        "detail": "175.0 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.5033664546981595,
+        "detail": "190.4 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.5358771380899934,
+        "detail": "202.7 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.5806110030163637,
+        "detail": "219.7 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.6331995717971846,
+        "detail": "239.6 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.682535644479338,
+        "detail": "258.2 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.7227136937501079,
+        "detail": "273.4 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.7753713994648402,
+        "detail": "293.3 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.8094440325743729,
+        "detail": "306.2 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.8631342423227275,
+        "detail": "326.5 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.9156753476796005,
+        "detail": "346.4 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.9569755090244886,
+        "detail": "362.1 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "running",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 0.9776255896969327,
+        "detail": "369.9 MiB / 378.3 MiB"
+      },
+      "error": null
+    },
+    {
+      "id": "41e1b3e2-44b5-4a2e-80e3-19381b27953b",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "download",
+      "phase": "complete",
+      "progress": {
+        "message": "Downloading model",
+        "ratio": 1.0,
+        "detail": "378.3 MiB / 378.3 MiB"
+      },
+      "error": null
+    }
+  ],
+  "loadProgress": [
+    {
+      "id": "ea216daa-ad19-4068-8ad6-9347ed7b33de",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "load",
+      "phase": "running",
+      "progress": {
+        "message": "Loading text model",
+        "ratio": 0.0
+      },
+      "error": null
+    },
+    {
+      "id": "ea216daa-ad19-4068-8ad6-9347ed7b33de",
+      "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+      "action": "load",
+      "phase": "complete",
+      "progress": {
+        "message": "Loading text model",
+        "ratio": 1.0
+      },
+      "error": null
+    }
+  ],
+  "preset": {
+    "id": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+    "name": "Qwen3 0.6B CPU test",
+    "context_window": 8192,
+    "max_tokens": 1024,
+    "input": [
+      "text"
+    ],
+    "reasoning": false,
+    "thinking_levels": [
+      "off"
+    ],
+    "default_thinking": "off",
+    "cost": {
+      "input": 0.0,
+      "output": 0.0,
+      "cacheRead": 0.0,
+      "cacheWrite": 0.0
+    },
+    "request_parameters": {
+      "temperature": 0,
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      }
+    },
+    "supports_developer_role": null,
+    "supports_reasoning_effort": false,
+    "compatibility": {},
+    "thinking_level_map": {},
+    "thinking_budgets": {},
+    "llama_options": "",
+    "llama_model_path": ""
+  },
+  "nativeProcesses": [
+    {
+      "pid": 3631062,
+      "parentPid": 3389,
+      "argv": [
+        "/usr/bin/llama-server",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "18831",
+        "--models-dir",
+        "/run/media/user/Data/bashkitten-builds/llama-live-download/models",
+        "--models-max",
+        "0",
+        "--no-models-autoload",
+        "--models-preset",
+        "/run/media/user/Data/bashkitten-builds/llama-live-download/config/llama-models.ini"
+      ],
+      "gpuEnvironment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "GGML_VK_VISIBLE_DEVICES": ""
+      }
+    },
+    {
+      "pid": 3631139,
+      "parentPid": 3631062,
+      "argv": [
+        "/usr/lib/llama-cpp/llama-server",
+        "--host",
+        "127.0.0.1",
+        "--jinja",
+        "--mmap",
+        "--port",
+        "36789",
+        "--alias",
+        "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+        "--batch-size",
+        "512",
+        "--ctx-size",
+        "8192",
+        "--flash-attn",
+        "off",
+        "--hf-repo",
+        "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+        "--n-gpu-layers",
+        "0",
+        "--parallel",
+        "1",
+        "--threads",
+        "4"
+      ],
+      "gpuEnvironment": {
+        "CUDA_VISIBLE_DEVICES": "",
+        "GGML_VK_VISIBLE_DEVICES": ""
+      }
+    }
+  ],
+  "webRestart": {
+    "before": 3627785,
+    "after": 3634450,
+    "routerPidUnchanged": 3631062,
+    "modelStayedLoaded": true
+  },
+  "testConfiguration": {
+    "cpuThreads": 4,
+    "gpuLayers": 0,
+    "contextWindow": 8192,
+    "maximumOutputTokens": 1024,
+    "compactionReserveTokens": 1024,
+    "compactionKeepRecentTokens": 2048,
+    "thinking": "off",
+    "temperature": 0,
+    "chatTemplateEnableThinking": false
+  },
+  "successfulWrite": {
+    "sessionId": "01a07341-5874-72b0-aa8b-a8ca024148c3",
+    "entries": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "01a07341-5874-72b0-aa8b-a8ca024148c3",
+        "timestamp": "2026-09-05T20:27:37.460Z",
+        "cwd": "/run/media/user/Data/bashkitten-builds/llama-live-download/work",
+        "provider": "llama.cpp",
+        "modelId": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+        "thinkingLevel": "off",
+        "modelParameters": {
+          "id": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "name": "Qwen3 0.6B CPU test",
+          "provider": "llama.cpp",
+          "api": "openai-completions",
+          "baseUrl": "http://127.0.0.1:18831/v1",
+          "contextWindow": 8192,
+          "maxTokens": 1024,
+          "input": [
+            "text"
+          ],
+          "reasoning": false,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsReasoningEffort": false,
+            "supportsUsageInStreaming": true,
+            "supportsStrictMode": false,
+            "maxTokensField": "max_tokens"
+          },
+          "thinkingLevelMap": {},
+          "samplingParams": {
+            "temperature": 0,
+            "chat_template_kwargs": {
+              "enable_thinking": false
+            }
+          },
+          "thinkingBudgets": {},
+          "llamaOptions": "",
+          "llamaModelPath": ""
+        }
+      },
+      {
+        "id": "94bf1906",
+        "parentId": null,
+        "timestamp": "2026-09-05T20:27:37.523Z",
+        "type": "message",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Create a file named success.txt containing exactly CPU-TOOL-842 followed by a newline. Use the write tool."
+            }
+          ],
+          "timestamp": 1788640057523,
+          "delivery": "queue"
+        }
+      },
+      {
+        "id": "f767afd6",
+        "parentId": "94bf1906",
+        "timestamp": "2026-09-05T20:27:38.905Z",
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "uVUWh9VTQBaYVf5hfWtZQbDgFv8AdbGI",
+              "name": "write",
+              "arguments": {
+                "path": "success.txt",
+                "content": "CPU-TOOL-842\n"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "llama.cpp",
+          "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "responseId": "chatcmpl-GJEIt7CMKOfBh5TZwGdLmIfsTTjrjAYz",
+          "usage": {
+            "input": 35,
+            "output": 35,
+            "cacheRead": 2023,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 2093,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          },
+          "stopReason": "toolUse",
+          "rawStopReason": "tool_calls",
+          "timestamp": 1788640057523
+        }
+      },
+      {
+        "id": "c9c3316b",
+        "parentId": "f767afd6",
+        "timestamp": "2026-09-05T20:27:38.905Z",
+        "type": "message",
+        "message": {
+          "role": "toolResult",
+          "toolCallId": "uVUWh9VTQBaYVf5hfWtZQbDgFv8AdbGI",
+          "toolName": "write",
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully wrote to success.txt"
+            }
+          ],
+          "isError": false,
+          "timestamp": 1788640058905
+        }
+      },
+      {
+        "id": "69c4ebcf",
+        "parentId": "c9c3316b",
+        "timestamp": "2026-09-05T20:27:40.020Z",
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "The file 'success.txt' has been successfully created with the content \"CPU-TOOL-842\\n\"."
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "llama.cpp",
+          "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "responseId": "chatcmpl-sYyDNIfGGchGv9NegLkR0fi4Lpcmhghz",
+          "usage": {
+            "input": 56,
+            "output": 25,
+            "cacheRead": 2054,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 2135,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          },
+          "stopReason": "stop",
+          "rawStopReason": "stop",
+          "timestamp": 1788640058906
+        }
+      }
+    ],
+    "independentFileBytes": "CPU-TOOL-842\n"
+  },
+  "successfulIndependentRead": {
+    "sessionId": "01a07343-1044-7903-ba57-2fdc0e2d256a",
+    "entries": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "01a07343-1044-7903-ba57-2fdc0e2d256a",
+        "timestamp": "2026-09-05T20:29:30.052Z",
+        "cwd": "/run/media/user/Data/bashkitten-builds/llama-live-download/work",
+        "provider": "llama.cpp",
+        "modelId": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+        "thinkingLevel": "off",
+        "modelParameters": {
+          "id": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "name": "Qwen3 0.6B CPU test",
+          "provider": "llama.cpp",
+          "api": "openai-completions",
+          "baseUrl": "http://127.0.0.1:18831/v1",
+          "contextWindow": 8192,
+          "maxTokens": 1024,
+          "input": [
+            "text"
+          ],
+          "reasoning": false,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsReasoningEffort": false,
+            "supportsUsageInStreaming": true,
+            "supportsStrictMode": false,
+            "maxTokensField": "max_tokens"
+          },
+          "thinkingLevelMap": {},
+          "samplingParams": {
+            "temperature": 0,
+            "chat_template_kwargs": {
+              "enable_thinking": false
+            }
+          },
+          "thinkingBudgets": {},
+          "llamaOptions": "",
+          "llamaModelPath": ""
+        }
+      },
+      {
+        "id": "3f582f64",
+        "parentId": null,
+        "timestamp": "2026-09-05T20:29:30.112Z",
+        "type": "message",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Read the file success.txt with the read tool and quote its contents. Do not modify any files."
+            }
+          ],
+          "timestamp": 1788640170112,
+          "delivery": "queue"
+        }
+      },
+      {
+        "id": "5a9e5798",
+        "parentId": "3f582f64",
+        "timestamp": "2026-09-05T20:29:30.920Z",
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "5ATeU0MoYEQfGjyZRT9IXYzfj7evasQK",
+              "name": "read",
+              "arguments": {
+                "path": "success.txt"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "llama.cpp",
+          "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "responseId": "chatcmpl-9VLTfcve4eNwvFyDLRvEzeAHRiCA7lc7",
+          "usage": {
+            "input": 29,
+            "output": 20,
+            "cacheRead": 2023,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 2072,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          },
+          "stopReason": "toolUse",
+          "rawStopReason": "tool_calls",
+          "timestamp": 1788640170112
+        }
+      },
+      {
+        "id": "7bea4fd9",
+        "parentId": "5a9e5798",
+        "timestamp": "2026-09-05T20:29:30.925Z",
+        "type": "message",
+        "message": {
+          "role": "toolResult",
+          "toolCallId": "5ATeU0MoYEQfGjyZRT9IXYzfj7evasQK",
+          "toolName": "read",
+          "content": [
+            {
+              "type": "text",
+              "text": "CPU-TOOL-842\n"
+            }
+          ],
+          "isError": false,
+          "timestamp": 1788640170925
+        }
+      },
+      {
+        "id": "7ed9bd45",
+        "parentId": "7bea4fd9",
+        "timestamp": "2026-09-05T20:29:31.776Z",
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "The contents of the file success.txt are:\n\nCPU-TOOL-842"
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "llama.cpp",
+          "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "responseId": "chatcmpl-Aja6D3PDjFJf6dZgXNTP8oWh2dy8vR5k",
+          "usage": {
+            "input": 45,
+            "output": 18,
+            "cacheRead": 2048,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 2111,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          },
+          "stopReason": "stop",
+          "rawStopReason": "stop",
+          "timestamp": 1788640170926
+        }
+      }
+    ],
+    "status": {
+      "ok": true,
+      "message": "status",
+      "data": {
+        "busy": false,
+        "steering": 0,
+        "queued": 0,
+        "steeringMessages": [],
+        "queuedMessages": [],
+        "usage": {
+          "totals": {
+            "input": 74,
+            "output": 38,
+            "cacheRead": 4071,
+            "cacheWrite": 0,
+            "cost": 0.0
+          },
+          "context": {
+            "tokens": 2111,
+            "contextWindow": 8192,
+            "percent": 25.76904296875
+          },
+          "latestCacheHitRate": 97.84997611084567,
+          "text": "\u219174 \u219338 R4.1k CH97.8% 25.8%/8.2k (auto)"
+        }
+      }
+    },
+    "independentFileBytes": "CPU-TOOL-842\n"
+  },
+  "modelQualityFailures": [
+    {
+      "case": "combined write/read with final-answer constraint",
+      "sessionId": "01a07340-2dbe-7570-9887-5fd7426d0e2b",
+      "detail": "The assistant returned three tool calls: correct write, correct read, then an unwanted write of VERIFIED. Rust executed the returned calls. The harness independently detected mismatched final file bytes.",
+      "entries": [
+        {
+          "type": "session",
+          "version": 3,
+          "id": "01a07340-2dbe-7570-9887-5fd7426d0e2b",
+          "timestamp": "2026-09-05T20:26:20.990Z",
+          "cwd": "/run/media/user/Data/bashkitten-builds/llama-live-download/work",
+          "provider": "llama.cpp",
+          "modelId": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "thinkingLevel": "off",
+          "modelParameters": {
+            "id": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+            "name": "Qwen3 0.6B CPU test",
+            "provider": "llama.cpp",
+            "api": "openai-completions",
+            "baseUrl": "http://127.0.0.1:18831/v1",
+            "contextWindow": 8192,
+            "maxTokens": 1024,
+            "input": [
+              "text"
+            ],
+            "reasoning": false,
+            "compat": {
+              "supportsStore": false,
+              "supportsDeveloperRole": false,
+              "supportsReasoningEffort": false,
+              "supportsUsageInStreaming": true,
+              "supportsStrictMode": false,
+              "maxTokensField": "max_tokens"
+            },
+            "thinkingLevelMap": {},
+            "samplingParams": {
+              "temperature": 0,
+              "chat_template_kwargs": {
+                "enable_thinking": false
+              }
+            },
+            "thinkingBudgets": {},
+            "llamaOptions": "",
+            "llamaModelPath": ""
+          }
+        },
+        {
+          "id": "1bbab91b",
+          "parentId": null,
+          "timestamp": "2026-09-05T20:26:21.052Z",
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Use the write tool to create proof.txt containing exactly LLAMA-LIVE-731 followed by a newline. Then use the read tool to read proof.txt and verify it. Finish with the single word VERIFIED. Do not create or modify any other file."
+              }
+            ],
+            "timestamp": 1788639981052,
+            "delivery": "queue"
+          }
+        },
+        {
+          "id": "d641f7ae",
+          "parentId": "1bbab91b",
+          "timestamp": "2026-09-05T20:26:31.012Z",
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "CUmfZQxzi5zT0G8WyNdYyVGpbOGtjrPS",
+                "name": "write",
+                "arguments": {
+                  "path": "proof.txt",
+                  "content": "LLAMA-LIVE-731\n"
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "RfD1eGtrXz6B3do5Qf3YcJ1xc3g3coJg",
+                "name": "read",
+                "arguments": {
+                  "path": "proof.txt"
+                }
+              },
+              {
+                "type": "toolCall",
+                "id": "AJVuQ947EtSDMkGfW8OsCo9jW7C0v9Ke",
+                "name": "write",
+                "arguments": {
+                  "path": "proof.txt",
+                  "content": "VERIFIED"
+                }
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "llama.cpp",
+            "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+            "responseId": "chatcmpl-OXmUbjesl4w0fAICyFeSdNQv4guopD3D",
+            "usage": {
+              "input": 2085,
+              "output": 81,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "reasoning": 0,
+              "totalTokens": 2166,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "toolUse",
+            "rawStopReason": "tool_calls",
+            "timestamp": 1788639981053
+          }
+        },
+        {
+          "id": "bcd62e4b",
+          "parentId": "d641f7ae",
+          "timestamp": "2026-09-05T20:26:31.014Z",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "CUmfZQxzi5zT0G8WyNdYyVGpbOGtjrPS",
+            "toolName": "write",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to proof.txt"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1788639991014
+          }
+        },
+        {
+          "id": "c8dfa83c",
+          "parentId": "bcd62e4b",
+          "timestamp": "2026-09-05T20:26:31.014Z",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "RfD1eGtrXz6B3do5Qf3YcJ1xc3g3coJg",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "LLAMA-LIVE-731\n"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1788639991014
+          }
+        },
+        {
+          "id": "d70a63d4",
+          "parentId": "c8dfa83c",
+          "timestamp": "2026-09-05T20:26:31.014Z",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "AJVuQ947EtSDMkGfW8OsCo9jW7C0v9Ke",
+            "toolName": "write",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to proof.txt"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1788639991014
+          }
+        },
+        {
+          "id": "0148e2ea",
+          "parentId": "d70a63d4",
+          "timestamp": "2026-09-05T20:26:31.818Z",
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "VERIFIED"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "llama.cpp",
+            "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+            "responseId": "chatcmpl-TQCzHg7bYIrFMrKyLZks0e4gpAMGJ6ml",
+            "usage": {
+              "input": 126,
+              "output": 3,
+              "cacheRead": 2081,
+              "cacheWrite": 0,
+              "reasoning": 0,
+              "totalTokens": 2210,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "stop",
+            "rawStopReason": "stop",
+            "timestamp": 1788639991014
+          }
+        }
+      ],
+      "check": {
+        "sessionId": "01a07340-2dbe-7570-9887-5fd7426d0e2b",
+        "expected": "LLAMA-LIVE-731\n",
+        "actual": "VERIFIED",
+        "reason": "Small model appended an extra write call with final-answer text after correctly writing and reading the requested content."
+      }
+    },
+    {
+      "case": "read follow-up in same session",
+      "sessionId": "01a07341-5874-72b0-aa8b-a8ca024148c3",
+      "detail": "Assistant answered the known content from history without the requested read call. The read-tool assertion failed; the file remained correct. A fresh independent session subsequently performed a read call and returned the correct file content.",
+      "entries": [
+        {
+          "type": "session",
+          "version": 3,
+          "id": "01a07341-5874-72b0-aa8b-a8ca024148c3",
+          "timestamp": "2026-09-05T20:27:37.460Z",
+          "cwd": "/run/media/user/Data/bashkitten-builds/llama-live-download/work",
+          "provider": "llama.cpp",
+          "modelId": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+          "thinkingLevel": "off",
+          "modelParameters": {
+            "id": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+            "name": "Qwen3 0.6B CPU test",
+            "provider": "llama.cpp",
+            "api": "openai-completions",
+            "baseUrl": "http://127.0.0.1:18831/v1",
+            "contextWindow": 8192,
+            "maxTokens": 1024,
+            "input": [
+              "text"
+            ],
+            "reasoning": false,
+            "compat": {
+              "supportsStore": false,
+              "supportsDeveloperRole": false,
+              "supportsReasoningEffort": false,
+              "supportsUsageInStreaming": true,
+              "supportsStrictMode": false,
+              "maxTokensField": "max_tokens"
+            },
+            "thinkingLevelMap": {},
+            "samplingParams": {
+              "temperature": 0,
+              "chat_template_kwargs": {
+                "enable_thinking": false
+              }
+            },
+            "thinkingBudgets": {},
+            "llamaOptions": "",
+            "llamaModelPath": ""
+          }
+        },
+        {
+          "id": "94bf1906",
+          "parentId": null,
+          "timestamp": "2026-09-05T20:27:37.523Z",
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Create a file named success.txt containing exactly CPU-TOOL-842 followed by a newline. Use the write tool."
+              }
+            ],
+            "timestamp": 1788640057523,
+            "delivery": "queue"
+          }
+        },
+        {
+          "id": "f767afd6",
+          "parentId": "94bf1906",
+          "timestamp": "2026-09-05T20:27:38.905Z",
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "uVUWh9VTQBaYVf5hfWtZQbDgFv8AdbGI",
+                "name": "write",
+                "arguments": {
+                  "path": "success.txt",
+                  "content": "CPU-TOOL-842\n"
+                }
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "llama.cpp",
+            "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+            "responseId": "chatcmpl-GJEIt7CMKOfBh5TZwGdLmIfsTTjrjAYz",
+            "usage": {
+              "input": 35,
+              "output": 35,
+              "cacheRead": 2023,
+              "cacheWrite": 0,
+              "reasoning": 0,
+              "totalTokens": 2093,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "toolUse",
+            "rawStopReason": "tool_calls",
+            "timestamp": 1788640057523
+          }
+        },
+        {
+          "id": "c9c3316b",
+          "parentId": "f767afd6",
+          "timestamp": "2026-09-05T20:27:38.905Z",
+          "type": "message",
+          "message": {
+            "role": "toolResult",
+            "toolCallId": "uVUWh9VTQBaYVf5hfWtZQbDgFv8AdbGI",
+            "toolName": "write",
+            "content": [
+              {
+                "type": "text",
+                "text": "Successfully wrote to success.txt"
+              }
+            ],
+            "isError": false,
+            "timestamp": 1788640058905
+          }
+        },
+        {
+          "id": "69c4ebcf",
+          "parentId": "c9c3316b",
+          "timestamp": "2026-09-05T20:27:40.020Z",
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "The file 'success.txt' has been successfully created with the content \"CPU-TOOL-842\\n\"."
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "llama.cpp",
+            "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+            "responseId": "chatcmpl-sYyDNIfGGchGv9NegLkR0fi4Lpcmhghz",
+            "usage": {
+              "input": 56,
+              "output": 25,
+              "cacheRead": 2054,
+              "cacheWrite": 0,
+              "reasoning": 0,
+              "totalTokens": 2135,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "stop",
+            "rawStopReason": "stop",
+            "timestamp": 1788640058906
+          }
+        },
+        {
+          "id": "ee594b94",
+          "parentId": "69c4ebcf",
+          "timestamp": "2026-09-05T20:28:39.748Z",
+          "type": "message",
+          "message": {
+            "role": "user",
+            "content": [
+              {
+                "type": "text",
+                "text": "Read success.txt using the read tool. Tell me exactly what the file contains. Do not modify any files."
+              }
+            ],
+            "timestamp": 1788640119748,
+            "delivery": "queue"
+          }
+        },
+        {
+          "id": "aedf6155",
+          "parentId": "ee594b94",
+          "timestamp": "2026-09-05T20:28:40.718Z",
+          "type": "message",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "The file 'success.txt' contains the content \"CPU-TOOL-842\\n\"."
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "llama.cpp",
+            "model": "unsloth/Qwen3-0.6B-GGUF:Q4_K_M",
+            "responseId": "chatcmpl-lJke1wjEXpdv3zI2TU1Pc6OlaHmbpft1",
+            "usage": {
+              "input": 60,
+              "output": 21,
+              "cacheRead": 2106,
+              "cacheWrite": 0,
+              "reasoning": 0,
+              "totalTokens": 2187,
+              "cost": {
+                "input": 0.0,
+                "output": 0.0,
+                "cacheRead": 0.0,
+                "cacheWrite": 0.0,
+                "total": 0.0
+              }
+            },
+            "stopReason": "stop",
+            "rawStopReason": "stop",
+            "timestamp": 1788640119749
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Browser surfaces were unavailable: createBrowserTab(iab) failed and cua.getState returned browsers=[]. The same authenticated endpoints backing the previously browser-verified Settings UI were exercised directly.",
+    "Successful small-model integration checks do not establish coding quality for the 0.6B model."
+  ],
+  "implementationChangesRequired": false,
+  "cleanup": {
+    "workersStopped": true,
+    "webStopped": true,
+    "routerStopped": true,
+    "downloadRetained": true,
+    "productionPidsUntouched": [
+      1695844,
+      2928289
+    ]
+  }
+}

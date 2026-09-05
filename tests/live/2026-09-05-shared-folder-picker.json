@@ -1,0 +1,49 @@
+{
+  "date": "2026-09-05T21:08:28.036734+00:00",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "isolatedRoot": "/run/media/user/Data/bashkitten-builds/browser-session-audit",
+  "browserChecks": {
+    "sameDialogForChatDefaultModelsAndAdditionalFolders": true,
+    "missingModelsFolderOpensReadableParent": true,
+    "folderCreation": true,
+    "parentNavigation": true,
+    "absolutePathNavigation": true,
+    "defaultFolderSaved": "/run/media/user/Data/bashkitten-builds/browser-session-audit/work/picker-proof",
+    "modelsDirectorySaved": "/run/media/user/Data/bashkitten-builds/browser-session-audit/work/picker-proof",
+    "additionalFoldersSaved": [
+      "/run/media/user/Data/bashkitten-builds/browser-session-audit/work"
+    ]
+  },
+  "validation": [
+    "76 Rust library tests passed",
+    "Embedded JavaScript syntax passed",
+    "Clippy --all-targets -D warnings passed"
+  ],
+  "deployment": {
+    "pending": false,
+    "url": "http://127.0.0.1:3939/",
+    "runtimeDirectory": "/home/user/.local/lib/bashkitten/current",
+    "userServiceOverrides": [
+      "/home/user/.config/systemd/user/bashkitten-web.service.d/90-bashkitten-current.conf",
+      "/home/user/.config/systemd/user/bashkitten-llama.service.d/90-bashkitten-current.conf",
+      "/home/user/.config/systemd/user/bashkitten-controller.service.d/90-bashkitten-current.conf"
+    ],
+    "pidsBefore": {
+      "bashkitten-web.service": "1695844",
+      "bashkitten-llama.service": "0",
+      "bashkitten-controller.service": "0"
+    },
+    "pidsAfter": {
+      "bashkitten-web.service": "3747972",
+      "bashkitten-llama.service": "0",
+      "bashkitten-controller.service": "0"
+    },
+    "onlyWebRestarted": true,
+    "systemPackageUnmodified": true
+  },
+  "cleanup": {
+    "isolatedWebStopped": true,
+    "fixtureProviderStopped": true,
+    "noWorkersCreated": true
+  }
+}

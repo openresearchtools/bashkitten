@@ -1,0 +1,106 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "fdVersion": "fdfind 8.6.0",
+  "cases": [
+    {
+      "name": "find-boundary--1",
+      "tool": "find",
+      "args": {
+        "pattern": "*.txt",
+        "limit": -1
+      },
+      "files": {
+        "text.txt": "one\ntwo\nthree\n"
+      },
+      "dirs": [
+        ".git"
+      ],
+      "expected": {
+        "error": "error: The argument '--max-results <count>' requires a value but none was supplied\n\nFor more information try '--help'"
+      },
+      "changed": {}
+    },
+    {
+      "name": "find-boundary-0",
+      "tool": "find",
+      "args": {
+        "pattern": "*.txt",
+        "limit": 0
+      },
+      "files": {
+        "text.txt": "one\ntwo\nthree\n"
+      },
+      "dirs": [
+        ".git"
+      ],
+      "expected": {
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "text.txt\n\n[0 results limit reached. Use limit=0 for more, or refine pattern]"
+            }
+          ],
+          "details": {
+            "resultLimitReached": 0
+          }
+        }
+      },
+      "changed": {}
+    },
+    {
+      "name": "find-boundary-0.5",
+      "tool": "find",
+      "args": {
+        "pattern": "*.txt",
+        "limit": 0.5
+      },
+      "files": {
+        "text.txt": "one\ntwo\nthree\n"
+      },
+      "dirs": [
+        ".git"
+      ],
+      "expected": {
+        "error": "error: Invalid value '0.5' for '--max-results <count>': invalid digit found in string\n\nFor more information try '--help'"
+      },
+      "changed": {}
+    },
+    {
+      "name": "find-boundary-1.5",
+      "tool": "find",
+      "args": {
+        "pattern": "*.txt",
+        "limit": 1.5
+      },
+      "files": {
+        "text.txt": "one\ntwo\nthree\n"
+      },
+      "dirs": [
+        ".git"
+      ],
+      "expected": {
+        "error": "error: Invalid value '1.5' for '--max-results <count>': invalid digit found in string\n\nFor more information try '--help'"
+      },
+      "changed": {}
+    },
+    {
+      "name": "find-boundary-1e+21",
+      "tool": "find",
+      "args": {
+        "pattern": "*.txt",
+        "limit": 1e+21
+      },
+      "files": {
+        "text.txt": "one\ntwo\nthree\n"
+      },
+      "dirs": [
+        ".git"
+      ],
+      "expected": {
+        "error": "error: Invalid value '1e+21' for '--max-results <count>': invalid digit found in string\n\nFor more information try '--help'"
+      },
+      "changed": {}
+    }
+  ]
+}

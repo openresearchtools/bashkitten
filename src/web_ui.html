@@ -72,7 +72,7 @@
     }
 
     * { box-sizing: border-box; }
-    html, body { height: 100%; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
     body { margin: 0; overflow: hidden; background: var(--bg); color: var(--text); font-size: 14px; }
     button, input, select, textarea { color: inherit; font: inherit; }
     button { cursor: pointer; }
@@ -119,9 +119,9 @@
     #auth input:focus { border-color: var(--accent); }
     #auth button { width: 100%; margin-top: 5px; padding: 11px; border-radius: 10px; }
 
-    #app { display: grid; grid-template-columns: 280px minmax(0, 1fr); height: 100dvh; }
-    #sidebar { display: flex; min-width: 0; flex-direction: column; border-right: 1px solid var(--line-soft); background: var(--sidebar); }
-    .sidebar-header { display: flex; height: 58px; align-items: center; gap: 2px; padding: 8px; border-bottom: 1px solid var(--line-soft); }
+    #app { display: grid; grid-template-columns: 280px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); height: 100dvh; min-height: 0; overflow: hidden; }
+    #sidebar { display: flex; min-width: 0; min-height: 0; overflow: hidden; flex-direction: column; border-right: 1px solid var(--line-soft); background: var(--sidebar); }
+    .sidebar-header { display: flex; flex: 0 0 58px; align-items: center; gap: 2px; padding: 8px; border-bottom: 1px solid var(--line-soft); }
     .new-chat {
       display: flex;
       min-width: 0;
@@ -140,7 +140,7 @@
     .new-chat:hover { background: var(--surface-2); }
     #settingsBtn { flex: 0 0 auto; color: var(--text); }
     .settings-glyph { font-size: 18px; line-height: 1; }
-    #sessions { flex: 1; overflow: auto; padding: 7px 8px 16px; }
+    #sessions { flex: 1 1 0; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: 7px 8px 16px; }
     .folder-group { margin: 5px 0 12px; }
     .folder-heading {
       display: flex;
@@ -167,7 +167,7 @@
     .session.active { background: var(--surface-2); }
     .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 430; text-overflow: ellipsis; white-space: nowrap; }
     .running-dot { position: absolute; top: 12px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
-    #workspace { position: relative; display: grid; min-width: 0; height: 100dvh; overflow: hidden; grid-template-rows: 58px minmax(0, 1fr) auto; }
+    #workspace { position: relative; display: grid; min-width: 0; min-height: 0; height: 100%; overflow: hidden; grid-template-rows: 58px minmax(0, 1fr) auto; }
     .topbar { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line-soft); }
     .chat-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
     #title { max-width: min(48vw, 540px); overflow: hidden; font-size: 14px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
@@ -199,9 +199,30 @@
     }
     #settingsView { overflow: auto; }
     .settings-page { width: min(680px, calc(100% - 44px)); margin: 0 auto; padding: 28px 0 42px; }
-    .settings-page h2 { margin: 0 0 18px; font-size: 20px; }
+    .settings-page h2 { margin: 0; font-size: 20px; }
+    .settings-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+    .settings-tabs { position: sticky; top: 0; z-index: 2; background: var(--bg); display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 22px; overflow-x: auto; }
+    .settings-tabs button { flex: 1 0 auto; padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: transparent; color: var(--muted); }
+    .settings-tabs button[aria-selected="true"] { border-bottom-color: var(--text); color: var(--text); }
+    .settings-page button:not([role="tab"]):not(.primary) { padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-2); font-size: 12px; }
+    .settings-page button:not([role="tab"]):not(.primary):hover { border-color: var(--muted); }
+    .settings-page button:disabled { opacity: .5; cursor: default; }
+    .settings-panel { min-width: 0; }
+    .settings-panel h3 { font-size: 15px; margin: 0 0 10px; }
+    .settings-panel h4 { margin: 22px 0 8px; font-size: 13px; }
+    .folder-field { display: flex; gap: 6px; align-items: center; }
+    .folder-field input { min-width: 0; flex: 1; }
+    .folder-field button { flex: 0 0 auto; margin-top: 5px; }
+    .model-folder-row, .local-model-row { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line-soft); }
+    .model-folder-row > span, .local-model-description { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+    .local-model-description strong { font-size: 12px; font-weight: 500; }
+    .local-model-description .meta { margin: 3px 0 0; font-size: 11px; }
+    .local-model-row button, .model-folder-row button { flex: 0 0 auto; }
+    .model-list { max-height: 380px; overflow: auto; }
+    .settings-section { padding: 18px 0; border-top: 1px solid var(--line-soft); margin-top: 18px; }
+    .settings-section > summary { font-weight: 500; }
     .settings-page label { display: block; margin: 11px 0; color: var(--muted); font-size: 12px; }
-    .settings-page input, .settings-page select { display: block; width: 100%; margin-top: 5px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
+    .settings-page input, .settings-page select, .settings-page textarea { display: block; width: 100%; margin-top: 5px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
     .chat-inner { width: min(790px, calc(100% - 44px)); min-height: 100%; margin: 0 auto; padding: 24px 0 28px; }
     .welcome { display: grid; min-height: calc(100dvh - 260px); place-content: center; color: var(--muted); text-align: center; }
     .welcome .cat { margin-bottom: 8px; font-size: 30px; filter: grayscale(.15); }
@@ -369,15 +390,16 @@
     .folder-create input { padding: 7px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); }
     .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
     .settings-grid .wide { grid-column: 1 / -1; }
-    .check { display: flex !important; align-items: center; gap: 8px; }
+    .check:not(.hidden) { display: flex !important; align-items: center; gap: 8px; }
     .check input { width: auto !important; margin: 0 !important; }
     .meta { color: var(--muted); font-size: 11px; }
 
     @media (max-width: 780px) {
-      #app { grid-template-columns: 1fr; }
-      #sidebar { display: none; }
-      #folderBtn { max-width: 44vw; }
-      #usage { display: none; }
+      #app { grid-template-columns: 180px minmax(0, 1fr); }
+      .topbar { flex-wrap: wrap; align-content: center; gap: 0; padding: 4px 10px; }
+      .chat-heading { flex-basis: 100%; }
+      #folderBtn { max-width: 100%; padding: 0; }
+      #usage { width: 100%; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
       .chat-inner { width: min(100% - 24px, 790px); }
       #composerWrap { padding: 0 10px 10px; }
       #model { width: 145px; }
@@ -420,18 +442,25 @@
       <div id="chat"><div id="chatInner" class="chat-inner"></div></div>
       <section id="settingsView" class="hidden">
         <form id="settingsForm" class="settings-page">
-          <h2>Settings</h2>
+          <div class="settings-heading"><h2>Settings</h2><button id="settingsDone" type="button">Done</button></div>
+          <nav class="settings-tabs" role="tablist" aria-label="Settings sections">
+            <button id="tabApp" type="button" role="tab" aria-selected="true" aria-controls="settingsApp" data-settings-tab="app">App</button>
+            <button id="tabSubscriptions" type="button" role="tab" aria-selected="false" aria-controls="settingsSubscriptions" tabindex="-1" data-settings-tab="subscriptions">Subscriptions</button>
+            <button id="tabApis" type="button" role="tab" aria-selected="false" aria-controls="settingsApis" tabindex="-1" data-settings-tab="apis">APIs</button>
+            <button id="tabLlama" type="button" role="tab" aria-selected="false" aria-controls="settingsLlama" tabindex="-1" data-settings-tab="llama">llama.cpp</button>
+          </nav>
+          <section id="settingsApp" class="settings-panel" role="tabpanel" aria-labelledby="tabApp">
           <div class="settings-grid">
             <label>Web port<input id="webPort" type="number" min="1024" max="65535"></label>
             <label>Appearance<select id="theme"><option value="system">System</option><option value="dark">Dark</option><option value="light">Light</option></select></label>
-            <label class="wide">Default working folder<input id="defaultCwd"></label>
+            <label class="wide">Default working folder<span class="folder-field"><input id="defaultCwd"><button id="defaultCwdBrowse" type="button">Browse…</button></span></label>
             <label>Default model<select id="defaultModel"></select></label>
             <label>Default thinking<select id="defaultThinking"></select></label>
-            <label class="check wide"><input id="llamaEnabled" type="checkbox"> Enable managed llama.cpp router</label>
-            <label>llama.cpp port<input id="llamaPort" type="number"></label>
-            <label>Context size<input id="llamaContext" type="number"></label>
+            <label>Network idle timeout<select id="httpIdleTimeout"><option value="30000">30 sec</option><option value="60000">1 min</option><option value="120000">2 min</option><option value="300000">5 min</option><option value="0">Disabled</option></select></label>
           </div>
-          <section class="subscription-settings" aria-label="OpenAI subscription">
+          <p class="meta">Changing the port restarts only the Web UI. Agent sessions keep running.</p>
+          </section>
+          <section id="settingsSubscriptions" class="settings-panel hidden" role="tabpanel" aria-labelledby="tabSubscriptions">
             <h3>OpenAI subscription</h3>
             <p id="subscriptionStatus" class="meta" role="status">Checking connection…</p>
             <div class="subscription-actions">
@@ -442,7 +471,7 @@
             <div id="oauthPending" class="hidden">
               <p id="oauthMessage" class="meta" role="status"></p>
               <strong id="oauthUserCode" class="hidden"></strong>
-              <div class="subscription-actions"><a id="oauthOpen" target="_blank" rel="noopener noreferrer" class="hidden">Open OpenAI login</a><button id="oauthCancel" type="button">Cancel login</button></div>
+              <div class="subscription-actions"><button id="oauthCancel" type="button">Cancel login</button></div>
               <div id="oauthManual" class="hidden">
                 <label for="oauthCode">Complete login in your browser, or paste the authorization code / redirect URL here:</label>
                 <input id="oauthCode" type="text" autocomplete="off" spellcheck="false" placeholder="http://localhost:1455/auth/callback">
@@ -450,11 +479,114 @@
               </div>
             </div>
           </section>
-          <div class="dialog-actions">
-            <button id="restartLlama" type="button">Restart llama.cpp</button>
-          </div>
-          <div class="dialog-actions"><button id="settingsDone" type="button">Done</button><button class="primary">Save</button></div>
-          <p class="meta">Port changes apply when the Web service restarts. BashKitten performs no telemetry or update checks.</p>
+          <section id="settingsApis" class="settings-panel hidden" role="tabpanel" aria-labelledby="tabApis">
+            <h3>OpenAI-compatible API</h3>
+            <div class="subscription-actions"><select id="compatibleProviders" aria-label="Compatible provider"></select><button id="compatibleAdd" type="button">Add provider</button><button id="compatibleRemove" type="button">Remove provider</button></div>
+            <div id="compatibleEditor" class="hidden">
+              <div class="settings-grid">
+                <label>Provider name<input id="compatibleName"></label><label>Provider ID<input id="compatibleId" readonly></label>
+                <label class="wide">Base URL<input id="compatibleUrl" placeholder="http://127.0.0.1:8000/v1"></label>
+                <label>Authentication<select id="compatibleAuth"><option value="none">None</option><option value="bearer">API key / bearer token</option><option value="header">Custom authentication header</option></select></label>
+                <label id="compatibleHeaderLabel">Header name<input id="compatibleHeader" placeholder="x-api-key"></label>
+                <label id="compatibleKeyLabel">Replace credential<input id="compatibleKey" type="password" autocomplete="new-password" placeholder="Leave blank to keep the saved credential"></label>
+                <label class="check" id="compatibleClearLabel"><input id="compatibleClear" type="checkbox"> Remove saved credential</label>
+              </div>
+              <div class="subscription-actions"><select id="compatibleModels" aria-label="Model preset"></select><button id="compatibleAddModel" type="button">Add model preset</button><button id="compatibleRemoveModel" type="button">Remove preset</button></div>
+              <div id="compatibleModelEditor" class="hidden">
+                <div class="settings-grid">
+                  <label>Model ID<input id="compatibleModelId" placeholder="ID accepted by this server"></label><label>Display name (optional)<input id="compatibleModelName"></label>
+                  <label>Context window<input id="compatibleContext" type="number" min="1"></label><label>Maximum output tokens<input id="compatibleMax" type="number" min="1"></label>
+                  <label class="check"><input id="compatibleImage" type="checkbox"> Image input</label><label class="check"><input id="compatibleReasoning" type="checkbox"> Reasoning supported</label>
+                  <fieldset class="wide"><legend>Supported thinking levels</legend><div id="compatibleLevels" class="subscription-actions"></div></fieldset>
+                  <label>Default thinking<select id="compatibleThinking"></select></label>
+                  <label>Thinking request format<select id="compatibleFormat"><option value="">Pi automatic detection</option><option>openai</option><option>openrouter</option><option>deepseek</option><option>together</option><option>baseten</option><option>zai</option><option>qwen</option><option>qwen-chat-template</option><option>chat-template</option><option>string-thinking</option><option>ant-ling</option></select></label>
+                  <label>Output-token field<select id="compatibleMaxField"><option value="">Pi automatic detection</option><option>max_completion_tokens</option><option>max_tokens</option></select></label>
+                  <label>Developer role<select id="compatibleDeveloper"></select></label><label>Reasoning effort parameter<select id="compatibleEffort"></select></label>
+                  <label>Stream usage<select id="compatibleUsage"></select></label><label>Finish reason required<select id="compatibleFinish"></select></label>
+                  <label>Store parameter supported<select id="compatibleStore"></select></label><label>Strict tool schemas supported<select id="compatibleStrict"></select></label>
+                  <label class="wide">Request parameters (JSON)<textarea id="compatibleParameters" rows="3" spellcheck="false">{}</textarea></label>
+                </div>
+                <details><summary>Advanced compatibility and thinking</summary>
+                  <label>Additional Pi compatibility controls (JSON)<textarea id="compatibleCompat" rows="4" spellcheck="false">{}</textarea></label>
+                  <label>Thinking level mapping (JSON)<textarea id="compatibleMapping" rows="3" spellcheck="false">{}</textarea></label>
+                  <label>Thinking token budgets (JSON)<textarea id="compatibleBudgets" rows="3" spellcheck="false">{}</textarea></label>
+                  <label>Token prices per million and tiers (JSON)<textarea id="compatibleCost" rows="3" spellcheck="false">{"input":0,"output":0,"cacheRead":0,"cacheWrite":0}</textarea></label>
+                </details>
+              </div>
+              <div class="subscription-actions"><button id="compatibleSave" type="button">Save provider and presets</button></div>
+            </div>
+            <p id="compatibleNotice" class="meta" role="status">Enter model IDs directly and save their context, output and thinking settings before starting a session.</p>
+          </section>
+          <section id="settingsLlama" class="settings-panel hidden" role="tabpanel" aria-labelledby="tabLlama">
+            <h3>llama.cpp</h3>
+            <p id="llamaStatus" class="meta" role="status"></p>
+            <div class="settings-grid">
+              <label class="check wide"><input id="llamaEnabled" type="checkbox"> Enable managed router</label>
+              <label class="wide">Models directory<span class="folder-field"><input id="llamaDirectory"><button id="llamaDirectoryBrowse" type="button">Browse…</button></span></label>
+              <label>Router port<input id="llamaPort" type="number" min="1" max="65535"></label>
+              <label>Context size<input id="llamaContext" type="number" min="0"></label>
+              <label>GPU layers<select id="llamaGpu"><option value="auto">Auto / all available layers</option><option value="cpu">CPU only</option><option value="count">Explicit count</option></select></label>
+              <label>Layer count<input id="llamaLayers" type="number" min="0"></label>
+              <label>CPU threads (0 = default)<input id="llamaThreads" type="number" min="0"></label>
+              <label>Batch size<input id="llamaBatch" type="number" min="1"></label>
+              <label>Parallel slots<input id="llamaParallel" type="number" min="1"></label>
+              <label>Replace API key<input id="llamaKey" type="password" autocomplete="new-password" placeholder="Leave blank to keep the saved key"></label>
+              <label class="check"><input id="llamaClearKey" type="checkbox"> Remove saved API key</label>
+              <label class="check"><input id="llamaFlash" type="checkbox"> Flash attention</label>
+              <label class="check"><input id="llamaMmap" type="checkbox"> Memory map</label>
+              <label class="check"><input id="llamaMlock" type="checkbox"> Memory lock</label>
+              <label class="check wide"><input id="llamaAutoload" type="checkbox"> Allow router model autoload</label>
+              <fieldset class="wide"><legend>GPU visibility</legend>
+                <p class="meta">Choose device indices visible to llama.cpp, such as 0 or 0,1. CUDA also accepts GPU UUIDs. Unchecked uses the service environment; an enabled empty value hides every device.</p>
+                <label class="check"><input id="llamaCudaOverride" type="checkbox"> Set CUDA_VISIBLE_DEVICES</label>
+                <label>Visible CUDA devices<input id="llamaCudaDevices" placeholder="0,1" spellcheck="false" disabled></label>
+                <label class="check"><input id="llamaVulkanOverride" type="checkbox"> Set GGML_VK_VISIBLE_DEVICES</label>
+                <label>Visible Vulkan devices<input id="llamaVulkanDevices" placeholder="0,1" spellcheck="false" disabled></label>
+              </fieldset>
+              <label class="wide">Extra arguments (one argument per line)<textarea id="llamaExtra" rows="3" spellcheck="false"></textarea></label>
+            </div>
+            <details><summary>Generated launch configuration</summary><pre id="llamaEnvironment" class="tool-output"></pre><pre id="llamaArgs" class="tool-output"></pre><pre id="llamaPresetIni" class="tool-output"></pre></details>
+            <div class="subscription-actions"><button id="llamaSaveSettings" type="button">Save router settings</button><button id="restartLlama" type="button">Save and restart router</button></div>
+            <p id="llamaNotice" class="meta" role="status"></p>
+            <section class="settings-section" aria-labelledby="llamaModelsHeading">
+              <h3 id="llamaModelsHeading">Models</h3>
+              <div class="subscription-actions"><button id="llamaRefresh" type="button">Refresh router models</button><button id="llamaScan" type="button">Refresh local files</button></div>
+              <h4>Router catalog</h4><div id="llamaCatalog"></div>
+              <h4>Local model folders</h4>
+              <p class="meta">Hugging Face caches, llama.cpp caches and typical LM Studio folders are included when present. Add other locations to find their GGUF models.</p>
+              <div id="llamaSources"></div><div id="llamaFolders"></div>
+              <div class="subscription-actions"><button id="llamaAddFolder" type="button">Add model folder…</button><button id="llamaSaveFolders" type="button">Save folders and scan</button></div>
+              <label>Filter local models<input id="llamaLocalFilter" type="search" placeholder="Model name or folder"></label>
+              <p id="llamaLocalSummary" class="meta" role="status"></p>
+              <div id="llamaLocalModels" class="model-list"></div>
+            </section>
+            <div id="llamaOperation" class="hidden"><p id="llamaProgress" class="meta" role="status"></p><progress id="llamaProgressBar" max="1"></progress><button id="llamaCancel" type="button">Cancel operation</button></div>
+            <details id="llamaPresetEditor" class="settings-section"><summary>Model preset</summary>
+              <p id="llamaPresetPath" class="meta"></p>
+              <div class="settings-grid">
+                <label class="wide">Model ID<input id="llamaPresetId" readonly></label>
+                <label>Display name<input id="llamaPresetName"></label>
+                <label>Context window<input id="llamaPresetContext" type="number" min="1"></label>
+                <label>Maximum output tokens<input id="llamaPresetMax" type="number" min="1"></label>
+                <label class="check"><input id="llamaPresetImage" type="checkbox"> Image input</label>
+                <label class="check"><input id="llamaPresetReasoning" type="checkbox"> Reasoning supported</label>
+                <label>Thinking levels (comma separated)<input id="llamaPresetLevels" value="off"></label>
+                <label>Default thinking<select id="llamaPresetThinking"><option>off</option></select></label>
+                <label class="check"><input id="llamaPresetEffort" type="checkbox"> Send reasoning_effort</label>
+                <label class="wide">Request parameters (JSON)<textarea id="llamaPresetParameters" rows="3" spellcheck="false">{}</textarea></label>
+              </div>
+              <label>Advanced model overrides (llama.cpp INI entries)<textarea id="llamaPresetOptions" rows="4" spellcheck="false" placeholder="ngl = 32"></textarea></label>
+              <button id="llamaSavePreset" type="button">Save model preset</button>
+            </details>
+            <details class="settings-section"><summary>Download from Hugging Face</summary>
+              <label>Search or repository<input id="llamaHfQuery" placeholder="organization/model-GGUF"></label>
+              <div class="subscription-actions"><button id="llamaHfSearch" type="button">Search</button><button id="llamaHfDetails" type="button">Open repository</button></div>
+              <div id="llamaHfResults"></div>
+              <div id="llamaHfSelection" class="hidden"><p id="llamaHfRepository" class="meta"></p><p id="llamaHfGated" class="meta"></p><label>Quantization<select id="llamaHfQuantization"></select></label><button id="llamaHfDownload" type="button">Download</button></div>
+            </details>
+          </section>
+          <div id="settingsSaveRow" class="dialog-actions"><button class="primary">Save app settings</button></div>
+          <p id="settingsNotice" class="meta" role="status"></p>
         </form>
       </section>
       <div id="composerWrap">
@@ -490,7 +622,7 @@
 
   <dialog id="folderDialog">
     <form id="folderForm" class="dialog-body">
-      <h2>Working folder</h2>
+      <h2 id="folderTitle">Working folder</h2>
       <div class="folder-toolbar">
         <button id="folderUp" type="button" title="Parent folder">↑</button>
         <input id="folderPath" required aria-label="Current folder" placeholder="/home/user/project">
@@ -501,8 +633,8 @@
         <input id="newFolderName" aria-label="New folder name" placeholder="New folder name">
         <button id="createFolder" type="button">Create</button>
       </div>
-      <p class="meta">Changes apply after the current turn finishes. Session history and attachments stay in place.</p>
-      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button class="primary">Use this folder</button></div>
+      <p id="folderHint" class="meta">Changes apply after the current turn finishes. Session history and attachments stay in place.</p>
+      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button id="folderUse" class="primary">Use this folder</button></div>
     </form>
   </dialog>
 
@@ -515,19 +647,41 @@
     let config = null;
     let pendingCwd = '';
     let pendingFiles = [];
-    let folderView = {path: '', parent: null};
+    let folderView = {path: '', parent: null}, folderSelection = null, folderGeneration = 0;
+    let activeSettingsTab = 'app';
     let queueState = {busy: false, steeringMessages: [], queuedMessages: []};
     let editingQueueId = null;
     let renderedTurn = null;
     let displayedUsage = null;
     let viewerZoom = 1;
-    const $ = selector => document.querySelector(selector);
+    let historyRenderTarget = null;
+    let oldestSegment = 0;
+    let loadingHistory = false;
+    let sessionView = 0;
+    let liveToolCalls = new Map();
+    let sessionCache = [];
+    let nextSessionOffset = null;
+    let loadingSessions = null;
+    const $ = selector => selector === '#chatInner' && historyRenderTarget ? historyRenderTarget : document.querySelector(selector);
 
     async function api(url, options = {}) {
       options.headers = options.headers || {};
-      if (options.method && options.method !== 'GET') options.headers['x-bashkitten-csrf'] = csrf;
-      const response = await fetch(url, options);
-      const value = await response.json().catch(() => ({}));
+      const mutation = options.method && options.method !== 'GET';
+      if (mutation) options.headers['x-bashkitten-csrf'] = csrf;
+      let response = await fetch(url, options);
+      let value = await response.json().catch(() => ({}));
+      // Another tab can refresh this login's CSRF token. Retry only the explicit
+      // CSRF rejection: the server rejected it before performing any action.
+      if (mutation && response.status === 403 && value.error === 'Invalid CSRF token') {
+        const bootstrap = await fetch('/api/bootstrap');
+        const login = await bootstrap.json();
+        if (bootstrap.ok && login.authenticated && login.csrf) {
+          csrf = login.csrf;
+          options.headers['x-bashkitten-csrf'] = csrf;
+          response = await fetch(url, options);
+          value = await response.json().catch(() => ({}));
+        }
+      }
       if (!response.ok) throw new Error(value.error || response.statusText);
       return value;
     }
@@ -906,12 +1060,22 @@
     }
 
     function findTool(callId) {
-      return [...document.querySelectorAll('.activity[data-call]')].reverse().find(node => node.dataset.call === callId);
+      return [...(historyRenderTarget || document).querySelectorAll('.activity[data-call]')].reverse().find(node => node.dataset.call === callId);
     }
 
     function renderToolCall(block, body) {
       let details = findTool(block.id);
-      if (details) return details;
+      if (details) {
+        details.title = JSON.stringify(block.arguments || {});
+        const presentation = toolPresentation(block);
+        details.querySelector('.tool-name').textContent = presentation.action;
+        details.querySelector('.tool-focus').textContent = presentation.focus;
+        details.querySelector('.tool-arguments')?.remove();
+        // Final message blocks replace streaming placeholders in provider order.
+        // Thinking may have been re-created immediately before this call.
+        body.append(details);
+        return details;
+      }
       details = document.createElement('details');
       details.className = 'activity';
       details.dataset.call = block.id;
@@ -968,90 +1132,16 @@
         const label = details.querySelector('.tool-focus')?.textContent || 'Viewed image';
         renderImages(message.content, toolBody, label, state);
       }
-      updateUsage(message.usage);
     }
 
     function resetUsage() {
-      displayedUsage = {
-        input: 0,
-        output: 0,
-        cacheRead: 0,
-        cacheWrite: 0,
-        cost: 0,
-        latestCacheHitRate: null,
-        contextTokens: null,
-        contextModel: null,
-        subscription: false
-      };
+      displayedUsage = null;
       $('#usage').textContent = '';
     }
 
-    function usageModel(modelId) {
-      return models.find(model => `${model.provider}/${model.id}` === modelId);
-    }
-
-    function calculatedUsageCost(usage, model) {
-      if (!model?.cost) return 0;
-      const promptTokens = (usage.input || 0) + (usage.cacheRead || 0) + (usage.cacheWrite || 0);
-      let rates = model.cost;
-      let threshold = -1;
-      for (const tier of model.cost.tiers || []) {
-        if (promptTokens > tier.inputTokensAbove && tier.inputTokensAbove > threshold) {
-          rates = tier;
-          threshold = tier.inputTokensAbove;
-        }
-      }
-      const longWrite = usage.cacheWrite1h || 0;
-      const shortWrite = Math.max(0, (usage.cacheWrite || 0) - longWrite);
-      return (
-        (rates.input || 0) * (usage.input || 0) +
-        (rates.output || 0) * (usage.output || 0) +
-        (rates.cacheRead || 0) * (usage.cacheRead || 0) +
-        (rates.cacheWrite || 0) * shortWrite +
-        (rates.input || 0) * 2 * longWrite
-      ) / 1_000_000;
-    }
-
-    function renderUsage() {
-      if (!displayedUsage) return;
-      const model = usageModel(displayedUsage.contextModel || $('#model').value);
-      const context = model?.context_window || 0;
-      const parts = [];
-      if (displayedUsage.input) parts.push(`↑${formatTokens(displayedUsage.input)}`);
-      if (displayedUsage.output) parts.push(`↓${formatTokens(displayedUsage.output)}`);
-      if (displayedUsage.cacheRead) parts.push(`R${formatTokens(displayedUsage.cacheRead)}`);
-      if (displayedUsage.cacheWrite) parts.push(`W${formatTokens(displayedUsage.cacheWrite)}`);
-      if ((displayedUsage.cacheRead || displayedUsage.cacheWrite) && displayedUsage.latestCacheHitRate !== null) {
-        parts.push(`CH${displayedUsage.latestCacheHitRate.toFixed(1)}%`);
-      }
-      if (displayedUsage.cost || displayedUsage.subscription) {
-        parts.push(`$${displayedUsage.cost.toFixed(3)}${displayedUsage.subscription ? ' (sub)' : ''}`);
-      }
-      if (context) {
-        const contextLabel = displayedUsage.contextTokens === null
-          ? `?/${formatTokens(context)}`
-          : `${(displayedUsage.contextTokens / context * 100).toFixed(1)}%/${formatTokens(context)}`;
-        parts.push(contextLabel);
-      }
-      $('#usage').textContent = parts.join('  ');
-    }
-
-    function updateUsage(usage, modelId = null) {
-      if (!usage) return;
-      if (!displayedUsage) resetUsage();
-      const model = usageModel(modelId || $('#model').value);
-      displayedUsage.input += usage.input || 0;
-      displayedUsage.output += usage.output || 0;
-      displayedUsage.cacheRead += usage.cacheRead || 0;
-      displayedUsage.cacheWrite += usage.cacheWrite || 0;
-      const promptTokens = (usage.input || 0) + (usage.cacheRead || 0) + (usage.cacheWrite || 0);
-      if (promptTokens > 0) displayedUsage.latestCacheHitRate = (usage.cacheRead || 0) / promptTokens * 100;
-      if ((usage.totalTokens || 0) > 0) displayedUsage.contextTokens = usage.totalTokens;
-      if (modelId) displayedUsage.contextModel = modelId;
-      if (model?.provider === 'openai-codex') displayedUsage.subscription = true;
-      const recordedCost = Number(usage.cost?.total || 0);
-      displayedUsage.cost += recordedCost || calculatedUsageCost(usage, model);
-      renderUsage();
+    function renderUsage(value = displayedUsage) {
+      displayedUsage = value;
+      $('#usage').textContent = value?.text || '';
     }
 
     function formatTokens(value) {
@@ -1062,7 +1152,7 @@
     }
 
     let renderedEntries = new Set();
-    function renderMessage(message, entryId = null) {
+    function renderMessage(message, entryId = null, live = false) {
       if (!message) return;
       if (entryId && renderedEntries.has(entryId)) return;
       if (entryId) renderedEntries.add(entryId);
@@ -1079,7 +1169,6 @@
       }
       if (message.role !== 'assistant') return;
       touchRenderedTurn(message.timestamp);
-      const modelId = `${message.provider}/${message.responseModel || message.model}`;
       const text = [];
       const imageBlocks = [];
       let hasToolCall = false;
@@ -1096,7 +1185,7 @@
         }
       }
       if (text.length || imageBlocks.length) {
-        if (!hasToolCall) finishRenderedTurn(message.timestamp);
+        if (!live && !hasToolCall) finishRenderedTurn(message.timestamp);
         const body = messageRow('assistant');
         renderImages(imageBlocks, body, 'Assistant image');
         if (text.length) {
@@ -1108,12 +1197,11 @@
         addMessageActions(body, message, entryId);
       }
       if (message.errorMessage) {
-        finishRenderedTurn(message.timestamp);
+        if (!live) finishRenderedTurn(message.timestamp);
         const body = messageRow('assistant', 'error');
         body.textContent = message.errorMessage;
         if (!text.length && !imageBlocks.length) addMessageActions(body, message, entryId);
       }
-      updateUsage(message.usage, modelId);
     }
 
     function clearLive() {
@@ -1131,6 +1219,7 @@
 
     function renderEvent(event) {
       if (event.type === 'session') return;
+      const followBottom = $('#chat').scrollHeight - $('#chat').scrollTop - $('#chat').clientHeight < 100;
       if (event.type === 'assistant_delta') {
         let body = $('#liveAssistant .message-content');
         if (!body) { body = messageRow('assistant'); body.parentElement.id = 'liveAssistant'; }
@@ -1139,7 +1228,29 @@
         renderThinking(event.delta, true);
       } else if (event.type === 'message') {
         clearLive();
-        renderMessage(event.message, event.entryId);
+        liveToolCalls.clear();
+        renderMessage(event.message, event.entryId, true);
+      } else if (event.type === 'tool_call_start') {
+        const call = {id:event.id, name:event.name, arguments:{}, text:''};
+        liveToolCalls.set(event.index, call);
+        const details = renderToolCall(call, ensureTurnWork());
+        details.open = true;
+        details.querySelector('.tool-state').textContent = 'Preparing';
+      } else if (event.type === 'tool_call_delta') {
+        const call = liveToolCalls.get(event.index);
+        if (call) {
+          call.text += event.delta;
+          const details = findTool(call.id);
+          if (details) {
+            let argumentsView = details.querySelector('.tool-arguments');
+            if (!argumentsView) {
+              argumentsView = document.createElement('pre');
+              argumentsView.className = 'tool-arguments';
+              details.querySelector('.tool-body').prepend(argumentsView);
+            }
+            argumentsView.textContent = call.text;
+          }
+        }
       } else if (event.type === 'tool_start') {
         const details = findTool(event.id);
         if (details) {
@@ -1158,23 +1269,27 @@
         if (current) current.running = true;
         if (renderedTurn?.work) renderedTurn.work.open = true;
         setRunButton(true);
-        $('#composerHint').textContent = 'Agent is working';
-      } else if (event.type === 'turn_end') {
-        finishRenderedTurn(Date.now());
-      } else if (event.type === 'agent_end') {
+        $('#composerHint').textContent = editingQueueId ? 'Editing queued message · Esc to cancel' : 'Agent is working';
+
+      } else if (event.type === 'agent_settled') {
         finishRenderedTurn(Date.now());
         queueState.busy = false;
         if (current) current.running = false;
         setRunButton(false);
-        $('#composerHint').textContent = 'Paste, drag, or attach files';
+        $('#composerHint').textContent = editingQueueId ? 'Editing queued message · Esc to cancel' : 'Paste, drag, or attach files';
         loadSessions().catch(() => {});
+        const settledView = sessionView;
         setTimeout(async () => {
+          if (sessionView !== settledView) return;
           await refreshQueue().catch(() => {});
+          if (sessionView !== settledView) return;
           if (!queueState.busy && !queuedItems().length) {
             source?.close();
             source = null;
           }
         }, 120);
+      } else if (event.type === 'usage') {
+        renderUsage(event.data);
       } else if (event.type === 'queue_state') {
         renderQueueState(event.data);
       } else if (event.type === 'model_change') {
@@ -1188,15 +1303,28 @@
       } else if (event.type === 'cwd_error') {
         $('#composerHint').textContent = event.message;
       } else if (event.type === 'compaction_start') {
+        queueState.busy = true;
+        setRunButton(true);
         $('#composerHint').textContent = 'Compacting context…';
+      } else if (event.type === 'compaction_end') {
+        $('#composerHint').textContent = event.errorMessage || (event.aborted ? 'Compaction cancelled' : 'Context compacted');
+        refreshQueue().catch(() => {});
+      } else if (event.type === 'segment_change') {
+        current.current_segment = event.segment;
+        renderEntry(event.entry);
+      } else if (event.type === 'auto_retry_start' || event.type === 'summarization_retry_scheduled') {
+        $('#composerHint').textContent = `Retrying (${event.attempt}/${event.maxAttempts}): ${event.errorMessage}`;
+      } else if (event.type === 'auto_retry_end' && !event.success) {
+        $('#composerHint').textContent = event.finalError || 'Retry cancelled';
       }
-      $('#chat').scrollTop = $('#chat').scrollHeight;
+      if (followBottom) $('#chat').scrollTop = $('#chat').scrollHeight;
     }
 
     function renderEntry(entry) {
       if (entry.type === 'message') renderMessage(entry.message, entry.id);
       else if (entry.type === 'compaction') {
-        updateUsage(entry.usage);
+        if (entry.id && renderedEntries.has(entry.id)) return;
+        if (entry.id) renderedEntries.add(entry.id);
         const details = document.createElement('details');
         details.className = 'turn-work';
         details.innerHTML = `<summary><span>Compacted ${escapeHtml(formatTokens(entry.tokensBefore || 0))} tokens</span></summary><div class="turn-work-body"><div class="thinking-block"><pre>${escapeHtml(entry.summary || '')}</pre></div></div>`;
@@ -1209,7 +1337,7 @@
     }
 
     function fillSelect(element, list, chosen) {
-      element.innerHTML = list.map(model => `<option value="${escapeHtml(`${model.provider}/${model.id}`)}">${escapeHtml(model.name)}</option>`).join('');
+      element.innerHTML = list.map(model => `<option value="${escapeHtml(`${model.provider}/${model.id}`)}" ${model.available ? '' : 'disabled'}>${escapeHtml(model.name)}${model.available ? '' : ' (unavailable)'}</option>`).join('');
       if (chosen && list.some(model => `${model.provider}/${model.id}` === chosen)) element.value = chosen;
       setThinking(element);
     }
@@ -1225,7 +1353,7 @@
       const selected = $('#model').value;
       const thinking = $('#thinking').value;
       const value = await api('/api/models');
-      models = value.models.filter(model => model.available);
+      models = value.models;
       fillSelect($('#model'), models, current?.model || selected || value.defaultModel);
       fillSelect($('#defaultModel'), models, value.defaultModel);
       setThinking($('#defaultModel'), $('#defaultThinking'));
@@ -1239,12 +1367,18 @@
       applyTheme(config.theme);
       pendingCwd = config.default_cwd;
       $('#webPort').value = config.web_port;
+      const idleTimeout = config.http_idle_timeout_ms ?? 300000;
+      if (![...$('#httpIdleTimeout').options].some(option => Number(option.value) === idleTimeout)) $('#httpIdleTimeout').add(new Option(`${idleTimeout / 1000} sec`, String(idleTimeout)));
+      $('#httpIdleTimeout').value = String(idleTimeout);
       $('#theme').value = config.theme || 'system';
       $('#defaultCwd').value = config.default_cwd;
       $('#llamaEnabled').checked = config.llama.enabled;
       $('#llamaPort').value = config.llama.port;
       $('#llamaContext').value = config.llama.context_size;
-      await refreshSubscription();
+      renderCompatibleProviders();
+      populateLlamaSettings();
+      if (activeSettingsTab === 'llama') await loadLlamaStatus();
+      if (activeSettingsTab === 'subscriptions') await refreshSubscription();
     }
 
     function queuedItems() {
@@ -1270,7 +1404,7 @@
         row.className = `queue-item ${item.kind === 'steer' ? 'steer' : ''} ${editingQueueId === item.id ? 'editing' : ''}`.trim();
         const kind = document.createElement('span');
         kind.className = 'queue-kind';
-        kind.textContent = item.kind;
+        kind.textContent = item.editing ? 'editing' : item.kind;
         const text = document.createElement('span');
         text.className = 'queue-text';
         text.textContent = item.content || (item.attachments?.length ? `${item.attachments.length} attachment(s)` : '(empty message)');
@@ -1303,19 +1437,24 @@
 
     async function refreshQueue() {
       if (!current) return renderQueueState();
+      const view = sessionView;
       const value = await api(`/api/sessions/${current.id}/status`);
+      if (view !== sessionView) return;
       renderQueueState(value.data);
+      if (value.data?.usage) renderUsage(value.data.usage);
     }
 
     async function mutateQueued(id, action, content = null) {
       if (!current) return;
+      const view = sessionView;
       try {
         const value = await api(`/api/sessions/${current.id}/queue`, {
           method: 'POST',
           headers: {'content-type': 'application/json'},
           body: JSON.stringify({id, action, content})
         });
-        if (editingQueueId === id) cancelQueueEdit();
+        if (sessionView !== view) return;
+        if (editingQueueId === id && (action === 'edit' || action === 'remove')) cancelQueueEdit(false);
         renderQueueState(value.data);
       } catch (error) {
         await refreshQueue().catch(() => {});
@@ -1323,7 +1462,24 @@
       }
     }
 
-    function beginQueueEdit(item) {
+    async function beginQueueEdit(item) {
+      if (!current) return;
+      const view = sessionView;
+      const id = current.id;
+      if (editingQueueId) await cancelQueueEdit();
+      if (sessionView !== view) return;
+      try {
+        const result = await api(`/api/sessions/${id}/queue`, {
+          method:'POST', headers:{'content-type':'application/json'},
+          body:JSON.stringify({id:item.id, action:'begin_edit'})
+        });
+        if (sessionView !== view) {
+          await api(`/api/sessions/${id}/queue`, {method:'POST', headers:{'content-type':'application/json'},
+            body:JSON.stringify({id:item.id, action:'cancel_edit'})});
+          return;
+        }
+        renderQueueState(result.data);
+      } catch (error) { $('#composerHint').textContent = error.message; return; }
       editingQueueId = item.id;
       pendingFiles = [];
       renderAttachments();
@@ -1335,12 +1491,22 @@
       $('#prompt').focus();
     }
 
-    function cancelQueueEdit() {
+    async function cancelQueueEdit(release = true) {
+      if (release && editingQueueId && current) {
+        try {
+          const result = await api(`/api/sessions/${current.id}/queue`, {
+            method:'POST', headers:{'content-type':'application/json'},
+            body:JSON.stringify({id:editingQueueId, action:'cancel_edit'})
+          });
+          renderQueueState(result.data);
+        } catch (error) { $('#composerHint').textContent = error.message; return; }
+      }
       editingQueueId = null;
       $('#prompt').value = '';
       $('#prompt').style.height = 'auto';
       $('#composerHint').textContent = queueState.busy ? 'Agent is working' : 'Paste, drag, or attach files';
       $('#attachBtn').disabled = false;
+      renderAttachments();
       renderQueueState(queueState);
     }
 
@@ -1352,6 +1518,7 @@
 
     function renderSessionSidebar(sessions) {
       const root = $('#sessions');
+      const scrollTop = root.scrollTop;
       root.innerHTML = '';
       const groups = new Map();
       for (const session of sessions) {
@@ -1389,18 +1556,79 @@
         }
         root.append(group);
       }
+      root.scrollTop = scrollTop;
     }
 
-    async function loadSessions() {
-      const value = await api('/api/sessions?limit=100');
-      const updated = current && value.sessions.find(session => session.id === current.id);
-      if (updated && updated.cwd !== current.cwd) {
-        current.cwd = updated.cwd;
-        $('#folderLabel').textContent = current.cwd;
-        $('#folderBtn').title = `Change working folder: ${current.cwd}`;
-      }
-      renderSessionSidebar(value.sessions);
-      return value.sessions;
+    async function loadSessions(append = false) {
+      if (loadingSessions) return loadingSessions;
+      if (append && nextSessionOffset === null) return sessionCache;
+      loadingSessions = (async () => {
+        const value = await api(`/api/sessions?limit=100&offset=${append ? nextSessionOffset : 0}`);
+        const byId = new Map(sessionCache.map(session => [session.id, session]));
+        for (const session of value.sessions) byId.set(session.id, session);
+        sessionCache = [...byId.values()].sort((a,b) => b.modified - a.modified || b.id.localeCompare(a.id));
+        nextSessionOffset = value.nextOffset === null ? null : (append ? value.nextOffset : sessionCache.length);
+        const updated = current && value.sessions.find(session => session.id === current.id);
+        if (updated) {
+          current.current_segment = updated.current_segment;
+          if (updated.cwd !== current.cwd) {
+            current.cwd = updated.cwd;
+            $('#folderLabel').textContent = current.cwd;
+            $('#folderBtn').title = `Change working folder: ${current.cwd}`;
+          }
+        }
+        renderSessionSidebar(sessionCache);
+        if (nextSessionOffset !== null) {
+          const more = document.createElement('button');
+          more.type = 'button';
+          more.textContent = 'Load more chats';
+          more.onclick = () => loadSessions(true).catch(error => { $('#composerHint').textContent = error.message; });
+          $('#sessions').append(more);
+        }
+        return sessionCache;
+      })();
+      try { return await loadingSessions; } finally { loadingSessions = null; }
+    }
+
+    function updateHistoryControl() {
+      $('#olderHistory')?.remove();
+      if (oldestSegment <= 1) return;
+      const button = document.createElement('button');
+      button.id = 'olderHistory';
+      button.type = 'button';
+      button.textContent = loadingHistory ? 'Loading earlier messages…' : 'Load earlier messages';
+      button.disabled = loadingHistory;
+      button.onclick = loadOlderHistory;
+      $('#chatInner').prepend(button);
+    }
+
+    async function loadOlderHistory() {
+      if (!current || loadingHistory || oldestSegment <= 1) return;
+      const id = current.id;
+      const view = sessionView;
+      const segment = oldestSegment - 1;
+      loadingHistory = true;
+      updateHistoryControl();
+      try {
+        const history = await api(`/api/sessions/${id}/segments/${segment}`);
+        if (sessionView !== view) return;
+        const chat = $('#chat');
+        const height = chat.scrollHeight;
+        const position = chat.scrollTop;
+        const target = document.createElement('div');
+        const liveTurn = renderedTurn;
+        historyRenderTarget = target;
+        renderedTurn = null;
+        try {
+          history.entries.forEach(renderEntry);
+          if (renderedTurn) finishRenderedTurn(renderedTurn.lastAt);
+        } finally { historyRenderTarget = null; renderedTurn = liveTurn; }
+        $('#chatInner').prepend(...target.childNodes);
+        oldestSegment = segment;
+        updateHistoryControl();
+        chat.scrollTop = position + chat.scrollHeight - height;
+      } catch (error) { if (sessionView === view) $('#composerHint').textContent = error.message; }
+      finally { if (sessionView === view) { loadingHistory = false; updateHistoryControl(); } }
     }
 
     function showChatView() {
@@ -1426,12 +1654,12 @@
       $('#settingsBtn').classList.add('active');
       $('#title').textContent = 'Settings';
       $('#title').classList.remove('hidden');
-      refreshSubscription().catch(error => { $('#subscriptionStatus').textContent = error.message; });
+      selectSettingsTab(activeSettingsTab);
       $('#folderBtn').classList.add('hidden');
       $('#usage').classList.add('hidden');
     }
 
-    function connectSession(id, consume = renderEvent) {
+    function connectSession(id, consume = renderEvent, view = sessionView) {
       source?.close();
       return new Promise((resolve, reject) => {
         const stream = new EventSource(`/api/sessions/${id}/events`);
@@ -1445,6 +1673,7 @@
           }
         }, 5000);
         stream.onmessage = event => {
+          if (sessionView !== view) { stream.close(); return; }
           try {
             const value = JSON.parse(event.data);
             if (!value.type && value.ok && value.message === 'subscribed') {
@@ -1458,6 +1687,7 @@
               }
               subscribed = true;
               clearTimeout(timeout);
+              if (value.data?.usage) consume({type: 'usage', data: value.data.usage});
               for (const item of value.data?.events || []) consume(item);
               if (value.data?.busy) consume({type:'agent_start'});
               resolve();
@@ -1471,7 +1701,7 @@
           stream.close();
           if (source === stream) source = null;
           if (!subscribed) reject(new Error('Agent session is offline'));
-          else {
+          else if (sessionView === view) {
             if (current) current.running = false;
             renderQueueState({busy: false});
             $('#composerHint').textContent = 'Paste, drag, or attach files';
@@ -1482,8 +1712,14 @@
 
     async function openSession(session) {
       if (!session) return;
+      const view = ++sessionView;
+      if (editingQueueId) await cancelQueueEdit();
+      if (sessionView !== view) return;
       closeImageViewer();
-      current = session;
+      current = {...session};
+      oldestSegment = 0;
+      loadingHistory = false;
+      liveToolCalls.clear();
       showChatView();
       source?.close();
       source = null;
@@ -1507,23 +1743,44 @@
       let bufferingEvents = Boolean(session.running);
       if (session.running) {
         await connectSession(session.id, value => {
+          if (sessionView !== view) return;
           if (bufferingEvents) pendingEvents.push(value);
           else renderEvent(value);
-        }).catch(() => {});
+        }, view).catch(() => {});
       }
-      const history = await api(`/api/sessions/${session.id}/segments/${session.current_segment}`);
+      if (sessionView !== view) return;
+      const history = await api(`/api/sessions/${session.id}/segments/current`);
+      if (sessionView !== view) return;
+      oldestSegment = history.segment;
+      current.current_segment = history.segment;
+      loadingHistory = false;
+      for (const entry of history.entries) {
+        if (entry.type === 'session') { current.model = `${entry.provider}/${entry.modelId}`; current.thinking = entry.thinkingLevel; }
+        else if (entry.type === 'model_change') current.model = `${entry.provider}/${entry.modelId}`;
+        else if (entry.type === 'thinking_level_change') current.thinking = entry.thinkingLevel;
+      }
+      $('#model').value = current.model;
+      setThinking($('#model'));
+      $('#thinking').value = current.thinking;
       history.entries.forEach(renderEntry);
+      updateHistoryControl();
       if (renderedTurn) finishRenderedTurn(renderedTurn.lastAt);
       bufferingEvents = false;
       pendingEvents.forEach(renderEvent);
-      await refreshQueue().catch(() => renderQueueState());
+      await refreshQueue().catch(() => { if (sessionView === view) renderQueueState(); });
+      if (sessionView !== view) return;
       document.querySelectorAll('.session').forEach(element => element.classList.toggle('active', element.dataset.id === session.id));
       $('#chat').scrollTop = $('#chat').scrollHeight;
     }
 
-    function beginNewSession() {
+    async function beginNewSession() {
+      const view = ++sessionView;
+      if (editingQueueId) await cancelQueueEdit();
+      if (sessionView !== view) return;
+      liveToolCalls.clear();
       closeImageViewer();
       current = null;
+      oldestSegment = 0;
       showChatView();
       source?.close();
       source = null;
@@ -1552,6 +1809,7 @@
     }
 
     function addAttachments(files) {
+      if (editingQueueId) { $('#composerHint').textContent = 'Save or cancel the queued edit before adding files'; return; }
       for (const file of files) pendingFiles.push(file);
       renderAttachments();
     }
@@ -1559,7 +1817,15 @@
     function renderAttachments() {
       const tray = $('#attachmentTray');
       tray.innerHTML = '';
-      tray.classList.toggle('hidden', !pendingFiles.length);
+      const retained = editingQueueId ? (queuedItems().find(item => item.id === editingQueueId)?.attachments || []) : [];
+      tray.classList.toggle('hidden', !pendingFiles.length && !retained.length);
+      for (const name of retained) {
+        const item = document.createElement('div');
+        item.className = 'attachment file';
+        item.textContent = name;
+        item.title = 'Attachment retained with this queued message';
+        tray.append(item);
+      }
       pendingFiles.forEach((file, index) => {
         const item = document.createElement('div');
         const isImage = file.type.startsWith('image/');
@@ -1628,6 +1894,14 @@
       else beginNewSession();
     }
 
+    $('#sessions').addEventListener('scroll', () => {
+      const panel = $('#sessions');
+      if (panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 120) loadSessions(true).catch(() => {});
+    });
+    $('#chat').addEventListener('scroll', () => {
+      if ($('#chat').scrollTop < 80) loadOlderHistory();
+    });
+
     $('#authForm').onsubmit = async event => {
       event.preventDefault();
       try {
@@ -1641,16 +1915,25 @@
     };
 
     $('#newBtn').onclick = beginNewSession;
-    async function loadFolder(path) {
-      const value = await api(`/api/folders?path=${encodeURIComponent(path || pendingCwd)}`);
+    async function loadFolder(path, nearest = false) {
+      const generation = ++folderGeneration;
+      $('#folderUse').disabled = true;
+      $('#folderUp').disabled = true;
+      $('#createFolder').disabled = true;
+      let value;
+      try { value = await api(`/api/folders?path=${encodeURIComponent(path || pendingCwd)}&nearest=${nearest}`); }
+      catch (error) { if (generation !== folderGeneration) return false; throw error; }
+      if (generation !== folderGeneration || !$('#folderDialog').open) return false;
       folderView = value;
+      $('#folderUse').disabled = false;
+      $('#createFolder').disabled = false;
       $('#folderPath').value = value.path;
       $('#folderUp').disabled = !value.parent;
       const list = $('#folderList');
       list.innerHTML = '';
       if (!value.folders.length) {
         list.innerHTML = '<div class="folder-empty">No subfolders</div>';
-        return;
+        return true;
       }
       for (const folder of value.folders) {
         const row = document.createElement('button');
@@ -1660,13 +1943,32 @@
         row.onclick = () => loadFolder(folder.path).catch(error => alert(error.message));
         list.append(row);
       }
+      return true;
     }
 
-    $('#folderBtn').onclick = async () => {
+    async function openFolderPicker(title, path, onSelect) {
+      folderSelection = onSelect;
+      folderView = {path: '', parent: null};
+      $('#newFolderName').value = '';
+      $('#folderList').textContent = 'Loading folders…';
+      $('#folderTitle').textContent = title;
+      $('#folderHint').textContent = title === 'Working folder' ? 'Changes apply after the current turn finishes. Session history and attachments stay in place.' : 'Choose a folder, then save the settings to apply it.';
       $('#folderDialog').showModal();
-      try { await loadFolder(current?.cwd || pendingCwd); }
-      catch (error) { alert(error.message); }
-    };
+      try { await loadFolder(path || pendingCwd, true); }
+      catch (error) { $('#folderPath').value = path || ''; $('#folderList').textContent = error.message; }
+    }
+    $('#folderDialog').addEventListener('close', () => { ++folderGeneration; folderSelection = null; });
+    $('#folderBtn').onclick = () => openFolderPicker('Working folder', current?.cwd || pendingCwd, async path => {
+      if (current) {
+        const reply = await api(`/api/sessions/${current.id}/cwd`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({cwd: path})});
+        $('#composerHint').textContent = reply.message;
+        await loadSessions();
+      } else $('#folderLabel').textContent = path || 'Set folder';
+      pendingCwd = path;
+      $('#prompt').focus();
+    });
+    $('#defaultCwdBrowse').onclick = () => openFolderPicker('Default working folder', $('#defaultCwd').value, path => { $('#defaultCwd').value = path; });
+    $('#llamaDirectoryBrowse').onclick = () => openFolderPicker('Models directory', $('#llamaDirectory').value, path => { $('#llamaDirectory').value = path; });
     $('#folderGo').onclick = () => loadFolder($('#folderPath').value.trim()).catch(error => alert(error.message));
     $('#folderUp').onclick = () => folderView.parent && loadFolder(folderView.parent).catch(error => alert(error.message));
     $('#createFolder').onclick = async () => {
@@ -1685,21 +1987,14 @@
     $('#folderForm').onsubmit = async event => {
       event.preventDefault();
       try {
-        if ($('#folderPath').value.trim() !== folderView.path) await loadFolder($('#folderPath').value.trim());
+        if ($('#folderPath').value.trim() !== folderView.path && !await loadFolder($('#folderPath').value.trim())) return;
       } catch (error) {
         alert(error.message);
         return;
       }
-      pendingCwd = folderView.path;
-      if (current) {
-        try {
-          const reply = await api(`/api/sessions/${current.id}/cwd`, {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({cwd: pendingCwd})});
-          $('#composerHint').textContent = reply.message;
-          await loadSessions();
-        } catch (error) { alert(error.message); return; }
-      } else $('#folderLabel').textContent = pendingCwd || 'Set folder';
+      try { await folderSelection?.(folderView.path); }
+      catch (error) { alert(error.message); return; }
       $('#folderDialog').close();
-      $('#prompt').focus();
     };
     document.querySelectorAll('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
 
@@ -1736,9 +2031,17 @@
     $('#composer').onsubmit = async event => {
       event.preventDefault();
       const text = $('#prompt').value.trim();
-      if (!text && !pendingFiles.length) return;
+      if (!text && !pendingFiles.length && !editingQueueId) return;
+      if (current && !pendingFiles.length && /^\/compact(?:\s|$)/.test(text)) {
+        $('#prompt').value = '';
+        try {
+          await api(`/api/sessions/${current.id}/compact`, {method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({instructions: text.slice(8).trim() || null})});
+          if (!source) await connectSession(current.id);
+        } catch (error) { $('#composerHint').textContent = error.message; }
+        return;
+      }
       if (editingQueueId) {
-        if (!text) return;
+        if (!text && !queuedItems().find(item => item.id === editingQueueId)?.attachments?.length) return;
         $('#sendBtn').disabled = true;
         await mutateQueued(editingQueueId, 'edit', text);
         $('#sendBtn').disabled = false;
@@ -1810,18 +2113,55 @@
       if ($('#settingsView').classList.contains('hidden')) showSettingsView();
       else showChatView();
     };
+    function selectSettingsTab(name, focus = false) {
+      activeSettingsTab = name;
+      $('#settingsView').scrollTop = 0;
+      for (const tab of document.querySelectorAll('[data-settings-tab]')) {
+        const selected = tab.dataset.settingsTab === name;
+        tab.setAttribute('aria-selected', String(selected));
+        tab.tabIndex = selected ? 0 : -1;
+        $('#' + tab.getAttribute('aria-controls')).classList.toggle('hidden', !selected);
+        if (selected && focus) tab.focus();
+      }
+      $('#settingsSaveRow').classList.toggle('hidden', name !== 'app');
+      $('#settingsNotice').textContent = '';
+      if (name === 'subscriptions') refreshSubscription().catch(error => { $('#subscriptionStatus').textContent = error.message; });
+      if (name === 'llama') loadLlamaStatus();
+    }
+    const settingsTabs = [...document.querySelectorAll('[data-settings-tab]')];
+    for (const tab of settingsTabs) {
+      tab.onclick = () => selectSettingsTab(tab.dataset.settingsTab);
+      tab.onkeydown = event => {
+        const index = settingsTabs.indexOf(tab);
+        let next;
+        if (event.key === 'ArrowRight') next = (index + 1) % settingsTabs.length;
+        if (event.key === 'ArrowLeft') next = (index + settingsTabs.length - 1) % settingsTabs.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = settingsTabs.length - 1;
+        if (next !== undefined) { event.preventDefault(); selectSettingsTab(settingsTabs[next].dataset.settingsTab, true); }
+      };
+    }
     $('#settingsDone').onclick = showChatView;
     $('#settingsForm').onsubmit = async event => {
       event.preventDefault();
+      try {
+      if (activeSettingsTab !== 'app') return;
       config.web_port = Number($('#webPort').value);
+      config.http_idle_timeout_ms = Number($('#httpIdleTimeout').value);
       config.theme = $('#theme').value;
       config.default_cwd = $('#defaultCwd').value;
       config.default_model = $('#defaultModel').value;
       config.default_thinking = $('#defaultThinking').value;
-      config.llama.enabled = $('#llamaEnabled').checked;
-      config.llama.port = Number($('#llamaPort').value);
-      config.llama.context_size = Number($('#llamaContext').value);
-      await api('/api/settings', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(config)});
+      const saved=await api('/api/settings', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify(config)});
+      if(saved.restartUrl){
+        source?.close();source=null;
+        $('#settingsNotice').textContent='Restarting the Web UI. Reconnecting…';
+        const link=document.createElement('a');link.href=saved.restartUrl;link.textContent='Open Web UI';$('#settingsNotice').append(' ',link);
+        setTimeout(()=>location.assign(saved.restartUrl),1200);return;
+      }
+      $('#llamaKey').value = '';
+      delete config.llama.api_key;
+      await loadModels();
       applyTheme(config.theme);
       if (!current) {
         pendingCwd = config.default_cwd;
@@ -1829,7 +2169,261 @@
         setThinking($('#model'));
         $('#thinking').value = config.default_thinking;
       }
+      $('#settingsNotice').textContent = 'Settings saved.';
+      } catch (error) {
+        $('#settingsNotice').textContent = error.message;
+      }
     };
+    let compatibleIndex = -1, compatibleModelIndex = -1;
+    const compatibleFlags = {compatibleDeveloper:'supportsDeveloperRole',compatibleEffort:'supportsReasoningEffort',compatibleUsage:'supportsUsageInStreaming',compatibleFinish:'supportsFinishReason',compatibleStore:'supportsStore',compatibleStrict:'supportsStrictMode'};
+    for(const id of Object.keys(compatibleFlags)) $('#'+id).replaceChildren(new Option('Pi automatic detection',''),new Option('Yes','true'),new Option('No','false'));
+    const thinkingLevels=['off','minimal','low','medium','high','xhigh','max'];
+    for(const level of thinkingLevels){const label=document.createElement('label');label.className='check';const input=document.createElement('input');input.type='checkbox';input.value=level;input.onchange=compatibleThinking;label.append(input,document.createTextNode(level));$('#compatibleLevels').append(label);}
+    function compatibleError(error){$('#compatibleNotice').textContent=error.message;}
+    function jsonObject(id,label){const value=JSON.parse($('#'+id).value||'{}');if(!value||Array.isArray(value)||typeof value!=='object')throw Error(label+' must be a JSON object.');return value;}
+    function compatibleThinking(){
+      const reasoning=$('#compatibleReasoning').checked, selected=$('#compatibleThinking').value;
+      for(const input of $('#compatibleLevels').querySelectorAll('input')){input.disabled=!reasoning&&input.value!=='off';if(input.disabled)input.checked=false;}
+      if(!reasoning)$('#compatibleLevels input[value="off"]').checked=true;
+      const levels=[...$('#compatibleLevels').querySelectorAll('input:checked')].map(input=>input.value);
+      $('#compatibleThinking').replaceChildren(...levels.map(level=>new Option(level,level)));
+      if(levels.includes(selected))$('#compatibleThinking').value=selected;
+    }
+    $('#compatibleReasoning').onchange=compatibleThinking;
+    function compatibleAuth(){const mode=$('#compatibleAuth').value;$('#compatibleHeaderLabel').classList.toggle('hidden',mode!=='header');for(const id of ['compatibleKeyLabel','compatibleClearLabel'])$('#'+id).classList.toggle('hidden',mode==='none');}
+    $('#compatibleAuth').onchange=compatibleAuth;
+    function collectCompatibleModel(){
+      const provider=config.compatible_providers[compatibleIndex];if(!provider||compatibleModelIndex<0)return;
+      const model=provider.models[compatibleModelIndex];if(!model)return;
+      const compat=jsonObject('compatibleCompat','Compatibility');
+      for(const [id,key] of Object.entries(compatibleFlags)){if($('#'+id).value==='')delete compat[key];else compat[key]=$('#'+id).value==='true';}
+      for(const [id,key] of [['compatibleFormat','thinkingFormat'],['compatibleMaxField','maxTokensField']]){if($('#'+id).value)compat[key]=$('#'+id).value;else delete compat[key];}
+      const levels=[...$('#compatibleLevels').querySelectorAll('input:checked')].map(input=>input.value);
+      Object.assign(model,{id:$('#compatibleModelId').value,name:$('#compatibleModelName').value,context_window:Number($('#compatibleContext').value),max_tokens:Number($('#compatibleMax').value),input:$('#compatibleImage').checked?['text','image']:['text'],reasoning:$('#compatibleReasoning').checked,thinking_levels:levels,default_thinking:$('#compatibleThinking').value,compatibility:compat,request_parameters:jsonObject('compatibleParameters','Request parameters'),thinking_level_map:jsonObject('compatibleMapping','Thinking level mapping'),thinking_budgets:jsonObject('compatibleBudgets','Thinking budgets'),cost:jsonObject('compatibleCost','Cost')});
+      delete model.supports_developer_role;delete model.supports_reasoning_effort;
+    }
+    function collectCompatibleProvider(){
+      const provider=config.compatible_providers[compatibleIndex];if(!provider)return;collectCompatibleModel();
+      provider.name=$('#compatibleName').value;provider.base_url=$('#compatibleUrl').value;
+      const mode=$('#compatibleAuth').value,previous=provider.auth?.[mode];
+      provider.auth=mode==='none'?'none':{[mode]:{...(previous||{}),...(mode==='header'?{name:$('#compatibleHeader').value}:{})}};
+      if(mode!=='none'){if($('#compatibleClear').checked)provider.auth[mode].secret='';else if($('#compatibleKey').value)provider.auth[mode].secret=$('#compatibleKey').value;}
+    }
+    function renderCompatibleModels(){
+      const provider=config.compatible_providers[compatibleIndex],list=provider?.models||[];
+      $('#compatibleModels').replaceChildren(...list.map((model,index)=>new Option(model.name||model.id||'New model',index)));
+      $('#compatibleRemoveModel').disabled=!list.length;$('#compatibleModelEditor').classList.toggle('hidden',!list.length);
+      compatibleModelIndex=list.length?Math.min(Math.max(0,compatibleModelIndex),list.length-1):-1;
+      $('#compatibleModels').value=String(compatibleModelIndex);const model=list[compatibleModelIndex];if(!model)return;
+      for(const [id,key] of [['compatibleModelId','id'],['compatibleModelName','name'],['compatibleContext','context_window'],['compatibleMax','max_tokens']])$('#'+id).value=model[key]??'';
+      $('#compatibleImage').checked=model.input.includes('image');$('#compatibleReasoning').checked=Boolean(model.reasoning);
+      for(const input of $('#compatibleLevels').querySelectorAll('input'))input.checked=model.thinking_levels.includes(input.value);
+      compatibleThinking();$('#compatibleThinking').value=model.default_thinking;
+      const compat={...(model.compatibility||{})};
+      for(const [legacy,key] of [['supports_developer_role','supportsDeveloperRole'],['supports_reasoning_effort','supportsReasoningEffort']])if(model[legacy]!=null&&compat[key]==null)compat[key]=model[legacy];
+      for(const [id,key] of Object.entries(compatibleFlags)){$('#'+id).value=compat[key]==null?'':String(compat[key]);delete compat[key];}
+      for(const [id,key] of [['compatibleFormat','thinkingFormat'],['compatibleMaxField','maxTokensField']]){$('#'+id).value=compat[key]||'';delete compat[key];}
+      $('#compatibleCompat').value=JSON.stringify(compat,null,2);
+      for(const [id,key] of [['compatibleParameters','request_parameters'],['compatibleMapping','thinking_level_map'],['compatibleBudgets','thinking_budgets'],['compatibleCost','cost']])$('#'+id).value=JSON.stringify(model[key]||{},null,2);
+    }
+    function renderCompatibleProviders(){
+      const list=config.compatible_providers;compatibleIndex=list.length?Math.min(Math.max(0,compatibleIndex),list.length-1):-1;
+      $('#compatibleProviders').replaceChildren(...list.map((provider,index)=>new Option(provider.name||provider.id,index)));
+      $('#compatibleProviders').value=String(compatibleIndex);$('#compatibleRemove').disabled=!list.length;$('#compatibleEditor').classList.toggle('hidden',!list.length);
+      const provider=list[compatibleIndex];if(!provider)return;
+      $('#compatibleName').value=provider.name;$('#compatibleId').value=provider.id;$('#compatibleUrl').value=provider.base_url;
+      const mode=provider.auth==='none'?'none':provider.auth?.bearer?'bearer':provider.auth?.header?'header':'none';
+      $('#compatibleAuth').value=mode;$('#compatibleHeader').value=provider.auth?.header?.name||'';$('#compatibleKey').value='';$('#compatibleClear').checked=false;
+      compatibleAuth();renderCompatibleModels();
+    }
+    $('#compatibleProviders').onchange=event=>{try{collectCompatibleProvider();compatibleIndex=Number(event.target.value);compatibleModelIndex=0;renderCompatibleProviders();}catch(error){event.target.value=String(compatibleIndex);compatibleError(error);}};
+    $('#compatibleModels').onchange=event=>{try{collectCompatibleModel();compatibleModelIndex=Number(event.target.value);renderCompatibleModels();}catch(error){event.target.value=String(compatibleModelIndex);compatibleError(error);}};
+    $('#compatibleAdd').onclick=()=>{try{collectCompatibleProvider();let id='local',number=1;while(config.compatible_providers.some(p=>p.id===id))id='local-'+(++number);config.compatible_providers.push({id,name:'Local API',base_url:'http://127.0.0.1:8000/v1',auth:'none',models:[]});compatibleIndex=config.compatible_providers.length-1;compatibleModelIndex=-1;renderCompatibleProviders();$('#compatibleName').focus();}catch(error){compatibleError(error);}};
+    $('#compatibleRemove').onclick=()=>{const provider=config.compatible_providers[compatibleIndex];if(!provider||!confirm('Remove '+provider.name+' and its model presets? Existing session history is retained.'))return;config.compatible_providers.splice(compatibleIndex,1);compatibleIndex=-1;compatibleModelIndex=-1;renderCompatibleProviders();$('#compatibleNotice').textContent='Provider removed from this form. Save settings to apply.';};
+    $('#compatibleAddModel').onclick=()=>{try{collectCompatibleModel();const provider=config.compatible_providers[compatibleIndex];provider.models.push({id:'',name:'',context_window:128000,max_tokens:16384,input:['text'],reasoning:false,thinking_levels:['off'],default_thinking:'off',request_parameters:{},compatibility:{},thinking_level_map:{},thinking_budgets:{},cost:{input:0,output:0,cacheRead:0,cacheWrite:0}});compatibleModelIndex=provider.models.length-1;renderCompatibleModels();$('#compatibleModelId').focus();}catch(error){compatibleError(error);}};
+    $('#compatibleRemoveModel').onclick=()=>{const provider=config.compatible_providers[compatibleIndex];if(!provider||compatibleModelIndex<0)return;provider.models.splice(compatibleModelIndex,1);compatibleModelIndex=0;renderCompatibleModels();};
+    $('#compatibleSave').onclick=async()=>{try{collectCompatibleProvider();await api('/api/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});await loadSettings();await loadModels();$('#compatibleNotice').textContent='Provider and model presets saved.';}catch(error){compatibleError(error);}};
+
+    let llamaCatalog = [], llamaLocalModels = [], llamaModelFolders = [], llamaPresetPath = '', llamaHfDetails = null, llamaPoll = null;
+    const llamaPost = (path, body = {}) => api('/api/llama/' + path, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
+    function llamaError(error) { $('#llamaNotice').textContent = error.message === 'fetch failed' ? 'Could not connect to the server. Use Refresh models to retry.' : error.message; }
+    function populateLlamaSettings() {
+      const c=config.llama;
+      $('#llamaDirectory').value=c.models_dir;
+      llamaModelFolders = [...(c.model_search_dirs || [])]; renderLlamaFolders();
+      for (const [name, control, input] of [['CUDA_VISIBLE_DEVICES', 'llamaCudaOverride', 'llamaCudaDevices'], ['GGML_VK_VISIBLE_DEVICES', 'llamaVulkanOverride', 'llamaVulkanDevices']]) {
+        const enabled = Object.hasOwn(c.gpu_environment || {}, name);
+        $('#'+control).checked = enabled; $('#'+input).disabled = !enabled; $('#'+input).value = c.gpu_environment?.[name] || '';
+      }
+      $('#llamaGpu').value=typeof c.gpu_layers==='string'?c.gpu_layers:'count';
+      $('#llamaLayers').value=c.gpu_layers?.count??0;
+      $('#llamaLayers').disabled=$('#llamaGpu').value!=='count';
+      for(const [id,key] of [['llamaThreads','cpu_threads'],['llamaBatch','batch_size'],['llamaParallel','parallel_slots']]) $('#'+id).value=c[key];
+      for(const [id,key] of [['llamaFlash','flash_attention'],['llamaMmap','mmap'],['llamaMlock','mlock'],['llamaAutoload','autoload']]) $('#'+id).checked=c[key];
+      $('#llamaExtra').value=c.extra_arguments.join('\n');
+      $('#llamaKey').value=''; $('#llamaClearKey').checked=false;
+    }
+    function collectLlamaSettings() {
+      const c=config.llama;c.enabled=$('#llamaEnabled').checked;c.models_dir=$('#llamaDirectory').value;
+      c.model_search_dirs = [...llamaModelFolders]; c.gpu_environment = {};
+      if ($('#llamaCudaOverride').checked) c.gpu_environment.CUDA_VISIBLE_DEVICES = $('#llamaCudaDevices').value.trim();
+      if ($('#llamaVulkanOverride').checked) c.gpu_environment.GGML_VK_VISIBLE_DEVICES = $('#llamaVulkanDevices').value.trim();
+      c.port=Number($('#llamaPort').value);c.context_size=Number($('#llamaContext').value);
+      c.gpu_layers=$('#llamaGpu').value==='count'?{count:Number($('#llamaLayers').value)}:$('#llamaGpu').value;
+      for(const [id,key] of [['llamaThreads','cpu_threads'],['llamaBatch','batch_size'],['llamaParallel','parallel_slots']]) c[key]=Number($('#'+id).value);
+      for(const [id,key] of [['llamaFlash','flash_attention'],['llamaMmap','mmap'],['llamaMlock','mlock'],['llamaAutoload','autoload']]) c[key]=$('#'+id).checked;
+      c.extra_arguments=$('#llamaExtra').value.split('\n').filter(value=>value.trim());
+      if($('#llamaClearKey').checked)c.api_key='';else if($('#llamaKey').value)c.api_key=$('#llamaKey').value;
+    }
+    async function loadLlamaStatus() {
+      try {
+        const value=await api('/api/llama/status');
+        $('#llamaStatus').textContent=value.installation?`${value.installation.package} · ${value.installation.backend} · ${value.running?'Running':'Stopped'}`:'llama.cpp is unavailable: install llama-cpp or llama-cpp-cuda.';
+        $('#llamaFlash').disabled=!value.flashAttentionSupported;
+        $('#llamaArgs').textContent=['/usr/bin/llama-server',...value.arguments].map(arg=>/^[a-zA-Z0-9_./:=<>-]+$/.test(arg)?arg:JSON.stringify(arg)).join(' ');
+        $('#llamaPresetIni').textContent=value.presetIni||'';
+        $('#llamaEnvironment').textContent=Object.entries(value.environment || {}).map(([key, value])=>key+'='+JSON.stringify(value)).join('\n') || 'GPU visibility: inherited service environment';
+        llamaLocalModels=value.localModels || []; renderLocalModels(); renderLlamaSources(value.localSources || []);
+        llamaCatalog=value.catalog; renderLlamaCatalog();renderLlamaOperation(value.operation);
+      } catch(error) {llamaError(error);}
+    }
+    function renderLlamaCatalog() {
+      const root=$('#llamaCatalog');root.replaceChildren();
+      const visible=[...llamaCatalog];
+      for(const preset of config.llama.models) if(!visible.some(model=>model.id===preset.id)) visible.push({id:preset.id,status:{value:'not in current router'},preset});
+      if(!visible.length)root.textContent='No saved router models. Refresh the router or save a preset from the local files below.';
+      for(const model of visible) {
+        const row=document.createElement('div');row.className='subscription-actions';
+        const label=document.createElement('span');label.textContent=`${model.id} · ${model.status.value}`;row.append(label);
+        const loaded=['loaded','sleeping'].includes(model.status.value);
+        const action=document.createElement('button');action.type='button';action.textContent=loaded?'Unload':'Load';
+        action.disabled=!loaded&&model.status.value!=='unloaded';action.onclick=()=>llamaModelAction(model,loaded?'unload':'load');row.append(action);
+        const edit=document.createElement('button');edit.type='button';edit.textContent=config.llama.models.some(p=>p.id===model.id)?'Edit preset':'Save preset';edit.onclick=()=>editLlamaPreset(model);row.append(edit);
+        if(loaded&&config.llama.models.some(p=>p.id===model.id)) {
+          const choose=document.createElement('button');choose.type='button';choose.textContent='Use model';choose.onclick=async()=>{await loadModels();$('#model').value='llama.cpp/'+model.id;setThinking($('#model'));$('#model').dispatchEvent(new Event('change'));showChatView();};row.append(choose);
+        }
+        root.append(row);
+      }
+    }
+    function renderLlamaFolders() {
+      const root=$('#llamaFolders');root.replaceChildren();
+      for(const [index,path] of llamaModelFolders.entries()) {
+        const row=document.createElement('div');row.className='model-folder-row';
+        const label=document.createElement('span');label.textContent=path;
+        const remove=document.createElement('button');remove.type='button';remove.textContent='Remove';remove.setAttribute('aria-label','Remove model folder '+path);
+        remove.onclick=()=>{llamaModelFolders.splice(index,1);renderLlamaFolders();$('#llamaNotice').textContent='Folder removed from this form. Save folders to apply.';};
+        row.append(label,remove);root.append(row);
+      }
+    }
+    function renderLlamaSources(sources) {
+      const root=$('#llamaSources');root.replaceChildren();
+      for(const source of sources) {
+        if(source.kind==='custom') continue;
+        const row=document.createElement('p');row.className='meta';
+        row.textContent=source.label+' · '+source.path+(source.error?' · '+source.error:source.exists?'':' · not present');root.append(row);
+      }
+      for(const source of sources.filter(source=>source.kind==='custom'&&source.error)) {
+        const row=document.createElement('p');row.className='meta';row.textContent=source.path+' · '+source.error;root.append(row);
+      }
+    }
+    function renderLocalModels() {
+      const root=$('#llamaLocalModels');root.replaceChildren();
+      const filter=$('#llamaLocalFilter').value.trim().toLowerCase();
+      const visible=llamaLocalModels.filter(model=>(model.name+' '+model.path+' '+model.source).toLowerCase().includes(filter));
+      $('#llamaLocalSummary').textContent=visible.length+' local model'+(visible.length===1?'':'s')+(filter?' matching filter':'')+'. Save a preset to make a model selectable.';
+      for(const model of visible) {
+        const preset=config.llama.models.find(p=>p.id===model.presetId||p.llama_model_path===model.path);
+        const row=document.createElement('div');row.className='local-model-row';
+        const description=document.createElement('div');description.className='local-model-description';
+        const name=document.createElement('strong');name.textContent=model.name;
+        const path=document.createElement('p');path.className='meta';path.textContent=model.path;
+        const info=document.createElement('p');info.className='meta';info.textContent=[model.source,new Intl.NumberFormat().format(model.sizeBytes)+' bytes',model.splitCount>1?model.splitCount+' parts':null,model.missingParts?.length?'Missing parts: '+model.missingParts.join(', '):null,preset?'Preset saved':null].filter(Boolean).join(' · ');
+        description.append(name,path,info);
+        const edit=document.createElement('button');edit.type='button';edit.textContent=preset?'Edit preset':'Save preset';edit.disabled=Boolean(model.missingParts?.length);
+        edit.onclick=()=>{
+          const context=Number(config.llama.context_size)||0;
+          editLlamaPreset({id:preset?.id||model.id,preset:preset||{id:model.id,name:model.name,context_window:context,max_tokens:context?Math.min(16384,context):0,input:['text'],reasoning:false,thinking_levels:['off'],default_thinking:'off',supports_reasoning_effort:false,request_parameters:{},llama_options:'',llama_model_path:model.path}});
+        };
+        row.append(description,edit);root.append(row);
+      }
+    }
+    $('#llamaLocalFilter').oninput=renderLocalModels;
+    $('#llamaAddFolder').onclick=()=>openFolderPicker('Add model folder',llamaModelFolders.at(-1)||$('#llamaDirectory').value,path=>{if(!llamaModelFolders.includes(path))llamaModelFolders.push(path);renderLlamaFolders();$('#llamaNotice').textContent='Folder added. Save folders and scan to list its models.';});
+    $('#llamaScan').onclick=async()=>{await loadLlamaStatus();};
+    $('#llamaSaveFolders').onclick=async()=>{try{config.llama.model_search_dirs=[...llamaModelFolders];await api('/api/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});await loadLlamaStatus();$('#llamaNotice').textContent='Model folders saved and scanned.';}catch(error){llamaError(error);}};
+    $('#llamaCudaOverride').onchange=()=>{$('#llamaCudaDevices').disabled=!$('#llamaCudaOverride').checked;};
+    $('#llamaVulkanOverride').onchange=()=>{$('#llamaVulkanDevices').disabled=!$('#llamaVulkanOverride').checked;};
+    $('#llamaSaveSettings').onclick=async()=>{try{collectLlamaSettings();await api('/api/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});$('#llamaKey').value='';delete config.llama.api_key;await loadLlamaStatus();$('#llamaNotice').textContent='Router settings saved. Restart the router to apply launch changes.';}catch(error){llamaError(error);}};
+    async function llamaModelAction(model,action) {
+      let retainOthers=true;
+      if(action==='unload'&&!confirm('Unload model?\n'+model.id))return;
+      if(action==='load'&&llamaCatalog.some(m=>m.id!==model.id&&['loaded','sleeping'].includes(m.status.value))) {
+        const choice=await chooseLlamaRetention();if(choice===null)return;retainOthers=choice;
+      }
+      try {renderLlamaOperation((await llamaPost('operation',{action,model:model.id,retainOthers})).operation);}catch(error){llamaError(error);}
+    }
+    function chooseLlamaRetention() {
+      return new Promise(resolve=>{
+        const dialog=document.createElement('dialog');const text=document.createElement('p');text.textContent='Other models are loaded';dialog.append(text);
+        for(const [label,value] of [['Unload all and load',false],['Keep loaded and load',true],['Cancel',null]]){const button=document.createElement('button');button.type='button';button.textContent=label;button.onclick=()=>{dialog.close();dialog.remove();resolve(value);};dialog.append(button);}
+        dialog.oncancel=()=>{dialog.remove();resolve(null);};document.body.append(dialog);dialog.showModal();
+      });
+    }
+    function renderLlamaOperation(op) {
+      clearTimeout(llamaPoll);const active=op&&['running','cancelling'].includes(op.phase);
+      $('#llamaOperation').classList.toggle('hidden',!op);
+      if(!op)return;
+      $('#llamaProgress').textContent=[op.model,op.progress?.message,op.progress?.detail,op.phase,op.phase==='failed'?op.error:''].filter(Boolean).join(' · ');
+      $('#llamaCancel').disabled=!active||op.phase==='cancelling';
+      if(op.progress?.ratio==null)$('#llamaProgressBar').removeAttribute('value');else $('#llamaProgressBar').value=op.progress.ratio;
+      if(active)llamaPoll=setTimeout(async()=>{try{const next=(await api('/api/llama/operation')).operation;renderLlamaOperation(next);if(!['running','cancelling'].includes(next?.phase)){await loadSettings();await loadModels();}}catch(error){llamaError(error);}},750);
+    }
+    function editLlamaPreset(model) {
+      const preset=config.llama.models.find(p=>p.id===model.id)||model.preset;
+      llamaPresetPath=preset.llama_model_path || '';
+      $('#llamaPresetPath').textContent=llamaPresetPath;
+      $('#llamaPresetId').readOnly=true;
+      $('#llamaPresetEditor').scrollIntoView({block:'nearest'});
+      $('#llamaPresetEditor').open=true;$('#llamaPresetId').value=preset.id;$('#llamaPresetName').value=preset.name;
+      $('#llamaPresetContext').value=preset.context_window||'';$('#llamaPresetMax').value=preset.max_tokens||'';
+      $('#llamaPresetImage').checked=preset.input.includes('image');$('#llamaPresetReasoning').checked=Boolean(preset.reasoning);$('#llamaPresetEffort').checked=Boolean(preset.supports_reasoning_effort);
+      $('#llamaPresetLevels').value=preset.thinking_levels.join(', ');presetThinking();$('#llamaPresetThinking').value=preset.default_thinking;
+      $('#llamaPresetParameters').value=JSON.stringify(preset.request_parameters,null,2);
+      $('#llamaPresetOptions').value=preset.llama_options||'';
+    }
+    function presetThinking(){const old=$('#llamaPresetThinking').value;$('#llamaPresetThinking').replaceChildren(...$('#llamaPresetLevels').value.split(',').map(v=>v.trim()).filter(Boolean).map(v=>new Option(v,v)));if([...$('#llamaPresetThinking').options].some(o=>o.value===old))$('#llamaPresetThinking').value=old;}
+    $('#llamaPresetLevels').oninput=presetThinking;
+    $('#llamaGpu').onchange=()=>{$('#llamaLayers').disabled=$('#llamaGpu').value!=='count';};
+    $('#llamaRefresh').onclick=async()=>{try{$('#llamaNotice').textContent='Refreshing models…';llamaCatalog=(await llamaPost('refresh')).catalog;config.llama.catalog=llamaCatalog;renderLlamaCatalog();await loadModels();$('#llamaNotice').textContent='Models refreshed.';}catch(error){llamaError(error);}};
+    $('#llamaCancel').onclick=async()=>{if(!confirm('Stop '+($('#llamaProgress').textContent||'model operation')+'?'))return;try{renderLlamaOperation((await llamaPost('cancel')).operation);}catch(error){llamaError(error);}};
+    $('#llamaSavePreset').onclick=async()=>{
+      try {
+        const id=$('#llamaPresetId').value;
+        const preset={...(config.llama.models.find(p=>p.id===id)||{}),id,name:$('#llamaPresetName').value,context_window:Number($('#llamaPresetContext').value),max_tokens:Number($('#llamaPresetMax').value),input:$('#llamaPresetImage').checked?['text','image']:['text'],reasoning:$('#llamaPresetReasoning').checked,thinking_levels:$('#llamaPresetLevels').value.split(',').map(v=>v.trim()).filter(Boolean),default_thinking:$('#llamaPresetThinking').value,supports_reasoning_effort:$('#llamaPresetEffort').checked,request_parameters:JSON.parse($('#llamaPresetParameters').value),llama_options:$('#llamaPresetOptions').value,llama_model_path:llamaPresetPath};
+        await llamaPost('preset',preset);const index=config.llama.models.findIndex(p=>p.id===id);if(index<0)config.llama.models.push(preset);else config.llama.models[index]=preset;
+        await loadModels();await loadLlamaStatus();$('#llamaNotice').textContent='Model preset saved. Restart the router once to enable the preset file; later edits apply when the unloaded model is refreshed and loaded.';
+      }catch(error){llamaError(error);}
+    };
+    async function inspectHf(id) {
+      try {
+        const colon=id.indexOf(':',id.lastIndexOf('/')+1);const quant=colon>=0?id.slice(colon+1):null;if(colon>=0)id=id.slice(0,colon);
+        $('#llamaNotice').textContent='Loading model details…';llamaHfDetails=await llamaPost('hf/details',{id});
+        $('#llamaHfSelection').classList.remove('hidden');$('#llamaHfRepository').textContent=llamaHfDetails.id;
+        $('#llamaHfGated').textContent=llamaHfDetails.gated?`${llamaHfDetails.gated==='manual'?'Manual approval is required':'Accept the access terms'} at https://huggingface.co/${llamaHfDetails.id}. The llama.cpp server needs HF_TOKEN with access.`:'';
+        $('#llamaHfQuantization').replaceChildren(...llamaHfDetails.quantizations.map(q=>new Option(`${q.name}${q.name==='Q4_K_M'?' · recommended':''}${q.size==null?'':` · ${new Intl.NumberFormat().format(q.size)+' bytes'}`}`,q.name)));
+        if(quant){if(![...$('#llamaHfQuantization').options].some(o=>o.value===quant))$('#llamaHfQuantization').append(new Option(quant,quant));$('#llamaHfQuantization').value=quant;}
+        $('#llamaNotice').textContent='';
+      }catch(error){llamaError(error);}
+    }
+    $('#llamaHfDetails').onclick=()=>inspectHf($('#llamaHfQuery').value.trim());
+    $('#llamaHfSearch').onclick=async()=>{try{const value=await llamaPost('hf/search',{query:$('#llamaHfQuery').value.trim()});$('#llamaHfResults').replaceChildren(...value.models.map(model=>{const button=document.createElement('button');button.type='button';button.textContent=model.id;button.onclick=()=>inspectHf(model.id);return button;}));}catch(error){llamaError(error);}};
+    $('#llamaHfDownload').onclick=async()=>{
+      if(!llamaHfDetails)return;
+      if(llamaHfDetails.gated&&!confirm(`Hugging Face access required\n${llamaHfDetails.id}\n\n${$('#llamaHfGated').textContent}\n\nContinue?`))return;
+      const quant=$('#llamaHfQuantization').value;const model=llamaHfDetails.id+(quant?':'+quant:'');
+      try{renderLlamaOperation((await llamaPost('operation',{action:'download',model})).operation);}catch(error){llamaError(error);}
+    };
+
     let oauthActive = false;
     let subscriptionConnected = null;
     function renderLogin(login = {}) {
@@ -1840,9 +2434,6 @@
       $('#oauthMessage').textContent = login.message || '';
       $('#oauthUserCode').textContent = login.userCode || '';
       $('#oauthUserCode').classList.toggle('hidden', !login.userCode);
-      $('#oauthOpen').classList.toggle('hidden', !login.url);
-      if (login.url) $('#oauthOpen').href = login.url;
-      else $('#oauthOpen').removeAttribute('href');
       const manual = oauthActive && login.url && !login.userCode;
       $('#oauthManual').classList.toggle('hidden', !manual);
       if (manual && !login.callbackAvailable) $('#oauthMessage').textContent += ' Port 1455 is in use; paste the redirect URL here after signing in.';
@@ -1859,16 +2450,14 @@
       if (changed) await loadModels();
     }
     async function startSubscription(method) {
-      // Open synchronously from the click so popup blockers do not swallow it.
-      const popup = method === 'browser' ? window.open('about:blank', '_blank') : null;
-      if (popup) popup.opener = null;
       try {
         $('#oauthLogin').disabled = $('#oauthDevice').disabled = true;
         const value = await api('/api/provider/login', {method: 'POST', headers: {'content-type': 'application/json'}, body: JSON.stringify({method})});
         renderLogin(value.login);
-        if (popup && value.login.url) popup.location.replace(value.login.url);
+        if (method === 'browser' && value.browserOpened === false) {
+          $('#oauthMessage').textContent = 'Could not open the default browser. Cancel login, check your desktop browser setting, and try again.';
+        }
       } catch (error) {
-        popup?.close();
         $('#subscriptionStatus').textContent = error.message;
         $('#oauthLogin').disabled = $('#oauthDevice').disabled = false;
       }
@@ -1895,8 +2484,13 @@
     };
     setInterval(() => { if (csrf && oauthActive) refreshSubscription().catch(() => {}); }, 1000);
     $('#restartLlama').onclick = async () => {
-      try { await api('/api/llama/restart', {method: 'POST'}); alert('llama.cpp restarted.'); }
-      catch (error) { alert(error.message); }
+      try {
+        collectLlamaSettings();
+        await api('/api/settings', {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(config)});
+        $('#llamaKey').value=''; delete config.llama.api_key;
+        await api('/api/llama/restart', {method:'POST'});
+        await loadLlamaStatus();
+      } catch(error) {llamaError(error);}
     };
 
     boot();

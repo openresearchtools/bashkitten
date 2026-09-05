@@ -1,0 +1,274 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+  "cases": [
+    {
+      "name": "codex-idle",
+      "kind": "codex",
+      "abort": false,
+      "chunks": [
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "msg_partial",
+            "type": "message",
+            "content": []
+          }
+        },
+        {
+          "type": "response.output_text.delta",
+          "output_index": 0,
+          "delta": "Partial answer"
+        }
+      ],
+      "model": {
+        "id": "gpt-5.5",
+        "provider": "openai-codex",
+        "api": "openai-codex-responses",
+        "baseUrl": "http://127.0.0.1:44795/backend-api",
+        "name": "Fixture",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "input": [
+          "text"
+        ],
+        "reasoning": false,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Partial answer"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "terminated"
+      }
+    },
+    {
+      "name": "codex-abort",
+      "kind": "codex",
+      "abort": true,
+      "chunks": [
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "id": "msg_partial",
+            "type": "message",
+            "content": []
+          }
+        },
+        {
+          "type": "response.output_text.delta",
+          "output_index": 0,
+          "delta": "Partial answer"
+        }
+      ],
+      "model": {
+        "id": "gpt-5.5",
+        "provider": "openai-codex",
+        "api": "openai-codex-responses",
+        "baseUrl": "http://127.0.0.1:44795/backend-api",
+        "name": "Fixture",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "input": [
+          "text"
+        ],
+        "reasoning": false,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Partial answer"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "aborted",
+        "errorMessage": "This operation was aborted"
+      }
+    },
+    {
+      "name": "compatible-idle",
+      "kind": "compatible",
+      "abort": false,
+      "chunks": [
+        {
+          "id": "partial",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "content": "Partial answer"
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "id": "fixture",
+        "provider": "fixture",
+        "api": "openai-completions",
+        "baseUrl": "http://127.0.0.1:44795/v1",
+        "name": "Fixture",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "input": [
+          "text"
+        ],
+        "reasoning": false,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Partial answer"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "responseId": "partial",
+        "errorMessage": "terminated"
+      }
+    },
+    {
+      "name": "compatible-abort",
+      "kind": "compatible",
+      "abort": true,
+      "chunks": [
+        {
+          "id": "partial",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "content": "Partial answer"
+              }
+            }
+          ]
+        }
+      ],
+      "model": {
+        "id": "fixture",
+        "provider": "fixture",
+        "api": "openai-completions",
+        "baseUrl": "http://127.0.0.1:44795/v1",
+        "name": "Fixture",
+        "contextWindow": 100000,
+        "maxTokens": 1000,
+        "input": [
+          "text"
+        ],
+        "reasoning": false,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        }
+      },
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Partial answer"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "aborted",
+        "responseId": "partial",
+        "errorMessage": "Request was aborted"
+      }
+    }
+  ]
+}

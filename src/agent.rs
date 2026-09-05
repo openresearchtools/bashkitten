@@ -1,7 +1,7 @@
 //! Pure session-worker state and Pi-compatible compaction/usage logic.
 //!
-//! Behavioral reference: Pi v0.84.4 at commit
-//! `b79e4cc834970cca69daebffab7df1da7d1e52c4`.
+//! Behavioral reference: Pi at commit
+//! `9841914c71a74d81abe07f751aefd271fd924e63`.
 //!
 //! The compaction prompt text and the algorithms ported here are derived from Pi,
 //! Copyright (c) 2025 Mario Zechner, used under the MIT License:
@@ -613,6 +613,10 @@ pub enum ContentBlock {
         thought_signature: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
         namespace: Option<String>,
+        // Pi can expose unfinished streaming scratch fields on a successful
+        // terminal response without output_item.done. Preserve that quirk.
+        #[serde(flatten)]
+        extra: serde_json::Map<String, serde_json::Value>,
     },
 }
 
@@ -805,6 +809,7 @@ pub struct SessionEntry {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
+#[allow(clippy::large_enum_variant)] // Keep logical Pi entries directly serializable.
 pub enum SessionEntryKind {
     Message {
         message: AgentMessage,
@@ -1685,10 +1690,21 @@ impl<T> PendingMessageQueue<T> {
     }
 
     pub fn drain(&mut self) -> Vec<T> {
-        match self.mode {
-            QueueMode::All => self.messages.drain(..).collect(),
-            QueueMode::OneAtATime => self.messages.pop_front().into_iter().collect(),
-        }
+        self.drain_ready(|_| true)
+    }
+
+    pub fn drain_ready(&mut self, ready: impl Fn(&T) -> bool) -> Vec<T> {
+        let maximum = match self.mode {
+            QueueMode::All => self.messages.len(),
+            QueueMode::OneAtATime => 1,
+        };
+        let count = self
+            .messages
+            .iter()
+            .take(maximum)
+            .take_while(|message| ready(message))
+            .count();
+        self.messages.drain(..count).collect()
     }
 }
 
@@ -1738,7 +1754,15 @@ impl<T> AgentQueues<T> {
     /// Poll at a safe model boundary. Steering always wins; follow-up is eligible
     /// only when the loop would otherwise stop (including an idle-session wake).
     pub fn drain_at_boundary(&mut self, would_otherwise_stop: bool) -> Option<QueueDrain<T>> {
-        let steering = self.steering.drain();
+        self.drain_at_boundary_if(would_otherwise_stop, |_| true)
+    }
+
+    pub fn drain_at_boundary_if(
+        &mut self,
+        would_otherwise_stop: bool,
+        ready: impl Fn(&T) -> bool,
+    ) -> Option<QueueDrain<T>> {
+        let steering = self.steering.drain_ready(&ready);
         if !steering.is_empty() {
             return Some(QueueDrain {
                 queue: DrainedQueue::Steering,
@@ -1746,7 +1770,7 @@ impl<T> AgentQueues<T> {
             });
         }
         if would_otherwise_stop {
-            let follow_up = self.follow_up.drain();
+            let follow_up = self.follow_up.drain_ready(ready);
             if !follow_up.is_empty() {
                 return Some(QueueDrain {
                     queue: DrainedQueue::FollowUp,
@@ -1844,7 +1868,8 @@ pub trait SegmentPersistence {
     fn rotate_after_compaction(&mut self, plan: &SegmentRotationPlan) -> Result<(), Self::Error>;
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
 pub struct UsageTotals {
     pub input: u64,
     pub output: u64,
@@ -1854,6 +1879,17 @@ pub struct UsageTotals {
 }
 
 impl UsageTotals {
+    pub fn merge(&mut self, other: Self) {
+        self.input = self.input.saturating_add(other.input);
+        self.output = self.output.saturating_add(other.output);
+        self.cache_read = self.cache_read.saturating_add(other.cache_read);
+        self.cache_write = self.cache_write.saturating_add(other.cache_write);
+        self.cost += other.cost;
+    }
+
+    pub fn is_zero(&self) -> bool {
+        *self == Self::default()
+    }
     pub fn add(&mut self, usage: &Usage) {
         self.input = self.input.saturating_add(usage.input);
         self.output = self.output.saturating_add(usage.output);
@@ -1953,7 +1989,8 @@ pub fn usage_cost_breakdown(entries: &[SessionEntry]) -> Vec<UsageCostBreakdownE
     result
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CurrentContextUsage {
     pub tokens: Option<u64>,
     pub context_window: u64,
@@ -2246,6 +2283,7 @@ mod tests {
                         ]),
                         thought_signature: None,
                         namespace: None,
+                        extra: Default::default(),
                     },
                 ],
                 api: String::new(),

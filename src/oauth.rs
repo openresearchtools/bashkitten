@@ -31,6 +31,41 @@ const REDIRECT_URI: &str = "http://localhost:1455/auth/callback";
 const DEVICE_REDIRECT_URI: &str = "https://auth.openai.com/deviceauth/callback";
 const LIFETIME: Duration = Duration::from_secs(15 * 60);
 
+/// Pi: utils/open-browser.ts and LoginDialog.showAuth at the pinned commit.
+/// Browser launch is best effort; manual code/redirect input remains available.
+/// The URL comes only from the pending Rust OAuth flow, never a caller argument.
+pub fn open_browser(url: &str) -> Result<()> {
+    spawn_browser(std::path::Path::new("xdg-open"), url)
+}
+
+fn spawn_browser(program: &std::path::Path, url: &str) -> Result<()> {
+    use std::os::unix::process::CommandExt;
+    use std::process::Stdio;
+    let mut command = tokio::process::Command::new(program);
+    command
+        .arg(url)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
+    // Match Node's detached:true on Linux. setsid is async-signal-safe, and this
+    // child hook does not allocate or acquire locks between fork and exec.
+    unsafe {
+        command.as_std_mut().pre_exec(|| {
+            if libc::setsid() == -1 {
+                return Err(std::io::Error::last_os_error());
+            }
+            Ok(())
+        });
+    }
+    let mut child = command
+        .spawn()
+        .context("Could not open the system browser")?;
+    tokio::spawn(async move {
+        let _ = child.wait().await;
+    });
+    Ok(())
+}
+
 #[derive(Clone, Default, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LoginStatus {
@@ -111,10 +146,10 @@ fn authorization_code(input: &str, expected_state: &str) -> Result<String> {
     } else {
         (Some(input.to_owned()), None)
     };
-    if let Some(state) = state.filter(|state| !state.is_empty()) {
-        if !bool::from(state.as_bytes().ct_eq(expected_state.as_bytes())) {
-            bail!("State mismatch");
-        }
+    if let Some(state) = state.filter(|state| !state.is_empty())
+        && !bool::from(state.as_bytes().ct_eq(expected_state.as_bytes()))
+    {
+        bail!("State mismatch");
     }
     code.filter(|code| !code.is_empty())
         .context("Missing authorization code")
@@ -185,6 +220,7 @@ impl LoginManager {
         let id = uuid::Uuid::new_v4().to_string();
         let (tx, rx) = mpsc::channel(1);
         let client = Client::builder()
+            .no_proxy()
             .timeout(Duration::from_secs(30))
             .redirect(reqwest::redirect::Policy::none())
             .build()?;
@@ -309,11 +345,11 @@ impl LoginManager {
 
     pub async fn logout(&self, store: ProviderAuthStore) -> Result<()> {
         let mut guard = self.0.lock().await;
-        if let Some(mut attempt) = guard.take() {
-            if let Some(task) = attempt.task.take() {
-                task.abort();
-                let _ = task.await;
-            }
+        if let Some(mut attempt) = guard.take()
+            && let Some(task) = attempt.task.take()
+        {
+            task.abort();
+            let _ = task.await;
         }
         store.set_codex(None).await
     }
@@ -529,6 +565,38 @@ async fn device_login(
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[tokio::test]
+    async fn browser_launcher_passes_the_complete_url_as_one_argument_without_a_shell() {
+        let temp = tempfile::tempdir().unwrap();
+        let program = temp.path().join("browser fixture");
+        let output = temp.path().join("captured arguments");
+        std::fs::write(
+            &program,
+            format!(
+                "#!/bin/sh\nprintf '%s\\n' \"$#\" \"$1\" > '{}'\n",
+                output.display()
+            ),
+        )
+        .unwrap();
+        std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let target = "https://auth.openai.com/oauth/authorize?state=a&code_challenge=b;$(touch BAD)`echo BAD`";
+        spawn_browser(&program, target).unwrap();
+        tokio::time::timeout(Duration::from_secs(2), async {
+            loop {
+                if let Ok(contents) = std::fs::read_to_string(&output)
+                    && contents.ends_with('\n')
+                {
+                    break contents;
+                }
+                tokio::task::yield_now().await;
+            }
+        })
+        .await
+        .map(|contents| assert_eq!(contents, format!("1\n{target}\n")))
+        .unwrap();
+        assert!(spawn_browser(&temp.path().join("missing"), target).is_err());
+    }
 
     fn token_response() -> Value {
         let payload = URL_SAFE_NO_PAD.encode(

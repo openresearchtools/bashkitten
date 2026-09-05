@@ -1,0 +1,1193 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "cases": [
+    {
+      "name": "first",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": null,
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "retained": false,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"First\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true}"
+    },
+    {
+      "name": "delta",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "previous_response_id": "response1"
+      },
+      "retained": true,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Next\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true,\"previous_response_id\":\"response1\"}"
+    },
+    {
+      "name": "empty-delta",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "previous_response_id": "response1"
+      },
+      "retained": true,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true,\"previous_response_id\":\"response1\"}"
+    },
+    {
+      "name": "short",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "retained": false,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"First\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true}"
+    },
+    {
+      "name": "changed-instructions",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "Changed",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "Changed",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "retained": false,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"Changed\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"First\"}]},{\"type\":\"message\",\"role\":\"assistant\",\"id\":\"msg_1\",\"content\":[{\"type\":\"output_text\",\"text\":\"Answer\",\"annotations\":[]}],\"status\":\"completed\"},{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Next\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true}"
+    },
+    {
+      "name": "changed-input",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "retained": false,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Next\"}]},{\"type\":\"message\",\"role\":\"assistant\",\"id\":\"msg_1\",\"content\":[{\"type\":\"output_text\",\"text\":\"Answer\",\"annotations\":[]}],\"status\":\"completed\"},{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Next\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true}"
+    },
+    {
+      "name": "missing-id",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "retained": false,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"First\"}]},{\"type\":\"message\",\"role\":\"assistant\",\"id\":\"msg_1\",\"content\":[{\"type\":\"output_text\",\"text\":\"Answer\",\"annotations\":[]}],\"status\":\"completed\"},{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Next\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true}"
+    },
+    {
+      "name": "existing-previous",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "previous_response_id": "wrong"
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "previous_response_id": "response1"
+      },
+      "retained": true,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Next\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true,\"previous_response_id\":\"response1\"}"
+    },
+    {
+      "name": "reordered-body",
+      "body": {
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          }
+        ],
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          }
+        ],
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "retained": false,
+      "serialized": "{\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"First\"}]}],\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true}"
+    },
+    {
+      "name": "reordered-item",
+      "body": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "id": "msg_1",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "First"
+                }
+              ]
+            }
+          ],
+          "tools": [],
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        "lastResponseId": "response1",
+        "lastResponseItems": [
+          {
+            "type": "message",
+            "role": "assistant",
+            "id": "msg_1",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          }
+        ]
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "System",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "First"
+              }
+            ]
+          },
+          {
+            "id": "msg_1",
+            "type": "message",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ],
+            "status": "completed"
+          },
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Next"
+              }
+            ]
+          }
+        ],
+        "tools": [],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true
+      },
+      "retained": false,
+      "serialized": "{\"model\":\"gpt-5.5\",\"store\":false,\"stream\":true,\"instructions\":\"System\",\"input\":[{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"First\"}]},{\"id\":\"msg_1\",\"type\":\"message\",\"role\":\"assistant\",\"content\":[{\"type\":\"output_text\",\"text\":\"Answer\",\"annotations\":[]}],\"status\":\"completed\"},{\"role\":\"user\",\"content\":[{\"type\":\"input_text\",\"text\":\"Next\"}]}],\"tools\":[],\"tool_choice\":\"auto\",\"parallel_tool_calls\":true}"
+    },
+    {
+      "name": "no-input",
+      "body": {
+        "model": "gpt-5.5"
+      },
+      "continuation": {
+        "lastRequestBody": {
+          "model": "gpt-5.5"
+        },
+        "lastResponseId": "empty",
+        "lastResponseItems": []
+      },
+      "expected": {
+        "model": "gpt-5.5",
+        "previous_response_id": "empty",
+        "input": []
+      },
+      "retained": true,
+      "serialized": "{\"model\":\"gpt-5.5\",\"previous_response_id\":\"empty\",\"input\":[]}"
+    }
+  ],
+  "headers": [
+    {
+      "modelHeaders": {},
+      "options": {},
+      "expected": {
+        "authorization": "Bearer token",
+        "chatgpt-account-id": "account",
+        "openai-beta": "responses_websockets=2026-02-06",
+        "originator": "pi",
+        "session-id": "session",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-client-request-id": "session"
+      }
+    },
+    {
+      "modelHeaders": {},
+      "options": {
+        "x-test": "option",
+        "authorization": "wrong",
+        "chatgpt-account-id": "wrong"
+      },
+      "expected": {
+        "authorization": "Bearer token",
+        "chatgpt-account-id": "account",
+        "openai-beta": "responses_websockets=2026-02-06",
+        "originator": "pi",
+        "session-id": "session",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-client-request-id": "session",
+        "x-test": "option"
+      }
+    },
+    {
+      "modelHeaders": {},
+      "options": {
+        "x-test": null
+      },
+      "expected": {
+        "authorization": "Bearer token",
+        "chatgpt-account-id": "account",
+        "openai-beta": "responses_websockets=2026-02-06",
+        "originator": "pi",
+        "session-id": "session",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-client-request-id": "session"
+      }
+    },
+    {
+      "modelHeaders": {
+        "accept": "bad",
+        "content-type": "bad",
+        "openai-beta": "bad",
+        "x-test": "model"
+      },
+      "options": {},
+      "expected": {
+        "authorization": "Bearer token",
+        "chatgpt-account-id": "account",
+        "openai-beta": "responses_websockets=2026-02-06",
+        "originator": "pi",
+        "session-id": "session",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-client-request-id": "session",
+        "x-test": "model"
+      }
+    },
+    {
+      "modelHeaders": {
+        "accept": "bad",
+        "content-type": "bad",
+        "openai-beta": "bad",
+        "x-test": "model"
+      },
+      "options": {
+        "x-test": "option",
+        "authorization": "wrong",
+        "chatgpt-account-id": "wrong"
+      },
+      "expected": {
+        "authorization": "Bearer token",
+        "chatgpt-account-id": "account",
+        "openai-beta": "responses_websockets=2026-02-06",
+        "originator": "pi",
+        "session-id": "session",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-client-request-id": "session",
+        "x-test": "option"
+      }
+    },
+    {
+      "modelHeaders": {
+        "accept": "bad",
+        "content-type": "bad",
+        "openai-beta": "bad",
+        "x-test": "model"
+      },
+      "options": {
+        "x-test": null
+      },
+      "expected": {
+        "authorization": "Bearer token",
+        "chatgpt-account-id": "account",
+        "openai-beta": "responses_websockets=2026-02-06",
+        "originator": "pi",
+        "session-id": "session",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-client-request-id": "session"
+      }
+    }
+  ],
+  "urls": [
+    {
+      "base": "",
+      "expected": "wss://chatgpt.com/backend-api/codex/responses"
+    },
+    {
+      "base": "http://localhost/backend-api",
+      "expected": "ws://localhost/backend-api/codex/responses"
+    },
+    {
+      "base": "https://host/codex",
+      "expected": "wss://host/codex/responses"
+    },
+    {
+      "base": "https://host/codex/responses",
+      "expected": "wss://host/codex/responses"
+    },
+    {
+      "base": "https://host/codex/responses///",
+      "expected": "wss://host/codex/responses"
+    },
+    {
+      "base": "http://LOCALHOST:80/backend-api",
+      "expected": "ws://localhost/backend-api/codex/responses"
+    },
+    {
+      "base": "https://host:443/base path",
+      "expected": "wss://host/base%20path/codex/responses"
+    },
+    {
+      "base": " https://host/base ",
+      "expected": "wss://host/base%20/codex/responses"
+    },
+    {
+      "base": "https://münich.example/模型",
+      "expected": "wss://xn--mnich-kva.example/%E6%A8%A1%E5%9E%8B/codex/responses"
+    }
+  ]
+}

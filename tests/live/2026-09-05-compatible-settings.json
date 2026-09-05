@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-05",
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "kind": "browser-and-native-worker-with-local-SSE-fixture",
+  "session": "01a072f0-2f33-7081-aa2e-afd60c10f1b4",
+  "checks": {
+    "two_saved_presets": true,
+    "reload_preserved_thinking_and_compatibility": true,
+    "thinking_selector": [
+      "off",
+      "low",
+      "high"
+    ],
+    "default_thinking": "low",
+    "two_provider_requests": true,
+    "configured_auth_used_without_revealing_it": true,
+    "stable_affinity_equals_session": true,
+    "qwen_template_and_top_p_applied": true,
+    "max_tokens": 4096,
+    "exact_seven_tools": true,
+    "proof_file": "COMPATIBLE-PARITY-916\n",
+    "assistant_final_visible": true,
+    "thinking_and_tool_trace_collapsed": true
+  },
+  "limits": "Deterministic HTTP fixture, not real-model inference. No production service or user credential changed."
+}

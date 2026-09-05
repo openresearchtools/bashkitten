@@ -3,8 +3,9 @@ Description=BashKitten GTK controller
 After=graphical-session.target
 
 [Service]
-Type=simple
-ExecStart=/usr/bin/bashkitten-controller
+Type=dbus
+BusName=org.openresearchtools.BashKitten
+ExecStart=/usr/bin/bashkitten-controller --service
 Restart=on-failure
 RestartSec=2
 
