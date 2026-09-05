@@ -419,6 +419,8 @@ The Web UI initially reads only the highest-numbered JSONL. For a running sessio
 
 The numbered-file layout is BashKitten's deliberate storage difference from Pi. It must not change the logical conversation, compaction result, model context, or usage accounting.
 
+The new segment stores the retained Pi entries with their original IDs and parent links, followed by the new Pi compaction entry. Rebuild active context with Pi's logical context builder, not physical line order. Its header carries `usageBefore`, the accumulated usage of entries omitted from the new segment; retained entries and the new summary request are counted from that segment exactly once. This checkpoint is only the bookkeeping required by the numbered-file layout, not a separate index or metadata file. Publish a fully written and flushed segment atomically; a failed or cancelled compaction must not expose a partial highest-numbered JSONL. History rendering deduplicates retained entry IDs when loading preceding segments.
+
 ## Exact Pi compaction parity
 
 Compaction is a strict compatibility boundary. Use the same pinned upstream Pi commit used for tool parity, and rewrite its compaction implementation in Rust with exact 1:1 behavioral parity. Do not design a new summarizer or adjust Pi's behavior.
