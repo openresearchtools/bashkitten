@@ -5,6 +5,7 @@ pub mod models;
 pub mod oauth;
 pub mod paths;
 pub mod providers;
+pub mod response;
 pub mod session;
 pub mod tools;
 pub mod web;

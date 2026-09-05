@@ -939,7 +939,7 @@
       return details;
     }
 
-    function renderToolResult(message) {
+    function renderToolResult(message, live = false) {
       touchRenderedTurn(message.timestamp);
       let details = findTool(message.toolCallId);
       if (!details) {
@@ -948,8 +948,9 @@
       }
       details.classList.toggle('error', Boolean(message.isError));
       const state = details.querySelector('.tool-state');
-      state.textContent = message.isError ? 'Failed' : '✓ Success';
+      state.textContent = live ? 'Running' : (message.isError ? 'Failed' : '✓ Success');
       const toolBody = details.querySelector('.tool-body');
+      [...toolBody.children].forEach(node => { if (node !== state) node.remove(); });
       const imageBlocks = (Array.isArray(message.content) ? message.content : []).filter(block => block.type === 'image');
       const outputText = textBlocks(message.content);
       if (outputText || !imageBlocks.length) {
@@ -1060,8 +1061,11 @@
       return `${(value / 1000000).toFixed(value < 10000000 ? 1 : 0)}M`;
     }
 
+    let renderedEntries = new Set();
     function renderMessage(message, entryId = null) {
       if (!message) return;
+      if (entryId && renderedEntries.has(entryId)) return;
+      if (entryId) renderedEntries.add(entryId);
       if (message.role === 'toolResult') return renderToolResult(message);
       if (message.role === 'user') {
         beginRenderedTurn(message.timestamp);
@@ -1076,14 +1080,6 @@
       if (message.role !== 'assistant') return;
       touchRenderedTurn(message.timestamp);
       const modelId = `${message.provider}/${message.responseModel || message.model}`;
-      if (message.errorMessage) {
-        finishRenderedTurn(message.timestamp);
-        const body = messageRow('assistant', 'error');
-        body.textContent = message.errorMessage;
-        addMessageActions(body, message, entryId);
-        updateUsage(message.usage, modelId);
-        return;
-      }
       const text = [];
       const imageBlocks = [];
       let hasToolCall = false;
@@ -1110,6 +1106,12 @@
           body.append(content);
         }
         addMessageActions(body, message, entryId);
+      }
+      if (message.errorMessage) {
+        finishRenderedTurn(message.timestamp);
+        const body = messageRow('assistant', 'error');
+        body.textContent = message.errorMessage;
+        if (!text.length && !imageBlocks.length) addMessageActions(body, message, entryId);
       }
       updateUsage(message.usage, modelId);
     }
@@ -1145,6 +1147,12 @@
           details.open = true;
           details.querySelector('.tool-state').textContent = 'Running';
         }
+      } else if (event.type === 'tool_update' || event.type === 'tool_end') {
+        const result = event.partialResult || event.result || {};
+        renderToolResult({toolCallId: event.id, toolName: event.name, content: result.content || [], details: result.details,
+          isError: event.isError, timestamp: Date.now()}, event.type === 'tool_update');
+      } else if (event.type === 'model_error') {
+        $('#composerHint').textContent = event.message;
       } else if (event.type === 'agent_start') {
         queueState.busy = true;
         if (current) current.running = true;
@@ -1440,8 +1448,18 @@
           try {
             const value = JSON.parse(event.data);
             if (!value.type && value.ok && value.message === 'subscribed') {
+              if (subscribed) {
+                // EventSource reconnected. Re-read the current disk boundary
+                // before replaying memory, including turns settled while offline.
+                stream.close();
+                if (source === stream) source = null;
+                if (current?.id === id) openSession(current).catch(error => { $('#composerHint').textContent = error.message; });
+                return;
+              }
               subscribed = true;
               clearTimeout(timeout);
+              for (const item of value.data?.events || []) consume(item);
+              if (value.data?.busy) consume({type:'agent_start'});
               resolve();
               return;
             }
@@ -1482,6 +1500,7 @@
         $('#thinking').value = session.thinking || 'off';
       }
       renderedTurn = null;
+      renderedEntries = new Set();
       resetUsage();
       $('#chatInner').innerHTML = '';
       const pendingEvents = [];
@@ -1511,6 +1530,7 @@
       pendingFiles = [];
       editingQueueId = null;
       renderedTurn = null;
+      renderedEntries = new Set();
       displayedUsage = null;
       renderAttachments();
       renderQueueState();

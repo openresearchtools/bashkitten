@@ -18,6 +18,13 @@ fn main() -> Result<()> {
         .application_id("org.openresearchtools.BashKitten")
         .build();
     app.connect_activate(move |app| build_window(app, paths.clone()));
+    app.connect_shutdown(|_| systemctl(&["stop", "bashkitten.target"]));
+    let app_for_signal = app.clone();
+    glib::unix_signal_add_local(libc::SIGTERM, move || {
+        systemctl(&["stop", "bashkitten.target"]);
+        app_for_signal.quit();
+        glib::ControlFlow::Break
+    });
     app.run();
     Ok(())
 }

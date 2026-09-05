@@ -743,7 +743,9 @@ async fn stop_session(
     AxumPath(id): AxumPath<String>,
 ) -> ApiResult<Json<Value>> {
     require_mutation(&state, &headers)?;
-    session::stop_worker(&id)?;
+    tokio::task::spawn_blocking(move || session::stop_worker(&state.paths, &id))
+        .await
+        .context("wait for session cancellation")??;
     Ok(Json(json!({"ok": true})))
 }
 

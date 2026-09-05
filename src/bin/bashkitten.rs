@@ -217,7 +217,7 @@ async fn main() -> Result<()> {
                     println!("{}", serde_json::to_string(&entry)?);
                 }
             }
-            SessionCommand::Stop { id } => session::stop_worker(&id)?,
+            SessionCommand::Stop { id } => session::stop_worker(&paths, &id)?,
             SessionCommand::Model {
                 id,
                 model,

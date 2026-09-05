@@ -208,6 +208,10 @@ pub struct ToolDefinition {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ProviderRequest {
     pub model: String,
+    /// Current model capability, including after a model switch. Historical
+    /// image blocks stay in JSONL but are omitted from non-vision requests.
+    #[serde(default = "supports_images_by_default")]
+    pub supports_images: bool,
     #[serde(default)]
     pub system_prompt: String,
     #[serde(default)]
@@ -237,6 +241,7 @@ impl ProviderRequest {
     pub fn new(model: impl Into<String>, messages: Vec<ProviderMessage>) -> Self {
         Self {
             model: model.into(),
+            supports_images: true,
             system_prompt: String::new(),
             messages,
             tools: Vec::new(),
@@ -249,6 +254,10 @@ impl ProviderRequest {
             headers: BTreeMap::new(),
         }
     }
+}
+
+fn supports_images_by_default() -> bool {
+    true
 }
 
 impl fmt::Debug for ProviderRequest {
@@ -282,6 +291,7 @@ pub struct NormalizedUsage {
 #[serde(rename_all = "snake_case")]
 pub enum StopReason {
     Stop,
+    Aborted,
     ToolUse,
     Length,
     ContentFilter,
@@ -297,18 +307,22 @@ pub enum ProviderEvent {
         response_id: Option<String>,
     },
     TextDelta {
+        index: u64,
         delta: String,
     },
     TextDone {
+        index: u64,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         text: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         text_signature: Option<String>,
     },
     ThinkingDelta {
+        index: u64,
         delta: String,
     },
     ThinkingDone {
+        index: u64,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         id: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1268,7 +1282,8 @@ fn convert_chat_messages(
         messages.push(json!({ "role": role, "content": request.system_prompt }));
     }
 
-    for message in &request.messages {
+    let mut remaining = request.messages.iter().peekable();
+    while let Some(message) = remaining.next() {
         let tool_results: Vec<_> = message
             .content
             .iter()
@@ -1282,12 +1297,44 @@ fn convert_chat_messages(
             })
             .collect();
         if !tool_results.is_empty() {
-            for (tool_call_id, output) in tool_results {
+            let mut results = tool_results;
+            while remaining
+                .peek()
+                .is_some_and(|message| message.role == MessageRole::Tool)
+            {
+                let message = remaining.next().expect("peeked tool result");
+                results.extend(message.content.iter().filter_map(|part| match part {
+                    ContentPart::ToolResult {
+                        tool_call_id,
+                        output,
+                        ..
+                    } => Some((tool_call_id, output)),
+                    _ => None,
+                }));
+            }
+            let mut images = Vec::new();
+            for (tool_call_id, output) in results {
                 messages.push(json!({
                     "role": "tool",
                     "tool_call_id": tool_call_id,
                     "content": chat_tool_result_text(output),
                 }));
+                if request.supports_images
+                    && let Some(parts) = output.as_array()
+                {
+                    images.extend(parts.iter().filter_map(|part| {
+                        (part["type"] == "input_image")
+                            .then(|| part.get("image_url"))
+                            .flatten()
+                            .map(|url| json!({"type":"image_url","image_url":{"url":url}}))
+                    }));
+                }
+            }
+            if !images.is_empty() {
+                let mut content =
+                    vec![json!({"type":"text","text":"Attached image(s) from tool result:"})];
+                content.extend(images);
+                messages.push(json!({"role":"user","content":content}));
             }
             continue;
         }
@@ -1304,6 +1351,9 @@ fn convert_chat_messages(
                     rich_content.push(json!({ "type": "text", "text": value }));
                 }
                 ContentPart::Image { source } => {
+                    if !request.supports_images {
+                        continue;
+                    }
                     has_image = true;
                     let mut image = Map::new();
                     image.insert("url".into(), Value::String(source.data_url()));
@@ -1370,9 +1420,10 @@ fn chat_tool_result_text(output: &Value) -> String {
                 })
                 .map(str::to_owned)
                 .collect::<Vec<_>>();
-            if parts
-                .iter()
-                .any(|part| part.get("type").and_then(Value::as_str) == Some("input_image"))
+            if text.is_empty()
+                && parts
+                    .iter()
+                    .any(|part| part.get("type").and_then(Value::as_str) == Some("input_image"))
             {
                 text.push("(see attached image)".into());
             }
@@ -1526,6 +1577,9 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
                     }
                 }
                 ContentPart::Image { source } => {
+                    if !request.supports_images {
+                        continue;
+                    }
                     let mut image = Map::new();
                     image.insert("type".into(), Value::String("input_image".into()));
                     image.insert("image_url".into(), Value::String(source.data_url()));
@@ -1579,7 +1633,7 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
                     input.push(json!({
                         "type": "function_call_output",
                         "call_id": call_id,
-                        "output": output,
+                        "output": codex_tool_output(output, request.supports_images),
                     }));
                 }
             }
@@ -1587,6 +1641,34 @@ fn convert_codex_input(request: &ProviderRequest) -> Result<Vec<Value>> {
         flush_codex_message(&mut input, role, &mut content);
     }
     Ok(input)
+}
+
+// Pinned openai-responses-shared.ts convertToolResultOutput: joined text first,
+// then images; non-vision models receive the text/placeholder only.
+fn codex_tool_output(output: &Value, supports_images: bool) -> Value {
+    let Some(parts) = output.as_array() else {
+        return output.clone();
+    };
+    let images: Vec<_> = parts
+        .iter()
+        .filter(|part| part["type"] == "input_image")
+        .cloned()
+        .collect();
+    if images.is_empty() || !supports_images {
+        return Value::String(chat_tool_result_text(output));
+    }
+    let text = parts
+        .iter()
+        .filter(|part| part["type"] == "input_text")
+        .filter_map(|part| part["text"].as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut content = Vec::new();
+    if !text.is_empty() {
+        content.push(json!({"type":"input_text","text":text}));
+    }
+    content.extend(images);
+    Value::Array(content)
 }
 
 fn codex_assistant_text_item(text: &str, signature: Option<&str>, fallback_id: &str) -> Value {
@@ -1672,6 +1754,7 @@ fn arguments_to_string(arguments: &Value) -> String {
 
 #[derive(Default)]
 struct ToolAccumulator {
+    content_index: u64,
     id: String,
     name: String,
     arguments: String,
@@ -1756,6 +1839,9 @@ struct ChatStreamState {
     done: bool,
     raw_stop_reason: Option<String>,
     tools: HashMap<u64, ToolAccumulator>,
+    next_content_index: u64,
+    text_index: Option<u64>,
+    thinking_index: Option<u64>,
 }
 
 #[allow(clippy::collapsible_if)]
@@ -1785,6 +1871,9 @@ fn parse_chat_completions_stream(response: Response) -> ProviderStream {
             }
         }
         if !state.done {
+            if state.raw_stop_reason.is_none() {
+                Err(anyhow!("OpenAI-compatible stream ended before a finish reason"))?;
+            }
             for event in finish_chat_stream(&mut state) {
                 yield event;
             }
@@ -1830,14 +1919,38 @@ fn chat_frame_events(
             if let Some(content) = delta.get("content").and_then(value_text)
                 && !content.is_empty()
             {
-                events.push(ProviderEvent::TextDelta { delta: content });
+                let index = *state.text_index.get_or_insert_with(|| {
+                    let index = state.next_content_index;
+                    state.next_content_index += 1;
+                    index
+                });
+                events.push(ProviderEvent::TextDelta {
+                    index,
+                    delta: content,
+                });
             }
             for field in ["reasoning_content", "reasoning", "reasoning_text"] {
                 if let Some(reasoning) = delta.get(field).and_then(value_text) {
                     if !reasoning.is_empty() {
-                        events.push(ProviderEvent::ThinkingDelta { delta: reasoning });
+                        let is_new = state.thinking_index.is_none();
+                        let index = *state.thinking_index.get_or_insert_with(|| {
+                            let index = state.next_content_index;
+                            state.next_content_index += 1;
+                            index
+                        });
+                        events.push(ProviderEvent::ThinkingDelta {
+                            index,
+                            delta: reasoning,
+                        });
+                        if is_new {
+                            events.push(ProviderEvent::ThinkingDone {
+                                index,
+                                id: None,
+                                encrypted_content: Some(field.to_owned()),
+                            });
+                        }
+                        break;
                     }
-                    break;
                 }
             }
             if let Some(calls) = delta.get("tool_calls").and_then(Value::as_array) {
@@ -1863,7 +1976,14 @@ fn append_chat_tool_delta(
     events: &mut Vec<ProviderEvent>,
 ) {
     let index = call.get("index").and_then(Value::as_u64).unwrap_or(0);
-    let tool = state.tools.entry(index).or_default();
+    let tool = state.tools.entry(index).or_insert_with(|| {
+        let content_index = state.next_content_index;
+        state.next_content_index += 1;
+        ToolAccumulator {
+            content_index,
+            ..Default::default()
+        }
+    });
     if let Some(id) = call.get("id").and_then(Value::as_str) {
         append_stream_fragment(&mut tool.id, id);
     }
@@ -1874,7 +1994,7 @@ fn append_chat_tool_delta(
     if !tool.started && (!tool.id.is_empty() || !tool.name.is_empty()) {
         tool.started = true;
         events.push(ProviderEvent::ToolCallStart {
-            index,
+            index: tool.content_index,
             id: tool.id.clone(),
             name: tool.name.clone(),
         });
@@ -1884,7 +2004,7 @@ fn append_chat_tool_delta(
     {
         tool.arguments.push_str(arguments);
         events.push(ProviderEvent::ToolCallDelta {
-            index,
+            index: tool.content_index,
             arguments_delta: arguments.to_owned(),
         });
     }
@@ -1917,14 +2037,14 @@ fn finish_chat_stream(state: &mut ChatStreamState) -> Vec<ProviderEvent> {
         }
         if !tool.started {
             events.push(ProviderEvent::ToolCallStart {
-                index,
+                index: tool.content_index,
                 id: tool.id.clone(),
                 name: tool.name.clone(),
             });
         }
         tool.done = true;
         events.push(ProviderEvent::ToolCallDone {
-            index,
+            index: tool.content_index,
             id: tool.id.clone(),
             name: tool.name.clone(),
             arguments: tool.arguments.clone(),
@@ -2022,6 +2142,10 @@ fn codex_frame_events(
         "response.output_text.delta" | "response.refusal.delta" => {
             if let Some(delta) = value.get("delta").and_then(Value::as_str) {
                 events.push(ProviderEvent::TextDelta {
+                    index: value
+                        .get("output_index")
+                        .and_then(Value::as_u64)
+                        .unwrap_or(0),
                     delta: delta.into(),
                 });
             }
@@ -2029,12 +2153,20 @@ fn codex_frame_events(
         "response.reasoning_summary_text.delta" | "response.reasoning_text.delta" => {
             if let Some(delta) = value.get("delta").and_then(Value::as_str) {
                 events.push(ProviderEvent::ThinkingDelta {
+                    index: value
+                        .get("output_index")
+                        .and_then(Value::as_u64)
+                        .unwrap_or(0),
                     delta: delta.into(),
                 });
             }
         }
         "response.reasoning_summary_part.done" => {
             events.push(ProviderEvent::ThinkingDelta {
+                index: value
+                    .get("output_index")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(0),
                 delta: "\n\n".into(),
             });
         }
@@ -2101,6 +2233,7 @@ fn codex_frame_events(
             if let Some(item) = value.get("item") {
                 match item.get("type").and_then(Value::as_str) {
                     Some("reasoning") => events.push(ProviderEvent::ThinkingDone {
+                        index,
                         id: item.get("id").and_then(Value::as_str).map(str::to_owned),
                         encrypted_content: Some(serde_json::to_string(item)?),
                     }),
@@ -2119,6 +2252,7 @@ fn codex_frame_events(
                                     .collect::<String>()
                             });
                         events.push(ProviderEvent::TextDone {
+                            index,
                             text,
                             text_signature: codex_text_signature(item),
                         });
@@ -2133,11 +2267,12 @@ fn codex_frame_events(
         "response.done" | "response.completed" | "response.incomplete" => {
             let response = value.get("response").unwrap_or(&value);
             if let Some(output) = response.get("output").and_then(Value::as_array) {
-                for item in output {
+                for (index, item) in output.iter().enumerate() {
                     if item.get("type").and_then(Value::as_str) == Some("reasoning")
                         && item.get("encrypted_content").is_some()
                     {
                         events.push(ProviderEvent::ThinkingDone {
+                            index: index as u64,
                             id: item.get("id").and_then(Value::as_str).map(str::to_owned),
                             encrypted_content: Some(serde_json::to_string(item)?),
                         });
@@ -2426,6 +2561,125 @@ fn parse_discovered_models(value: Value) -> Result<Vec<DiscoveredModel>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tool_images_follow_all_results_and_respect_current_model_capability() {
+        let image = json!({"type":"input_image","detail":"auto","image_url":"data:image/png;base64,fixture"});
+        let mut request = ProviderRequest::new(
+            "fixture",
+            vec![
+                ProviderMessage {
+                    role: MessageRole::Tool,
+                    content: vec![ContentPart::ToolResult {
+                        tool_call_id: "first".into(),
+                        output: json!([{"type":"input_text","text":"read image"},image.clone()]),
+                        is_error: false,
+                    }],
+                },
+                ProviderMessage {
+                    role: MessageRole::Tool,
+                    content: vec![ContentPart::ToolResult {
+                        tool_call_id: "second".into(),
+                        output: json!("second result"),
+                        is_error: false,
+                    }],
+                },
+            ],
+        );
+        let messages = convert_chat_messages(&request, &OpenAiCompatibility::default()).unwrap();
+        assert_eq!(messages.len(), 3);
+        assert_eq!(messages[0]["content"], "read image");
+        assert_eq!(messages[1]["tool_call_id"], "second");
+        assert_eq!(messages[2]["role"], "user");
+        assert_eq!(
+            messages[2]["content"][0]["text"],
+            "Attached image(s) from tool result:"
+        );
+        assert_eq!(
+            messages[2]["content"][1]["image_url"]["url"],
+            image["image_url"]
+        );
+        request.supports_images = false;
+        let messages = convert_chat_messages(&request, &OpenAiCompatibility::default()).unwrap();
+        assert_eq!(messages.len(), 2);
+        assert!(!serde_json::to_string(&messages).unwrap().contains("base64"));
+        let codex = convert_codex_input(&request).unwrap();
+        assert_eq!(codex[0]["output"], "read image");
+        assert!(!serde_json::to_string(&codex).unwrap().contains("base64"));
+        assert_eq!(
+            codex_tool_output(
+                &json!([{"type":"input_text","text":"first"},image.clone(),{"type":"input_text","text":"second"}]),
+                true
+            ),
+            json!([{"type":"input_text","text":"first\nsecond"},image])
+        );
+    }
+
+    #[test]
+    fn responses_parser_and_worker_keep_multiple_output_items() {
+        let items = vec![
+            json!({"type":"reasoning","id":"rs_first","summary":[{"type":"summary_text","text":"first thought"}],"encrypted_content":"first-signature"}),
+            json!({"type":"message","id":"msg_commentary","phase":"commentary","role":"assistant","content":[{"type":"output_text","text":"Checking the file","annotations":[]}]}),
+            json!({"type":"reasoning","id":"rs_second","summary":[{"type":"summary_text","text":"second thought"}],"encrypted_content":"second-signature"}),
+            json!({"type":"message","id":"msg_final","phase":"final_answer","role":"assistant","content":[{"type":"output_text","text":"Finished","annotations":[]}]}),
+        ];
+        let mut state = CodexStreamState::default();
+        let mut response = crate::response::ResponseAssembly::default();
+        for (index, item) in items.iter().enumerate() {
+            if item["type"] == "reasoning" {
+                let frame = json!({"type":"response.reasoning_summary_text.delta","output_index":index,"delta":item["summary"][0]["text"]});
+                let (events, _) = codex_frame_events(
+                    SseFrame {
+                        event: None,
+                        data: frame.to_string(),
+                    },
+                    &mut state,
+                )
+                .unwrap();
+                for event in events {
+                    response.push(event);
+                }
+            }
+            let frame =
+                json!({"type":"response.output_item.done","output_index":index,"item":item});
+            let (events, _) = codex_frame_events(
+                SseFrame {
+                    event: None,
+                    data: frame.to_string(),
+                },
+                &mut state,
+            )
+            .unwrap();
+            for event in events {
+                response.push(event);
+            }
+        }
+        let message = serde_json::to_value(response.message(
+            "openai-codex",
+            "fixture",
+            &crate::agent::ModelCost::default(),
+        ))
+        .unwrap();
+        assert_eq!(message["content"].as_array().unwrap().len(), 4);
+        for index in [0, 2] {
+            let signature: Value = serde_json::from_str(
+                message["content"][index]["thinkingSignature"]
+                    .as_str()
+                    .unwrap(),
+            )
+            .unwrap();
+            assert_eq!(signature, items[index]);
+        }
+        assert_eq!(message["content"][1]["text"], "Checking the file");
+        assert_eq!(message["content"][3]["text"], "Finished");
+        for index in [1, 3] {
+            let signature: Value =
+                serde_json::from_str(message["content"][index]["textSignature"].as_str().unwrap())
+                    .unwrap();
+            assert_eq!(signature["id"], items[index]["id"]);
+            assert_eq!(signature["phase"], items[index]["phase"]);
+        }
+    }
 
     #[test]
     fn pi_auth_schema_round_trips_without_debugging_secrets() {

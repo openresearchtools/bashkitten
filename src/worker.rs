@@ -2,18 +2,18 @@
 //! state; they communicate with it through the session's Unix socket.
 
 use crate::agent::{
-    AgentMessage, AgentQueues, ContentBlock, DeliveryKind, MessageContent, ModelCost,
-    OrderedJsonValue, SessionEntry, SessionEntryKind, StopReason, Usage, calculate_cost,
+    AgentMessage, AgentQueues, ContentBlock, DeliveryKind, MessageContent, SessionEntry,
+    SessionEntryKind,
 };
 use crate::config::AppConfig;
 use crate::models::{self, ModelInfo};
 use crate::paths::AppPaths;
 use crate::providers::{
-    CodexEndpoint, ContentPart as ProviderContent, MessageRole, NormalizedUsage,
-    OpenAiCompatibleEndpoint, ProviderClient, ProviderEndpoint, ProviderEvent, ProviderMessage,
-    ProviderRequest, StopReason as ProviderStopReason, ThinkingLevel,
-    ToolDefinition as ProviderToolDefinition,
+    CodexEndpoint, ContentPart as ProviderContent, MessageRole, OpenAiCompatibleEndpoint,
+    ProviderClient, ProviderEndpoint, ProviderMessage, ProviderRequest,
+    StopReason as ProviderStopReason, ThinkingLevel, ToolDefinition as ProviderToolDefinition,
 };
+use crate::response::{PendingToolCall, ResponseAssembly};
 use crate::session::{self, ControlReply, ControlRequest, Delivery, QueueAction, SessionHeader};
 use crate::tools::{self, ToolContext};
 use anyhow::{Context, Result, bail};
@@ -23,7 +23,6 @@ use chrono::Utc;
 use futures_util::StreamExt;
 use futures_util::future::join_all;
 use serde_json::{Map, Value, json};
-use std::collections::BTreeMap;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
@@ -58,6 +57,8 @@ struct Shared {
     events: broadcast::Sender<Value>,
     busy: AtomicBool,
     stop: AtomicBool,
+    cancellation: tools::CancellationToken,
+    replay: std::sync::Mutex<LiveReplay>,
 }
 
 impl Shared {
@@ -71,11 +72,71 @@ impl Shared {
             events,
             busy: AtomicBool::new(false),
             stop: AtomicBool::new(false),
+            cancellation: tools::CancellationToken::default(),
+            replay: std::sync::Mutex::new(LiveReplay::default()),
         }
     }
 
     fn emit(&self, event: Value) {
+        let mut replay = self.replay.lock().expect("live replay lock");
+        replay.push(&event);
         let _ = self.events.send(event);
+    }
+
+    fn stop(&self) {
+        self.stop.store(true, Ordering::SeqCst);
+        self.cancellation.cancel();
+        self.notify.notify_waiters();
+    }
+}
+
+/// Only the uncommitted turn, never the session's older JSONLs. Coalesce deltas
+/// and output updates so a long-running command does not accumulate snapshots.
+#[derive(Default)]
+struct LiveReplay {
+    events: Vec<Value>,
+}
+
+impl LiveReplay {
+    fn push(&mut self, event: &Value) {
+        let kind = event["type"].as_str().unwrap_or_default();
+        if kind == "message" {
+            self.events.retain(|value| {
+                !matches!(
+                    value["type"].as_str(),
+                    Some(
+                        "assistant_delta"
+                            | "thinking_delta"
+                            | "tool_call_start"
+                            | "tool_call_delta"
+                    )
+                )
+            });
+        }
+        if matches!(
+            kind,
+            "assistant_delta" | "thinking_delta" | "tool_call_delta"
+        ) {
+            if let Some(previous) =
+                self.events.iter_mut().rev().find(|value| {
+                    value["type"] == event["type"] && value["index"] == event["index"]
+                })
+            {
+                let mut text = previous["delta"].as_str().unwrap_or_default().to_owned();
+                text.push_str(event["delta"].as_str().unwrap_or_default());
+                previous["delta"] = Value::String(text);
+                return;
+            }
+        }
+        if matches!(kind, "tool_update" | "queue_state") {
+            self.events
+                .retain(|value| value["type"] != event["type"] || value["id"] != event["id"]);
+        }
+        if kind == "tool_end" {
+            self.events
+                .retain(|value| value["type"] != "tool_update" || value["id"] != event["id"]);
+        }
+        self.events.push(event.clone());
     }
 }
 
@@ -138,10 +199,7 @@ pub async fn run_worker(paths: AppPaths, id: String) -> Result<()> {
     let model = models::find_model(&config, &model_id, authenticated, llama_available())
         .with_context(|| format!("session model is unavailable: {model_id}"))?;
     let last_entry_id = entries.last().map(|entry| entry.id.clone());
-    let logical_messages = entries
-        .iter()
-        .flat_map(SessionEntry::context_messages)
-        .collect::<Vec<_>>();
+    let logical_messages = crate::agent::build_session_context(&entries, None);
     let messages = logical_messages
         .iter()
         .filter_map(to_provider_message)
@@ -151,6 +209,18 @@ pub async fn run_worker(paths: AppPaths, id: String) -> Result<()> {
     let listener_shared = shared.clone();
     let listener_socket = socket.clone();
     let listener = tokio::spawn(async move { listen(listener_socket, listener_shared).await });
+
+    let signal_shared = shared.clone();
+    let signals = tokio::spawn(async move {
+        let mut terminate =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
+        tokio::select! {
+            _ = terminate.recv() => {},
+            _ = tokio::signal::ctrl_c() => {},
+        }
+        signal_shared.stop();
+        Ok::<_, std::io::Error>(())
+    });
 
     wait_for_socket(&socket).await?;
     let mut runtime = Runtime {
@@ -170,27 +240,36 @@ pub async fn run_worker(paths: AppPaths, id: String) -> Result<()> {
     };
     runtime.shared.emit(json!({"type":"status","state":"idle"}));
 
-    loop {
-        if shared.stop.load(Ordering::SeqCst) {
-            break;
+    let result: Result<()> = async {
+        loop {
+            if shared.stop.load(Ordering::SeqCst) {
+                break;
+            }
+            let had_work = runtime.process_available_work().await?;
+            if had_work {
+                continue;
+            }
+            if tokio::time::timeout(Duration::from_millis(1_500), shared.notify.notified())
+                .await
+                .is_err()
+                && !runtime.has_work().await
+            {
+                break;
+            }
         }
-        let had_work = runtime.process_available_work().await?;
-        if had_work {
-            continue;
-        }
-        if tokio::time::timeout(Duration::from_millis(1_500), shared.notify.notified())
-            .await
-            .is_err()
-            && !runtime.has_work().await
-        {
-            break;
-        }
+        Ok(())
     }
+    .await;
 
-    shared.stop.store(true, Ordering::SeqCst);
+    // Cancellation, model/provider errors and shutdown use the same persistence
+    // boundary as a settled turn. Do not lose partial assistant/tool messages.
+    let persisted = runtime.flush_pending();
+    shared.stop();
     listener.abort();
+    signals.abort();
     let _ = fs::remove_file(&socket);
-    Ok(())
+    persisted?;
+    result
 }
 
 async fn wait_for_socket(path: &Path) -> Result<()> {
@@ -231,10 +310,16 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
     let request: ControlRequest = serde_json::from_str(&line)?;
     match request {
         ControlRequest::Subscribe => {
-            // Subscribe first, then acknowledge. Once the Web client receives
-            // this reply it can safely dispatch work without losing an event.
-            let mut events = shared.events.subscribe();
-            write_reply(&mut write, true, "subscribed", json!({})).await?;
+            // Snapshot and subscription share the publisher lock: no event can
+            // fall between them. Entry IDs deduplicate a concurrent disk flush.
+            let (mut events, snapshot) = {
+                let replay = shared.replay.lock().expect("live replay lock");
+                (
+                    shared.events.subscribe(),
+                    json!({"events":replay.events,"busy":shared.busy.load(Ordering::SeqCst)}),
+                )
+            };
+            write_reply(&mut write, true, "subscribed", snapshot).await?;
             while let Ok(event) = events.recv().await {
                 write
                     .write_all(serde_json::to_string(&event)?.as_bytes())
@@ -275,9 +360,10 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             write_reply(&mut write, true, "status", state).await?;
         }
         ControlRequest::Stop => {
-            shared.stop.store(true, Ordering::SeqCst);
-            shared.notify.notify_waiters();
             write_reply(&mut write, true, "stopping", json!({})).await?;
+            // Put the acknowledgment on the socket before waking an idle main
+            // loop, which may otherwise exit the process before replying.
+            shared.stop();
         }
         ControlRequest::ChangeModel { model, thinking } => {
             *shared.model_change.lock().await = Some(PendingModel { model, thinking });
@@ -391,7 +477,10 @@ impl Runtime {
         }
         let change = { self.shared.model_change.lock().await.take() };
         if let Some(change) = change {
-            self.apply_model_change(change).await?;
+            if let Err(error) = self.apply_model_change(change).await {
+                self.shared
+                    .emit(json!({"type":"model_error","message":error.to_string()}));
+            }
             did_work = true;
         }
         let drained = self.shared.queues.lock().await.drain_at_boundary(true);
@@ -575,140 +664,44 @@ impl Runtime {
             self.shared.emit(json!({"type":"turn_start"}));
             let request = self.provider_request()?;
             let endpoint = self.endpoint()?;
-            let stream = self.provider.stream(&endpoint, request).await;
-            let mut stream = match stream {
-                Ok(stream) => stream,
-                Err(error) => {
-                    self.push_provider_error(error.to_string());
-                    return Ok(());
+            let mut response = ResponseAssembly::default();
+            let cancellation = self.shared.cancellation.clone();
+            let stream = tokio::select! {
+                biased;
+                _ = cancellation.cancelled() => { response.abort(); None }
+                result = self.provider.stream(&endpoint, request) => match result {
+                    Ok(stream) => Some(stream),
+                    Err(error) => { response.fail(error.to_string()); None }
                 }
             };
-            let mut text = String::new();
-            let mut thinking = String::new();
-            let mut thinking_signature = None;
-            let mut response_id = None;
-            let mut text_signature = None;
-            let mut usage = NormalizedUsage::default();
-            let mut calls: BTreeMap<u64, PendingToolCall> = BTreeMap::new();
-            let mut stop_reason = ProviderStopReason::Stop;
-            let mut raw_stop_reason = None;
-
-            while let Some(event) = stream.next().await {
-                match event {
-                    Ok(ProviderEvent::Start { response_id: value }) => response_id = value,
-                    Ok(ProviderEvent::TextDelta { delta }) => {
-                        text.push_str(&delta);
-                        self.shared
-                            .emit(json!({"type":"assistant_delta","delta":delta}));
-                    }
-                    Ok(ProviderEvent::TextDone {
-                        text: final_text,
-                        text_signature: signature,
-                    }) => {
-                        if let Some(final_text) = final_text {
-                            text = final_text;
+            if let Some(mut stream) = stream {
+                loop {
+                    let event = tokio::select! {
+                        biased;
+                        _ = cancellation.cancelled() => { response.abort(); break; }
+                        event = stream.next() => event
+                    };
+                    match event {
+                        Some(Ok(event)) => {
+                            if let Some(event) = response.push(event) {
+                                self.shared.emit(event);
+                            }
                         }
-                        text_signature = signature;
-                    }
-                    Ok(ProviderEvent::ThinkingDelta { delta }) => {
-                        thinking.push_str(&delta);
-                        self.shared
-                            .emit(json!({"type":"thinking_delta","delta":delta}));
-                    }
-                    Ok(ProviderEvent::ThinkingDone {
-                        encrypted_content, ..
-                    }) => thinking_signature = encrypted_content,
-                    Ok(ProviderEvent::ToolCallStart { index, id, name }) => {
-                        calls.insert(
-                            index,
-                            PendingToolCall {
-                                id,
-                                name,
-                                arguments: String::new(),
-                            },
-                        );
-                    }
-                    Ok(ProviderEvent::ToolCallDelta {
-                        index,
-                        arguments_delta,
-                    }) => {
-                        if let Some(call) = calls.get_mut(&index) {
-                            call.arguments.push_str(&arguments_delta);
+                        Some(Err(error)) => {
+                            response.fail(error.to_string());
+                            break;
                         }
-                    }
-                    Ok(ProviderEvent::ToolCallDone {
-                        index,
-                        id,
-                        name,
-                        arguments,
-                    }) => {
-                        calls.insert(
-                            index,
-                            PendingToolCall {
-                                id,
-                                name,
-                                arguments,
-                            },
-                        );
-                    }
-                    Ok(ProviderEvent::Usage { usage: value }) => usage = value,
-                    Ok(ProviderEvent::Done { reason, raw_reason }) => {
-                        stop_reason = reason;
-                        raw_stop_reason = raw_reason;
-                    }
-                    Err(error) => {
-                        self.push_provider_error(error.to_string());
-                        return Ok(());
+                        None => break,
                     }
                 }
             }
-
-            let mut content = Vec::new();
-            if !thinking.is_empty() || thinking_signature.is_some() {
-                content.push(ContentBlock::Thinking {
-                    thinking,
-                    thinking_signature,
-                    redacted: None,
-                });
-            }
-            if !text.is_empty() {
-                content.push(ContentBlock::Text {
-                    text,
-                    text_signature,
-                });
-            }
-            for call in calls.values() {
-                let arguments =
-                    serde_json::from_str::<Value>(&call.arguments).unwrap_or_else(|_| json!({}));
-                content.push(ContentBlock::ToolCall {
-                    id: call.id.clone(),
-                    name: call.name.clone(),
-                    arguments: OrderedJsonValue::from(arguments),
-                    thought_signature: None,
-                    namespace: None,
-                });
-            }
-            let message = AgentMessage::Assistant {
-                content,
-                api: if self.header.provider == "openai-codex" {
-                    "openai-codex-responses"
-                } else {
-                    "openai-completions"
-                }
-                .into(),
-                provider: self.header.provider.clone(),
-                model: self.header.model_id.clone(),
-                response_model: None,
-                response_id,
-                diagnostics: None,
-                usage: normalized_usage(&usage, &self.model.cost),
-                stop_reason: map_stop_reason(&stop_reason),
-                deferred: None,
-                error_message: None,
-                raw_stop_reason,
-                end_turn: None,
-                timestamp: Utc::now().timestamp_millis(),
-            };
+            let message = response.message(
+                &self.header.provider,
+                &self.header.model_id,
+                &self.model.cost,
+            );
+            let stop_reason = response.stop_reason.clone();
+            let calls = response.calls;
             self.logical_messages.push(message.clone());
             if let Some(provider) = to_provider_message(&message) {
                 self.messages.push(provider);
@@ -723,7 +716,10 @@ impl Runtime {
 
             if matches!(
                 stop_reason,
-                ProviderStopReason::Length | ProviderStopReason::Error
+                ProviderStopReason::Length
+                    | ProviderStopReason::Error
+                    | ProviderStopReason::Aborted
+                    | ProviderStopReason::ContentFilter
             ) {
                 break;
             }
@@ -752,35 +748,9 @@ impl Runtime {
         Ok(())
     }
 
-    fn push_provider_error(&mut self, error: String) {
-        let message = AgentMessage::Assistant {
-            content: Vec::new(),
-            api: String::new(),
-            provider: self.header.provider.clone(),
-            model: self.header.model_id.clone(),
-            response_model: None,
-            response_id: None,
-            diagnostics: None,
-            usage: Usage::default(),
-            stop_reason: StopReason::Error,
-            deferred: None,
-            error_message: Some(error.clone()),
-            raw_stop_reason: None,
-            end_turn: None,
-            timestamp: Utc::now().timestamp_millis(),
-        };
-        self.logical_messages.push(message.clone());
-        let entry = self.entry(SessionEntryKind::Message {
-            message: message.clone(),
-        });
-        let entry_id = entry.id.clone();
-        self.pending_entries.push(entry);
-        self.shared
-            .emit(json!({"type":"message","message":message,"entryId":entry_id,"error":error}));
-    }
-
     async fn execute_tools(&mut self, calls: Vec<PendingToolCall>) -> Result<()> {
         let mut context = ToolContext::new(&self.header.cwd);
+        context.cancellation = self.shared.cancellation.clone();
         context.model_supports_images = self.model.input.iter().any(|input| input == "image");
         context
             .session_environment
@@ -814,9 +784,23 @@ impl Runtime {
         }
         let futures = calls.into_iter().map(|call| {
             let context = context.clone();
+            let shared = self.shared.clone();
             async move {
                 let arguments = serde_json::from_str(&call.arguments).unwrap_or_else(|_| json!({}));
-                let result = tools::execute_tool(&call.name, arguments, &context).await;
+                let update_shared = shared.clone();
+                let update_id = call.id.clone();
+                let update_name = call.name.clone();
+                let on_update = move |partial: tools::ToolResult| {
+                    update_shared.emit(json!({"type":"tool_update","id":update_id,"name":update_name,"partialResult":partial}));
+                };
+                let result = tools::execute_tool_with_updates(&call.name, arguments, &context, Some(&on_update)).await;
+                let (output, is_error) = match &result {
+                    Ok(value) => (serde_json::to_value(value).expect("tool result"), false),
+                    Err(error) => (json!({"content":[{"type":"text","text":error.to_string()}]}), true),
+                };
+                // Render each completion immediately, but commit tool-result
+                // messages below in call order, as Pi's parallel loop does.
+                shared.emit(json!({"type":"tool_end","id":call.id,"name":call.name,"result":output,"isError":is_error}));
                 (call, result)
             }
         });
@@ -870,6 +854,7 @@ impl Runtime {
     fn provider_request(&self) -> Result<ProviderRequest> {
         let thinking = ThinkingLevel::from_str(&self.thinking)?;
         let mut request = ProviderRequest::new(&self.header.model_id, self.messages.clone());
+        request.supports_images = self.model.input.iter().any(|input| input == "image");
         request.system_prompt = system_prompt(&self.header.cwd);
         request.tools = tools::tool_definitions()
             .into_iter()
@@ -971,39 +956,13 @@ impl Runtime {
             .collect::<std::result::Result<Vec<_>, _>>()?;
         session::append_values(&self.paths, &self.id, &values)?;
         self.entries.append(&mut self.pending_entries);
+        self.shared
+            .replay
+            .lock()
+            .expect("live replay lock")
+            .events
+            .clear();
         Ok(())
-    }
-}
-
-#[derive(Clone)]
-struct PendingToolCall {
-    id: String,
-    name: String,
-    arguments: String,
-}
-
-fn normalized_usage(usage: &NormalizedUsage, model_cost: &ModelCost) -> Usage {
-    let mut normalized = Usage {
-        input: usage.input_tokens,
-        output: usage.output_tokens,
-        cache_read: usage.cache_read_tokens,
-        cache_write: usage.cache_write_tokens,
-        cache_write_1h: None,
-        reasoning: (usage.reasoning_tokens > 0).then_some(usage.reasoning_tokens),
-        total_tokens: usage.total_tokens,
-        cost: Default::default(),
-    };
-    calculate_cost(&mut normalized, model_cost);
-    normalized
-}
-
-fn map_stop_reason(reason: &ProviderStopReason) -> StopReason {
-    match reason {
-        ProviderStopReason::Stop => StopReason::Stop,
-        ProviderStopReason::ToolUse => StopReason::ToolUse,
-        ProviderStopReason::Length => StopReason::Length,
-        ProviderStopReason::Error | ProviderStopReason::ContentFilter => StopReason::Error,
-        ProviderStopReason::Unknown => StopReason::Stop,
     }
 }
 
@@ -1208,4 +1167,254 @@ fn system_prompt(cwd: &Path) -> String {
         guidelines.join("\n"),
         cwd.display()
     )
+}
+
+#[cfg(test)]
+mod runtime_tests {
+    use super::*;
+    use crate::config::{CompatibleAuth, CompatibleProvider, ModelPreset};
+    use axum::{Router, body::Body, response::Response, routing::post};
+    use std::convert::Infallible;
+    use tokio::io::Lines;
+    use tokio::net::unix::OwnedReadHalf;
+
+    async fn fixture_server(
+        body: &'static str,
+        keep_open: bool,
+    ) -> (String, tokio::task::JoinHandle<()>) {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("http://{}/v1", listener.local_addr().unwrap());
+        let app = Router::new().route(
+            "/v1/chat/completions",
+            post(move || async move {
+                let output = async_stream::stream! {
+                    yield Ok::<_, Infallible>(body);
+                    if keep_open { std::future::pending::<()>().await; }
+                };
+                Response::builder()
+                    .header("content-type", "text/event-stream")
+                    .body(Body::from_stream(output))
+                    .unwrap()
+            }),
+        );
+        let task = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        (url, task)
+    }
+
+    fn fixture_paths(root: &Path, url: &str) -> AppPaths {
+        let paths = AppPaths {
+            config: root.join("config"),
+            data: root.join("data"),
+            runtime: root.join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let mut config = AppConfig::default();
+        config.default_cwd = root.to_owned();
+        config.default_model = "fixture/model".into();
+        config.default_thinking = "off".into();
+        config.compatible_providers.push(CompatibleProvider {
+            id: "fixture".into(),
+            name: "Offline test server".into(),
+            base_url: url.into(),
+            auth: CompatibleAuth::None,
+            models: vec![ModelPreset {
+                id: "model".into(),
+                name: "Fixture".into(),
+                ..Default::default()
+            }],
+        });
+        config.save(&paths).unwrap();
+        paths
+    }
+
+    async fn worker(paths: &AppPaths, cwd: &Path) -> (String, tokio::task::JoinHandle<Result<()>>) {
+        let id = session::create(
+            paths,
+            &session::NewSession {
+                cwd: cwd.to_owned(),
+                model: "fixture/model".into(),
+                thinking: "off".into(),
+                prompt: "runtime fixture".into(),
+                attachments: vec![],
+                parent: None,
+            },
+        )
+        .unwrap();
+        let run_paths = paths.clone();
+        let run_id = id.clone();
+        let task = tokio::spawn(async move { run_worker(run_paths, run_id).await });
+        wait_for_socket(&session::control_socket(paths, &id).unwrap())
+            .await
+            .unwrap();
+        (id, task)
+    }
+
+    async fn connect(
+        paths: &AppPaths,
+        id: &str,
+        request: ControlRequest,
+    ) -> Lines<BufReader<OwnedReadHalf>> {
+        let connection = UnixStream::connect(session::control_socket(paths, id).unwrap())
+            .await
+            .unwrap();
+        let (read, mut write) = connection.into_split();
+        write
+            .write_all(serde_json::to_string(&request).unwrap().as_bytes())
+            .await
+            .unwrap();
+        write.write_all(b"\n").await.unwrap();
+        BufReader::new(read).lines()
+    }
+
+    async fn next(lines: &mut Lines<BufReader<OwnedReadHalf>>) -> Value {
+        let line = tokio::time::timeout(Duration::from_secs(5), lines.next_line())
+            .await
+            .expect("worker event timed out")
+            .unwrap()
+            .expect("worker stream closed");
+        serde_json::from_str(&line).unwrap()
+    }
+
+    async fn until(
+        lines: &mut Lines<BufReader<OwnedReadHalf>>,
+        predicate: impl Fn(&Value) -> bool,
+    ) -> Value {
+        loop {
+            let value = next(lines).await;
+            if predicate(&value) {
+                return value;
+            }
+        }
+    }
+
+    async fn prompt(paths: &AppPaths, id: &str) {
+        let mut response = connect(
+            paths,
+            id,
+            ControlRequest::Send {
+                delivery: Delivery::Queue,
+                content: "test".into(),
+                attachments: vec![],
+                source_session: None,
+            },
+        )
+        .await;
+        assert_eq!(next(&mut response).await["ok"], true);
+    }
+
+    async fn stop(paths: &AppPaths, id: &str, task: tokio::task::JoinHandle<Result<()>>) {
+        let mut response = connect(paths, id, ControlRequest::Stop).await;
+        assert_eq!(next(&mut response).await["ok"], true);
+        tokio::time::timeout(Duration::from_secs(5), task)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn stop_saves_partial_response_and_late_subscriber_recovers_memory() {
+        let (url, server) = fixture_server("data: {\"id\":\"fixture\",\"choices\":[{\"delta\":{\"reasoning_content\":\"working thought\",\"content\":\"partial answer\"}}]}\n\n", true).await;
+        let root = tempfile::tempdir().unwrap();
+        let paths = fixture_paths(root.path(), &url);
+        let (id, task) = worker(&paths, root.path()).await;
+        let mut events = connect(&paths, &id, ControlRequest::Subscribe).await;
+        next(&mut events).await;
+        prompt(&paths, &id).await;
+        until(&mut events, |value| value["type"] == "thinking_delta").await;
+
+        let mut late = connect(&paths, &id, ControlRequest::Subscribe).await;
+        let snapshot = next(&mut late).await;
+        assert_eq!(snapshot["data"]["busy"], true);
+        assert!(
+            snapshot["data"]["events"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|event| event["type"] == "assistant_delta"
+                    && event["delta"] == "partial answer")
+        );
+        assert!(
+            load_current_entries(&paths.session_dir(&id))
+                .unwrap()
+                .is_empty(),
+            "live deltas must not be written to JSONL"
+        );
+
+        stop(&paths, &id, task).await;
+        let entries = load_current_entries(&paths.session_dir(&id)).unwrap();
+        let value = serde_json::to_value(entries.last().unwrap()).unwrap();
+        assert_eq!(value["message"]["stopReason"], "aborted");
+        let content = value["message"]["content"].as_array().unwrap();
+        assert!(
+            content
+                .iter()
+                .any(|block| block["text"] == "partial answer")
+        );
+        assert!(
+            content
+                .iter()
+                .any(|block| block["thinking"] == "working thought")
+        );
+        server.abort();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn bash_streams_before_completion_cancels_and_does_not_stop_sibling() {
+        let (url, server) = fixture_server("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call-fixture\",\"function\":{\"name\":\"bash\",\"arguments\":\"{\\\"command\\\":\\\"printf early-output; sleep 60\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n", false).await;
+        let root = tempfile::tempdir().unwrap();
+        let paths = fixture_paths(root.path(), &url);
+        let (id, task) = worker(&paths, root.path()).await;
+        let (sibling, sibling_task) = worker(&paths, root.path()).await;
+        let mut events = connect(&paths, &id, ControlRequest::Subscribe).await;
+        next(&mut events).await;
+        let mut sibling_events = connect(&paths, &sibling, ControlRequest::Subscribe).await;
+        next(&mut sibling_events).await;
+        prompt(&paths, &id).await;
+        prompt(&paths, &sibling).await;
+        until(&mut events, |value| {
+            value["type"] == "tool_update" && value.to_string().contains("early-output")
+        })
+        .await;
+        until(&mut sibling_events, |value| {
+            value["type"] == "tool_update" && value.to_string().contains("early-output")
+        })
+        .await;
+        assert!(
+            load_current_entries(&paths.session_dir(&id))
+                .unwrap()
+                .is_empty()
+        );
+        stop(&paths, &id, task).await;
+        assert!(
+            !sibling_task.is_finished(),
+            "stopping one worker must not stop another"
+        );
+        let entries = load_current_entries(&paths.session_dir(&id)).unwrap();
+        let value = serde_json::to_value(entries.last().unwrap()).unwrap();
+        assert_eq!(value["message"]["role"], "toolResult");
+        assert_eq!(value["message"]["isError"], true);
+        assert!(value.to_string().contains("early-output"));
+        assert!(value.to_string().contains("aborted"));
+        stop(&paths, &sibling, sibling_task).await;
+        server.abort();
+    }
+
+    #[test]
+    fn live_replay_coalesces_deltas_and_replaces_partial_tools() {
+        let mut replay = LiveReplay::default();
+        replay.push(&json!({"type":"assistant_delta","index":1,"delta":"a"}));
+        replay.push(&json!({"type":"assistant_delta","index":1,"delta":"b"}));
+        assert_eq!(replay.events.len(), 1);
+        assert_eq!(replay.events[0]["delta"], "ab");
+        replay.push(&json!({"type":"message","entryId":"saved"}));
+        assert_eq!(replay.events.len(), 1);
+        for number in 0..100 {
+            replay.push(&json!({"type":"tool_update","id":"call","partialResult":number}));
+        }
+        assert_eq!(replay.events.len(), 2);
+        assert_eq!(replay.events[1]["partialResult"], 99);
+    }
 }

@@ -675,17 +675,21 @@ pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {
     bail!("Agent session did not create its control socket")
 }
 
-pub fn stop_worker(id: &str) -> Result<()> {
+pub fn stop_worker(paths: &AppPaths, id: &str) -> Result<()> {
     validate_id(id)?;
-    let status = Command::new("systemctl")
-        .args([
-            "--user",
-            "stop",
-            &format!("bashkitten-session-{id}.service"),
-        ])
-        .status()?;
-    if !status.success() {
-        bail!("Could not stop session {id}");
+    let socket = control_socket(paths, id)?;
+    if !socket_is_live(&socket) {
+        return Ok(());
+    }
+    send(paths, id, &ControlRequest::Stop)?;
+    let started = Instant::now();
+    while socket_is_live(&socket) {
+        if started.elapsed() >= Duration::from_secs(30) {
+            bail!(
+                "Session {id} has not finished saving after cancellation; it has not been force-killed"
+            );
+        }
+        std::thread::sleep(Duration::from_millis(25));
     }
     Ok(())
 }
