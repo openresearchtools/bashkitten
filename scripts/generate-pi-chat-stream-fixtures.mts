@@ -12,14 +12,21 @@ const cases:any[]=[];
 const chunk=(delta:any={},reason:any=null,extra:any={})=>({id:'response-id',model:'fixture',choices:[{index:0,delta,finish_reason:reason}],...extra});
 const call=(index:any,id:any,name:any,args:any)=>({index,id,function:{name,arguments:args}});
 async function add(name:string,chunks:any[],model:any={},done=true){
- model={...base,...model};const payload=chunks.map(c=>`data: ${JSON.stringify(c)}\n\n`).join('')+(done?'data: [DONE]\n\n':'');
+ model={...base,...model};const payload=chunks.map(c=>`data: ${(c.raw??JSON.stringify(c))}\n\n`).join('')+(done?'data: [DONE]\n\n':'');
  const headers:any[]=[];const events:any[]=[];
  const result=stream(model,{systemPrompt:'System',messages:[{role:'user',content:'Test',timestamp:1}]},{apiKey:'fixture-key',sessionId:'fixture-session',fetch:async(url:any,options:any)=>{headers.push(Object.fromEntries(new Headers(options.headers)));return new Response(payload,{headers:{'content-type':'text/event-stream'}});},maxRetries:0});
  for await(const event of result){events.push({type:event.type,...(event.contentIndex!==undefined?{contentIndex:event.contentIndex}:{}),...(event.delta!==undefined?{delta:event.delta}:{})});}
  const message=await result.result();delete message.timestamp;
  cases.push({name,model,chunks,done,expected:message,events,headers:headers[0]});
 }
-for(const reason of ['stop','end','length','tool_calls','function_call','content_filter','network_error','error','max_tokens','unknown'])await add(`finish-${reason}`,[chunk({content:'answer'},reason)]);
+await add('tool-literal-surrogate',[chunk({tool_calls:[call(0,'a','read','{"path":"\ud83d')]},'tool_calls')]);
+await add('tool-split-surrogate',[chunk({tool_calls:[call(0,'a','read','{"path":"\ud83d')]}),chunk({tool_calls:[call(0,'a','read','\ude00"}')]},'tool_calls')]);
+await add('text-split-surrogate' ,[chunk({content:'\ud83d'}),chunk({content:'\ude00'},'stop')]);
+await add('thinking-split-surrogate',[chunk({reasoning:'\ud83d'}),chunk({reasoning:'\ude00'},'stop')]);
+await add('malformed-before-output' ,[{raw:'{broken'}]);
+await add('malformed-after-output',[chunk({content:'retained'}),{raw:'{"a":}'}]);
+await add('error-object',[{error:{message:'Denied',code:'fixture_error'}}]);
+for(const reason of ['stop' ,'end','length','tool_calls','function_call','content_filter','network_error','error','max_tokens','unknown'])await add(`finish-${reason}`,[chunk({content:'answer'},reason)]);
 await add('missing-finish',[chunk({content:'partial'})]);
 await add('missing-finish-eof',[chunk({content:'partial'})],{},false);
 await add('finish-optional',[chunk({content:'answer'})],{compat:{supportsFinishReason:false}});
@@ -43,5 +50,5 @@ for(let i=0;i<fragments.length;i++)await add(`partial-args-${i}`,[chunk({tool_ca
 for(const usage of [{prompt_tokens:100,completion_tokens:20,total_tokens:999},{prompt_tokens:100,completion_tokens:20,prompt_cache_hit_tokens:40},{prompt_tokens:100,completion_tokens:20,cached_tokens:30},{prompt_tokens:100,completion_tokens:20,cached_tokens:30,prompt_cache_hit_tokens:40,prompt_tokens_details:{cached_tokens:0,cache_write_tokens:5},completion_tokens_details:{reasoning_tokens:0}},{prompt_tokens:10,completion_tokens:5,prompt_tokens_details:{cached_tokens:20,cache_write_tokens:3}}])await add(`usage-${cases.length}`,[chunk({content:'answer'},'stop',{usage})]);
 await add('choice-usage',[{id:'a',choices:[{delta:{content:'answer'},finish_reason:'stop',usage:{prompt_tokens:100,completion_tokens:20,cached_tokens:30}}]}]);
 await add('usage-after-finish',[chunk({content:'answer'},'stop'),{choices:[],usage:{prompt_tokens:100,completion_tokens:20}}]);
-const jsonCases=['',' ','null','false','123','[1,2]','{"a":true}','{"a":"x\\q"}',...fragments,'{"a":nul','{"a":fals','{"a":tru','{"a":1e+','{"a":1.','{"a":"x\\','{"a":"x\\u12','{"a":1, "b"','{"a":[{"b":2},'].map(input=>({input,expected:parseStreamingJson(input)}));
+const jsonCases=['{"a":"\ud83d','{"\ud800":"\udc00','{"a":"\ud800","b":"\\udb80\\udc00','' ,' ','null','false','123','[1,2]','{"a":true}','{"a":"x\\q"}',...fragments,'{"a":nul','{"a":fals','{"a":tru','{"a":1e+','{"a":1.','{"a":"x\\','{"a":"x\\u12','{"a":1, "b"','{"a":[{"b":2},'].map(input=>({input,expected:parseStreamingJson(input)}));
 writeFileSync(process.argv[2],JSON.stringify({pin,cases,jsonCases},null,2)+'\n');console.log(`Captured ${cases.length} streams and ${jsonCases.length} JSON cases from pinned Pi; no network.`);

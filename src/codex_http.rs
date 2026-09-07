@@ -168,7 +168,7 @@ pub async fn send(
     request: &ProviderRequest,
     secrets: &[String],
 ) -> Result<Response> {
-    let json = serde_json::to_vec(&body)?;
+    let json = crate::lossless_json::to_vec(&body)?;
     let bytes = match zstd::bulk::compress(&json, 3) {
         Ok(compressed) => {
             headers.insert(

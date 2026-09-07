@@ -1,19 +1,23 @@
 //! Pinned ai/src/utils/validation.ts and TypeBox 1.x conversion for the fixed
 //! seven built-in schemas (objects, arrays, strings, numbers and booleans).
+use crate::lossless_json::{self, JsString};
 use crate::tools::{ToolError, tool_definitions};
+fn is_string(value: &Value) -> bool {
+    JsString::from_value(value).is_some()
+}
 use serde_json::{Value, json};
 
 fn single_edit(value: &Value) -> bool {
-    value.get("oldText").is_some_and(Value::is_string)
-        && value.get("newText").is_some_and(Value::is_string)
+    lossless_json::object_get(value, "oldText").is_some_and(is_string)
+        && lossless_json::object_get(value, "newText").is_some_and(is_string)
 }
 fn prepare_edit(mut value: Value) -> Value {
-    let Some(object) = value.as_object_mut() else {
+    if !value.is_object() || is_string(&value) {
         return value;
-    };
-    if let Some(edits) = object.get_mut("edits") {
-        if let Some(text) = edits.as_str() {
-            if let Ok(parsed) = serde_json::from_str::<Value>(text) {
+    }
+    if let Some(edits) = lossless_json::object_get_mut(&mut value, "edits") {
+        if let Some(text) = JsString::from_value(edits) {
+            if let Ok(parsed) = lossless_json::from_js_str::<Value>(&text) {
                 if parsed.is_array() {
                     *edits = parsed;
                 } else if single_edit(&parsed) {
@@ -24,18 +28,15 @@ fn prepare_edit(mut value: Value) -> Value {
             *edits = json!([edits.take()]);
         }
     }
-    if object.get("oldText").is_some_and(Value::is_string)
-        && object.get("newText").is_some_and(Value::is_string)
-    {
-        let old = object.remove("oldText").unwrap();
-        let new = object.remove("newText").unwrap();
-        let mut edits = object
-            .get("edits")
+    if single_edit(&value) {
+        let old = lossless_json::object_remove(&mut value, "oldText").unwrap();
+        let new = lossless_json::object_remove(&mut value, "newText").unwrap();
+        let mut edits = lossless_json::object_get(&value, "edits")
             .and_then(Value::as_array)
             .cloned()
             .unwrap_or_default();
         edits.push(json!({"oldText":old,"newText":new}));
-        object.insert("edits".into(), Value::Array(edits));
+        lossless_json::object_insert(&mut value, "edits", Value::Array(edits));
     }
     value
 }
@@ -65,14 +66,14 @@ fn number(value: &str) -> Option<f64> {
 fn normalize_and_convert(value: &mut Value, schema: &Value) {
     match schema["type"].as_str().unwrap_or("") {
         "object" => {
-            if let Some(object) = value.as_object_mut() {
+            if value.is_object() && !is_string(value) {
                 let required = schema["required"].as_array();
                 for (key, property) in schema["properties"].as_object().unwrap() {
-                    if object.get(key) == Some(&Value::Null)
+                    if lossless_json::object_get(value, key) == Some(&Value::Null)
                         && !required.is_some_and(|keys| keys.iter().any(|v| v == key))
                     {
-                        object.remove(key);
-                    } else if let Some(value) = object.get_mut(key) {
+                        lossless_json::object_remove(value, key);
+                    } else if let Some(value) = lossless_json::object_get_mut(value, key) {
                         normalize_and_convert(value, property);
                     }
                 }
@@ -127,9 +128,9 @@ fn normalize_and_convert(value: &mut Value, schema: &Value) {
 fn validate(value: &Value, schema: &Value, path: &str, errors: &mut Vec<String>) {
     let kind = schema["type"].as_str().unwrap();
     let valid = match kind {
-        "object" => value.is_object(),
+        "object" => value.is_object() && !is_string(value),
         "array" => value.is_array(),
-        "string" => value.is_string(),
+        "string" => is_string(value),
         "number" => value.is_number(),
         "boolean" => value.is_boolean(),
         _ => false,
@@ -146,13 +147,13 @@ fn validate(value: &Value, schema: &Value, path: &str, errors: &mut Vec<String>)
             format!("{path}.{key}")
         }
     };
-    if let Some(object) = value.as_object() {
+    if kind == "object" {
         let missing: Vec<_> = schema["required"]
             .as_array()
             .into_iter()
             .flatten()
             .filter_map(Value::as_str)
-            .filter(|key| !object.contains_key(*key))
+            .filter(|key| lossless_json::object_get(value, key).is_none())
             .collect();
         if let Some(first) = missing.first() {
             errors.push(format!(
@@ -162,11 +163,13 @@ fn validate(value: &Value, schema: &Value, path: &str, errors: &mut Vec<String>)
             ));
         }
         for (key, property) in schema["properties"].as_object().unwrap() {
-            if let Some(value) = object.get(key) {
+            if let Some(value) = lossless_json::object_get(value, key) {
                 validate(value, property, &child(key), errors);
             }
         }
-    } else if let Some(items) = value.as_array() {
+    } else if kind == "array"
+        && let Some(items) = value.as_array()
+    {
         for (i, value) in items.iter().enumerate() {
             validate(value, &schema["items"], &child(&i.to_string()), errors);
         }

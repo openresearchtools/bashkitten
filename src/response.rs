@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 pub struct PendingToolCall {
     pub id: String,
     pub name: String,
-    pub arguments: String,
+    pub arguments: crate::lossless_json::JsString,
 }
 
 #[derive(Clone)]
@@ -30,7 +30,7 @@ pub struct ResponseAssembly {
     usage: NormalizedUsage,
     pub stop_reason: StopReason,
     raw_stop_reason: Option<String>,
-    error: Option<String>,
+    error: Option<crate::lossless_json::JsString>,
     timestamp: i64,
 }
 
@@ -58,14 +58,14 @@ impl ResponseAssembly {
     pub fn error_message(&self) -> Option<&str> {
         self.error.as_deref()
     }
-    pub fn fail(&mut self, error: String) {
+    pub fn fail(&mut self, error: impl Into<crate::lossless_json::JsString>) {
         self.stop_reason = StopReason::Error;
-        self.error = Some(error);
+        self.error = Some(error.into());
     }
 
     pub fn abort(&mut self) {
         self.stop_reason = StopReason::Aborted;
-        self.error = Some(self.abort_message.clone());
+        self.error = Some(self.abort_message.clone().into());
     }
 
     pub fn push(&mut self, event: ProviderEvent) -> Option<Value> {
@@ -79,7 +79,9 @@ impl ResponseAssembly {
                         PendingToolCall {
                             id: block["id"].as_str().unwrap_or_default().into(),
                             name: block["name"].as_str().unwrap_or_default().into(),
-                            arguments: block["arguments"].to_string(),
+                            arguments: crate::lossless_json::to_string(&block["arguments"])
+                                .expect("tool arguments")
+                                .into(),
                         },
                     );
                 }
@@ -128,7 +130,7 @@ impl ResponseAssembly {
                     .entry(index)
                     .or_insert_with(|| ContentBlock::text(""))
                 {
-                    text.push_str(&delta);
+                    text.push_js(&delta);
                 }
                 return Some(json!({"type":"assistant_delta","index":index,"delta":delta}));
             }
@@ -156,7 +158,7 @@ impl ResponseAssembly {
                 if let ContentBlock::Thinking { thinking, .. } =
                     self.blocks.entry(index).or_insert_with(empty_thinking)
                 {
-                    thinking.push_str(&delta);
+                    thinking.push_js(&delta);
                 }
                 return Some(json!({"type":"thinking_delta","index":index,"delta":delta}));
             }
@@ -178,7 +180,7 @@ impl ResponseAssembly {
                     PendingToolCall {
                         id: id.clone(),
                         name: name.clone(),
-                        arguments: String::new(),
+                        arguments: String::new().into(),
                     },
                 );
                 self.tool_block(index);
@@ -189,7 +191,7 @@ impl ResponseAssembly {
                 arguments_delta,
             } => {
                 if let Some(call) = self.calls.get_mut(&index) {
-                    call.arguments.push_str(&arguments_delta);
+                    call.arguments.push_js(&arguments_delta);
                 }
                 self.tool_block(index);
                 return Some(
@@ -228,9 +230,9 @@ impl ResponseAssembly {
                 ContentBlock::ToolCall {
                     id: call.id.clone(),
                     name: call.name.clone(),
-                    arguments: OrderedJsonValue::from(crate::streaming_json::parse_streaming_json(
-                        &call.arguments,
-                    )),
+                    arguments: OrderedJsonValue::from(
+                        crate::streaming_json::parse_streaming_json_js(&call.arguments),
+                    ),
                     thought_signature: None,
                     namespace: None,
                     extra: Default::default(),
@@ -283,7 +285,7 @@ impl ResponseAssembly {
 
 fn empty_thinking() -> ContentBlock {
     ContentBlock::Thinking {
-        thinking: String::new(),
+        thinking: String::new().into(),
         thinking_signature: None,
         redacted: None,
     }

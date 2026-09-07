@@ -1,0 +1,356 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "cases": [
+    {
+      "name": "cache-without-retained-assistant",
+      "omitted": [
+        {
+          "type": "message",
+          "id": "before",
+          "parentId": null,
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "stopReason": "stop",
+            "timestamp": 0,
+            "usage": {
+              "input": 8,
+              "output": 1,
+              "cacheRead": 24,
+              "cacheWrite": 0,
+              "totalTokens": 33,
+              "cost": {
+                "input": 0.1,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0.1
+              }
+            }
+          }
+        }
+      ],
+      "retained": [
+        {
+          "type": "message",
+          "id": "user",
+          "parentId": "before",
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "next turn",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "compact",
+          "parentId": "user",
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "summary": "summary",
+          "firstKeptEntryId": "user",
+          "tokensBefore": 1000,
+          "usage": {
+            "input": 50,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 51,
+            "cost": {
+              "input": 0.0001,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0001
+            }
+          }
+        }
+      ],
+      "totals": {
+        "input": 58,
+        "output": 2,
+        "cacheRead": 24,
+        "cacheWrite": 0,
+        "cost": 0.10010000000000001
+      },
+      "text": "↑58 ↓2 R24 CH75.0% $0.100 ?/2.0k (auto)"
+    },
+    {
+      "name": "zero-usage-clears-cache",
+      "omitted": [
+        {
+          "type": "message",
+          "id": "old",
+          "parentId": null,
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "stopReason": "stop",
+            "timestamp": 0,
+            "usage": {
+              "input": 8,
+              "output": 1,
+              "cacheRead": 24,
+              "cacheWrite": 0,
+              "totalTokens": 33,
+              "cost": {
+                "input": 0.1,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0.1
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "id": "before",
+          "parentId": null,
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "stopReason": "stop",
+            "timestamp": 0,
+            "usage": {
+              "input": 0,
+              "output": 1,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 1,
+              "cost": {
+                "input": 0.2,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0.2
+              }
+            }
+          }
+        }
+      ],
+      "retained": [
+        {
+          "type": "message",
+          "id": "user",
+          "parentId": "before",
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "next turn",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "compact",
+          "parentId": "user",
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "summary": "summary",
+          "firstKeptEntryId": "user",
+          "tokensBefore": 1000,
+          "usage": {
+            "input": 50,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 51,
+            "cost": {
+              "input": 0.0001,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0001
+            }
+          }
+        }
+      ],
+      "totals": {
+        "input": 58,
+        "output": 3,
+        "cacheRead": 24,
+        "cacheWrite": 0,
+        "cost": 0.30010000000000003
+      },
+      "text": "↑58 ↓3 R24 $0.300 ?/2.0k (auto)"
+    },
+    {
+      "name": "cost-addition-order",
+      "omitted": [
+        {
+          "type": "message",
+          "id": "before",
+          "parentId": null,
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "stopReason": "stop",
+            "timestamp": 0,
+            "usage": {
+              "input": 8,
+              "output": 1,
+              "cacheRead": 24,
+              "cacheWrite": 0,
+              "totalTokens": 33,
+              "cost": {
+                "input": 10000000000000000,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 10000000000000000
+              }
+            }
+          }
+        }
+      ],
+      "retained": [
+        {
+          "type": "message",
+          "id": "user",
+          "parentId": "before",
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "user",
+            "content": "next turn",
+            "timestamp": 0
+          }
+        },
+        {
+          "type": "message",
+          "id": "small-a",
+          "parentId": null,
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "stopReason": "stop",
+            "timestamp": 0,
+            "usage": {
+              "input": 8,
+              "output": 1,
+              "cacheRead": 24,
+              "cacheWrite": 0,
+              "totalTokens": 33,
+              "cost": {
+                "input": 1,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 1
+              }
+            }
+          }
+        },
+        {
+          "type": "message",
+          "id": "small-b",
+          "parentId": null,
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "answer"
+              }
+            ],
+            "api": "openai-completions",
+            "provider": "fixture",
+            "model": "model",
+            "stopReason": "stop",
+            "timestamp": 0,
+            "usage": {
+              "input": 8,
+              "output": 1,
+              "cacheRead": 24,
+              "cacheWrite": 0,
+              "totalTokens": 33,
+              "cost": {
+                "input": 1,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 1
+              }
+            }
+          }
+        },
+        {
+          "type": "compaction",
+          "id": "compact",
+          "parentId": "user",
+          "timestamp": "2026-09-07T00:00:00.000Z",
+          "summary": "summary",
+          "firstKeptEntryId": "user",
+          "tokensBefore": 1000,
+          "usage": {
+            "input": 50,
+            "output": 1,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 51,
+            "cost": {
+              "input": 0.0001,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0.0001
+            }
+          }
+        }
+      ],
+      "totals": {
+        "input": 74,
+        "output": 4,
+        "cacheRead": 72,
+        "cacheWrite": 0,
+        "cost": 10000000000000000
+      },
+      "text": "↑74 ↓4 R72 CH75.0% $10000000000000000.000 ?/2.0k (auto)"
+    }
+  ]
+}

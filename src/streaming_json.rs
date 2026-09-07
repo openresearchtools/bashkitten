@@ -1,6 +1,7 @@
 //! Native port of pinned Pi utils/json-parse.ts and partial-json 0.1.7's
 //! default Allow.ALL parser. See THIRD_PARTY_NOTICES.md. No runtime dependency.
-use serde_json::{Map, Value, json};
+use crate::lossless_json::JsString;
+use serde_json::{Value, json};
 
 pub fn repair_json(input: &str) -> String {
     let chars: Vec<_> = input.chars().collect();
@@ -46,15 +47,23 @@ pub fn repair_json(input: &str) -> String {
 }
 
 pub fn parse_streaming_json(input: &str) -> Value {
+    parse_streaming_json_js(&JsString::from(input))
+}
+fn parse_source<T: serde::de::DeserializeOwned>(input: &str) -> Result<T, serde_json::Error> {
+    crate::lossless_json::from_js_str(&JsString::from_algorithm_string(input))
+}
+pub fn parse_streaming_json_js(input: &JsString) -> Value {
+    let input = input.algorithm_string();
+    let input = input.as_str();
     if input.trim().is_empty() {
         return json!({});
     }
-    if let Ok(value) = serde_json::from_str(input) {
+    if let Ok(value) = parse_source(input) {
         return value;
     }
     let repaired = repair_json(input);
     if repaired != input
-        && let Ok(value) = serde_json::from_str(&repaired)
+        && let Ok(value) = parse_source(&repaired)
     {
         return value;
     }
@@ -88,7 +97,7 @@ impl Partial<'_> {
             return Err(());
         };
         match b {
-            b'"' => return self.string().map(Value::String),
+            b'"' => return self.string().map(|value| value.to_value()),
             b'{' => return Ok(self.object()),
             b'[' => return Ok(self.array()),
             _ => {}
@@ -111,7 +120,7 @@ impl Partial<'_> {
         }
         self.number()
     }
-    fn string(&mut self) -> Result<String, ()> {
+    fn string(&mut self) -> Result<JsString, ()> {
         let start = self.index;
         self.index += 1;
         let mut escape = false;
@@ -124,37 +133,41 @@ impl Partial<'_> {
         }
         if self.byte() == Some(b'"') {
             self.index += 1;
-            return serde_json::from_str(&self.text[start..self.index - usize::from(escape)])
+            return parse_source(&self.text[start..self.index - usize::from(escape)])
                 .map_err(|_| ());
         }
         let end = self.index - usize::from(escape);
         let candidate = format!("{}\"", &self.text[start..end]);
-        if let Ok(value) = serde_json::from_str(&candidate) {
+        if let Ok(value) = parse_source(&candidate) {
             return Ok(value);
         }
         let end = self.text.rfind('\\').unwrap_or(0).max(start);
-        serde_json::from_str(&format!("{}\"", &self.text[start..end])).map_err(|_| ())
+        parse_source(&format!("{}\"", &self.text[start..end])).map_err(|_| ())
     }
     fn object(&mut self) -> Value {
         self.index += 1;
         self.blank();
-        let mut map = Map::new();
+        let mut map: Vec<(JsString, Value)> = Vec::new();
         while self.byte() != Some(b'}') {
             self.blank();
             if self.index >= self.text.len() {
-                return Value::Object(map);
+                return object_value(&map);
             }
             let Ok(key) = self.string() else {
-                return Value::Object(map);
+                return object_value(&map);
             };
             self.blank();
             self.index += 1;
             let Ok(value) = self.any() else {
-                return Value::Object(map);
+                return object_value(&map);
             };
             // JavaScript's object prototype setter does not create an own key.
             if key != "__proto__" {
-                map.insert(key, value);
+                if let Some(entry) = map.iter_mut().find(|entry| entry.0 == key) {
+                    entry.1 = value;
+                } else {
+                    map.push((key, value));
+                }
             }
             self.blank();
             if self.byte() == Some(b',') {
@@ -162,7 +175,7 @@ impl Partial<'_> {
             }
         }
         self.index += 1;
-        Value::Object(map)
+        object_value(&map)
     }
     fn array(&mut self) -> Value {
         self.index += 1;
@@ -189,10 +202,25 @@ impl Partial<'_> {
                 self.index += 1;
             }
         }
-        if let Ok(value) = serde_json::from_str(&self.text[start..self.index]) {
+        if let Ok(value) = parse_source(&self.text[start..self.index]) {
             return Ok(value);
         }
         let end = self.text.rfind('e').unwrap_or(start).max(start);
-        serde_json::from_str(&self.text[start..end]).map_err(|_| ())
+        parse_source(&self.text[start..end]).map_err(|_| ())
     }
+}
+
+fn object_value(entries: &[(JsString, Value)]) -> Value {
+    let fields = entries
+        .iter()
+        .map(|(key, value)| {
+            format!(
+                "{}:{}",
+                crate::lossless_json::to_string(key).unwrap(),
+                crate::lossless_json::to_string(value).unwrap()
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
+    crate::lossless_json::from_str(&format!("{{{fields}}}")).expect("serialized object")
 }

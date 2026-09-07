@@ -24,7 +24,7 @@
 //! OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 //! SOFTWARE.
 
-use serde::de::{MapAccess, SeqAccess, Visitor};
+use crate::lossless_json::{self, JsString};
 use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
@@ -427,7 +427,7 @@ pub enum OrderedJsonValue {
     Null,
     Bool(bool),
     Number(serde_json::Number),
-    String(String),
+    String(JsString),
     Array(Vec<OrderedJsonValue>),
     Object(Vec<(String, OrderedJsonValue)>),
 }
@@ -452,11 +452,14 @@ impl OrderedJsonValue {
 
 impl From<Value> for OrderedJsonValue {
     fn from(value: Value) -> Self {
+        if let Some(text) = JsString::from_value(&value) {
+            return Self::String(text);
+        }
         match value {
             Value::Null => Self::Null,
             Value::Bool(value) => Self::Bool(value),
             Value::Number(value) => Self::Number(value),
-            Value::String(value) => Self::String(value),
+            Value::String(value) => Self::String(value.into()),
             Value::Array(values) => Self::Array(values.into_iter().map(Self::from).collect()),
             Value::Object(values) => Self::Object(
                 values
@@ -477,7 +480,7 @@ impl Serialize for OrderedJsonValue {
             Self::Null => serializer.serialize_unit(),
             Self::Bool(value) => serializer.serialize_bool(*value),
             Self::Number(value) => value.serialize(serializer),
-            Self::String(value) => serializer.serialize_str(value),
+            Self::String(value) => value.serialize(serializer),
             Self::Array(values) => {
                 let mut sequence = serializer.serialize_seq(Some(values.len()))?;
                 for value in values {
@@ -497,80 +500,8 @@ impl Serialize for OrderedJsonValue {
 }
 
 impl<'de> Deserialize<'de> for OrderedJsonValue {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        struct OrderedJsonVisitor;
-
-        impl<'de> Visitor<'de> for OrderedJsonVisitor {
-            type Value = OrderedJsonValue;
-
-            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-                formatter.write_str("a JSON value")
-            }
-
-            fn visit_unit<E>(self) -> Result<Self::Value, E> {
-                Ok(OrderedJsonValue::Null)
-            }
-
-            fn visit_none<E>(self) -> Result<Self::Value, E> {
-                Ok(OrderedJsonValue::Null)
-            }
-
-            fn visit_bool<E>(self, value: bool) -> Result<Self::Value, E> {
-                Ok(OrderedJsonValue::Bool(value))
-            }
-
-            fn visit_i64<E>(self, value: i64) -> Result<Self::Value, E> {
-                Ok(OrderedJsonValue::Number(value.into()))
-            }
-
-            fn visit_u64<E>(self, value: u64) -> Result<Self::Value, E> {
-                Ok(OrderedJsonValue::Number(value.into()))
-            }
-
-            fn visit_f64<E>(self, value: f64) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
-            {
-                serde_json::Number::from_f64(value)
-                    .map(OrderedJsonValue::Number)
-                    .ok_or_else(|| E::custom("non-finite number is not valid JSON"))
-            }
-
-            fn visit_str<E>(self, value: &str) -> Result<Self::Value, E> {
-                Ok(OrderedJsonValue::String(value.to_owned()))
-            }
-
-            fn visit_string<E>(self, value: String) -> Result<Self::Value, E> {
-                Ok(OrderedJsonValue::String(value))
-            }
-
-            fn visit_seq<A>(self, mut sequence: A) -> Result<Self::Value, A::Error>
-            where
-                A: SeqAccess<'de>,
-            {
-                let mut values = Vec::with_capacity(sequence.size_hint().unwrap_or(0));
-                while let Some(value) = sequence.next_element()? {
-                    values.push(value);
-                }
-                Ok(OrderedJsonValue::Array(values))
-            }
-
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: MapAccess<'de>,
-            {
-                let mut entries = Vec::with_capacity(map.size_hint().unwrap_or(0));
-                while let Some((key, value)) = map.next_entry()? {
-                    entries.push((key, value));
-                }
-                Ok(OrderedJsonValue::Object(entries))
-            }
-        }
-
-        deserializer.deserialize_any(OrderedJsonVisitor)
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Value::deserialize(deserializer).map(Self::from)
     }
 }
 
@@ -579,7 +510,7 @@ impl<'de> Deserialize<'de> for OrderedJsonValue {
 pub enum ContentBlock {
     #[serde(rename = "text")]
     Text {
-        text: String,
+        text: JsString,
         #[serde(rename = "textSignature", skip_serializing_if = "Option::is_none")]
         text_signature: Option<String>,
     },
@@ -598,7 +529,7 @@ pub enum ContentBlock {
     },
     #[serde(rename = "thinking")]
     Thinking {
-        thinking: String,
+        thinking: JsString,
         #[serde(rename = "thinkingSignature", skip_serializing_if = "Option::is_none")]
         thinking_signature: Option<String>,
         #[serde(skip_serializing_if = "Option::is_none")]
@@ -621,7 +552,7 @@ pub enum ContentBlock {
 }
 
 impl ContentBlock {
-    pub fn text(text: impl Into<String>) -> Self {
+    pub fn text(text: impl Into<JsString>) -> Self {
         Self::Text {
             text: text.into(),
             text_signature: None,
@@ -655,12 +586,12 @@ fn attachment_text(name: &str, path: &str, mime_type: &str) -> String {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum MessageContent {
-    Text(String),
+    Text(JsString),
     Blocks(Vec<ContentBlock>),
 }
 
 impl MessageContent {
-    pub fn text(text: impl Into<String>) -> Self {
+    pub fn text(text: impl Into<JsString>) -> Self {
         Self::Blocks(vec![ContentBlock::text(text)])
     }
 }
@@ -724,7 +655,7 @@ pub enum AgentMessage {
         #[serde(skip_serializing_if = "Option::is_none")]
         deferred: Option<Value>,
         #[serde(rename = "errorMessage", skip_serializing_if = "Option::is_none")]
-        error_message: Option<String>,
+        error_message: Option<JsString>,
         #[serde(rename = "rawStopReason", skip_serializing_if = "Option::is_none")]
         raw_stop_reason: Option<String>,
         #[serde(rename = "endTurn", skip_serializing_if = "Option::is_none")]
@@ -994,10 +925,10 @@ fn utf16_len(text: &str) -> u64 {
 
 fn content_chars(content: &MessageContent) -> u64 {
     match content {
-        MessageContent::Text(text) => utf16_len(text),
+        MessageContent::Text(text) => text.len() as u64,
         MessageContent::Blocks(blocks) => blocks.iter().fold(0_u64, |total, block| {
             total.saturating_add(match block {
-                ContentBlock::Text { text, .. } => utf16_len(text),
+                ContentBlock::Text { text, .. } => text.len() as u64,
                 ContentBlock::Image { .. } => ESTIMATED_IMAGE_CHARS,
                 ContentBlock::Attachment {
                     name,
@@ -1011,7 +942,7 @@ fn content_chars(content: &MessageContent) -> u64 {
 }
 
 fn json_stringify_len(value: &OrderedJsonValue) -> u64 {
-    serde_json::to_string(value)
+    lossless_json::to_string(value)
         .map(|json| utf16_len(&json))
         .unwrap_or(0)
 }
@@ -1023,8 +954,8 @@ pub fn estimate_tokens(message: &AgentMessage) -> u64 {
         | AgentMessage::Custom { content, .. } => content_chars(content),
         AgentMessage::Assistant { content, .. } => content.iter().fold(0_u64, |total, block| {
             total.saturating_add(match block {
-                ContentBlock::Text { text, .. } => utf16_len(text),
-                ContentBlock::Thinking { thinking, .. } => utf16_len(thinking),
+                ContentBlock::Text { text, .. } => text.len() as u64,
+                ContentBlock::Thinking { thinking, .. } => thinking.len() as u64,
                 ContentBlock::ToolCall {
                     name, arguments, ..
                 } => utf16_len(name).saturating_add(json_stringify_len(arguments)),
@@ -1398,22 +1329,24 @@ fn message_for_compaction(entry: &SessionEntry) -> Option<AgentMessage> {
     }
 }
 
-fn content_text(content: &MessageContent, separator: &str) -> String {
+fn content_text(content: &MessageContent, separator: &str) -> JsString {
     match content {
         MessageContent::Text(text) => text.clone(),
-        MessageContent::Blocks(blocks) => blocks
-            .iter()
-            .filter_map(|block| match block {
-                ContentBlock::Text { text, .. } => Some(text.clone()),
-                ContentBlock::Attachment {
-                    name,
-                    path,
-                    mime_type,
-                } => Some(attachment_text(name, path, mime_type)),
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-            .join(separator),
+        MessageContent::Blocks(blocks) => JsString::join(
+            &blocks
+                .iter()
+                .filter_map(|block| match block {
+                    ContentBlock::Text { text, .. } => Some(text.clone()),
+                    ContentBlock::Attachment {
+                        name,
+                        path,
+                        mime_type,
+                    } => Some(attachment_text(name, path, mime_type).into()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>(),
+            separator,
+        ),
     }
 }
 
@@ -1450,40 +1383,40 @@ pub fn bash_execution_to_text(message: &AgentMessage) -> Option<String> {
     Some(text)
 }
 
-fn truncate_for_summary(text: &str, max_utf16_units: usize) -> String {
-    let units: Vec<u16> = text.encode_utf16().collect();
-    if units.len() <= max_utf16_units {
-        return text.to_owned();
+fn truncate_for_summary(text: &JsString, max_utf16_units: usize) -> JsString {
+    if text.len() <= max_utf16_units {
+        return text.clone();
     }
-    let truncated = units.len() - max_utf16_units;
-    let prefix = String::from_utf16_lossy(&units[..max_utf16_units]);
-    format!("{prefix}\n\n[... {truncated} more characters truncated]")
+    let truncated = text.len() - max_utf16_units;
+    let mut prefix = JsString::from_units(text.units()[..max_utf16_units].to_vec());
+    prefix.push_str(&format!("\n\n[... {truncated} more characters truncated]"));
+    prefix
 }
 
-fn json_argument_pairs(arguments: &OrderedJsonValue) -> String {
-    let OrderedJsonValue::Object(object) = arguments else {
-        return String::new();
+fn json_argument_pairs(arguments: &OrderedJsonValue) -> JsString {
+    let value = serde_json::to_value(arguments).unwrap_or(Value::Null);
+    let Some(entries) = lossless_json::object_entries(&value) else {
+        return JsString::default();
     };
-    object
-        .iter()
-        .map(|(key, value)| {
-            format!(
-                "{key}={}",
-                serde_json::to_string(value).unwrap_or_else(|_| "null".to_owned())
-            )
+    let pairs = entries
+        .into_iter()
+        .map(|(mut key, value)| {
+            key.push_str("=");
+            key.push_str(&lossless_json::to_string(value).unwrap_or_else(|_| "null".into()));
+            key
         })
-        .collect::<Vec<_>>()
-        .join(", ")
+        .collect::<Vec<_>>();
+    JsString::join(&pairs, ", ")
 }
 
-pub fn serialize_conversation(messages: &[AgentMessage]) -> String {
+pub fn serialize_conversation(messages: &[AgentMessage]) -> JsString {
     let mut parts = Vec::new();
     for message in messages {
         match message {
             AgentMessage::User { content, .. } => {
                 let content = content_text(content, "");
                 if !content.is_empty() {
-                    parts.push(format!("[User]: {content}"));
+                    parts.push(content.prefixed("[User]: "));
                 }
             }
             AgentMessage::Assistant { content, .. } => {
@@ -1495,34 +1428,41 @@ pub fn serialize_conversation(messages: &[AgentMessage]) -> String {
                     match block {
                         ContentBlock::Thinking {
                             thinking: value, ..
-                        } => thinking.push(value.as_str()),
+                        } => thinking.push(value.clone()),
                         ContentBlock::Text { text: value, .. } => {
                             has_text = true;
-                            text.push(value.as_str());
+                            text.push(value.clone());
                         }
                         ContentBlock::ToolCall {
                             name, arguments, ..
-                        } => tool_calls.push(format!("{name}({})", json_argument_pairs(arguments))),
+                        } => {
+                            let mut call =
+                                json_argument_pairs(arguments).prefixed(&format!("{name}("));
+                            call.push_str(")");
+                            tool_calls.push(call);
+                        }
                         ContentBlock::Image { .. } | ContentBlock::Attachment { .. } => {}
                     }
                 }
                 if !thinking.is_empty() {
-                    parts.push(format!("[Assistant thinking]: {}", thinking.join("\n")));
+                    parts.push(JsString::join(&thinking, "\n").prefixed("[Assistant thinking]: "));
                 }
                 if has_text {
-                    parts.push(format!("[Assistant]: {}", text.join("\n")));
+                    parts.push(JsString::join(&text, "\n").prefixed("[Assistant]: "));
                 }
                 if !tool_calls.is_empty() {
-                    parts.push(format!("[Assistant tool calls]: {}", tool_calls.join("; ")));
+                    parts.push(
+                        JsString::join(&tool_calls, "; ").prefixed("[Assistant tool calls]: "),
+                    );
                 }
             }
             AgentMessage::ToolResult { content, .. } => {
                 let content = content_text(content, "");
                 if !content.is_empty() {
-                    parts.push(format!(
-                        "[Tool result]: {}",
+                    parts.push(
                         truncate_for_summary(&content, TOOL_RESULT_MAX_CHARS)
-                    ));
+                            .prefixed("[Tool result]: "),
+                    );
                 }
             }
             AgentMessage::BashExecution {
@@ -1532,31 +1472,32 @@ pub fn serialize_conversation(messages: &[AgentMessage]) -> String {
                 if !exclude_from_context.unwrap_or(false)
                     && let Some(text) = bash_execution_to_text(message)
                 {
-                    parts.push(format!("[User]: {text}"));
+                    parts.push(format!("[User]: {text}").into());
                 }
             }
             AgentMessage::Custom { content, .. } => {
                 let content = content_text(content, "");
                 if !content.is_empty() {
-                    parts.push(format!("[User]: {content}"));
+                    parts.push(content.prefixed("[User]: "));
                 }
             }
-            AgentMessage::BranchSummary { summary, .. } => parts.push(format!(
-                "[User]: {BRANCH_SUMMARY_PREFIX}{summary}{BRANCH_SUMMARY_SUFFIX}"
-            )),
-            AgentMessage::CompactionSummary { summary, .. } => parts.push(format!(
-                "[User]: {COMPACTION_SUMMARY_PREFIX}{summary}{COMPACTION_SUMMARY_SUFFIX}"
-            )),
+            AgentMessage::BranchSummary { summary, .. } => parts.push(
+                format!("[User]: {BRANCH_SUMMARY_PREFIX}{summary}{BRANCH_SUMMARY_SUFFIX}").into(),
+            ),
+            AgentMessage::CompactionSummary { summary, .. } => parts.push(
+                format!("[User]: {COMPACTION_SUMMARY_PREFIX}{summary}{COMPACTION_SUMMARY_SUFFIX}")
+                    .into(),
+            ),
         }
     }
-    parts.join("\n\n")
+    JsString::join(&parts, "\n\n")
 }
 
 pub fn build_summarization_prompt(
     messages: &[AgentMessage],
     previous_summary: Option<&str>,
     custom_instructions: Option<&str>,
-) -> String {
+) -> JsString {
     let previous_summary = previous_summary.filter(|summary| !summary.is_empty());
     let mut base = if previous_summary.is_some() {
         UPDATE_SUMMARIZATION_PROMPT.to_owned()
@@ -1568,10 +1509,8 @@ pub fn build_summarization_prompt(
         base.push_str(instructions);
     }
 
-    let mut prompt = format!(
-        "<conversation>\n{}\n</conversation>\n\n",
-        serialize_conversation(messages)
-    );
+    let mut prompt = serialize_conversation(messages).prefixed("<conversation>\n");
+    prompt.push_str("\n</conversation>\n\n");
     if let Some(previous) = previous_summary {
         prompt.push_str(&format!(
             "<previous-summary>\n{previous}\n</previous-summary>\n\n"
@@ -1581,11 +1520,12 @@ pub fn build_summarization_prompt(
     prompt
 }
 
-pub fn build_turn_prefix_prompt(messages: &[AgentMessage]) -> String {
-    format!(
-        "<conversation>\n{}\n</conversation>\n\n{TURN_PREFIX_SUMMARIZATION_PROMPT}",
-        serialize_conversation(messages)
-    )
+pub fn build_turn_prefix_prompt(messages: &[AgentMessage]) -> JsString {
+    let mut prompt = serialize_conversation(messages).prefixed("<conversation>\n");
+    prompt.push_str(&format!(
+        "\n</conversation>\n\n{TURN_PREFIX_SUMMARIZATION_PROMPT}"
+    ));
+    prompt
 }
 
 pub fn summary_max_tokens(reserve_tokens: u64, model_max_tokens: u64) -> u64 {
@@ -1908,6 +1848,11 @@ impl UsageTotals {
 
 pub fn session_usage_totals(entries: &[SessionEntry]) -> UsageTotals {
     let mut totals = UsageTotals::default();
+    accumulate_session_usage(&mut totals, entries);
+    totals
+}
+
+pub fn accumulate_session_usage(totals: &mut UsageTotals, entries: &[SessionEntry]) {
     for entry in entries {
         match &entry.kind {
             SessionEntryKind::Message {
@@ -1928,7 +1873,6 @@ pub fn session_usage_totals(entries: &[SessionEntry]) -> UsageTotals {
             _ => {}
         }
     }
-    totals
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -2146,7 +2090,7 @@ mod tests {
     #[test]
     fn estimation_matches_pi_utf16_and_image_rules() {
         let emoji = AgentMessage::User {
-            content: MessageContent::Text("😀😀".to_owned()),
+            content: MessageContent::Text("😀😀".into()),
             timestamp: 0,
             source_session: None,
             delivery: None,
@@ -2266,7 +2210,7 @@ mod tests {
             AgentMessage::Assistant {
                 content: vec![
                     ContentBlock::Thinking {
-                        thinking: "plan".to_owned(),
+                        thinking: "plan".into(),
                         thinking_signature: None,
                         redacted: None,
                     },
@@ -2275,10 +2219,7 @@ mod tests {
                         id: "1".to_owned(),
                         name: "read".to_owned(),
                         arguments: OrderedJsonValue::Object(vec![
-                            (
-                                "path".to_owned(),
-                                OrderedJsonValue::String("/tmp/a".to_owned()),
-                            ),
+                            ("path".to_owned(), OrderedJsonValue::String("/tmp/a".into())),
                             ("line".to_owned(), OrderedJsonValue::Number(3.into())),
                         ]),
                         thought_signature: None,

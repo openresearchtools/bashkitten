@@ -1,0 +1,43 @@
+{
+  "date": "2026-09-07",
+  "purpose": "Distinguish a provider authentication rejection from a code regression without changing credentials",
+  "requests": [
+    {
+      "binary": "Previously installed September 5 CLI and matching agent",
+      "model": "openai-codex/gpt-5.6-luna",
+      "prompt": "Reply with exactly OK. Do not use tools.",
+      "result": "error",
+      "errorMessage": "Provided authentication token is expired."
+    },
+    {
+      "binary": "New debug CLI and matching agent",
+      "model": "openai-codex/gpt-5.6-luna",
+      "prompt": "Reply with exactly OK. Do not use tools.",
+      "result": "error",
+      "errorMessage": "Provided authentication token is expired."
+    }
+  ],
+  "storage": "Disposable data and runtime directories; existing BashKitten provider configuration",
+  "webInstancesCreated": 0,
+  "sessionsStoppedAfterComparison": true,
+  "credentialsUnchanged": true,
+  "verification": "Credential file bytes hashed before and after comparison; no hash or credential recorded here",
+  "metadataFinding": "Stored expiry and JWT expiry agree to the same second and are in the future; Pi's five-minute minimum-validity rule therefore does not refresh",
+  "conclusion": "The same server rejection occurs in the previous binary and the new binary; the comparison does not establish the server's reason for rejecting this credential",
+  "actionsNotTaken": [
+    "No login",
+    "No logout",
+    "No forced refresh",
+    "No credential import",
+    "No access to other applications' credentials"
+  ],
+  "subsequentVerification": {
+    "userReportedProviderLogin": true,
+    "installedBinary": "/usr/bin/bashkitten",
+    "model": "openai-codex/gpt-5.6-luna",
+    "result": "passed",
+    "allSevenToolsUsed": true,
+    "suppliedAndIndependentTestsPassed": true,
+    "evidence": "2026-09-07-luna-installed.json"
+  }
+}

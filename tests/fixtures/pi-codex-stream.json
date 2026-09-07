@@ -1978,6 +1978,454 @@
       }
     },
     {
+      "name": "tool-literal-surrogate",
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "type": "function_call",
+            "id": "fc_1",
+            "call_id": "call1",
+            "name": "read",
+            "arguments": ""
+          }
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "output_index": 0,
+          "delta": "{\"path\":\"\ud83d"
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "terminal",
+            "status": "completed",
+            "output": []
+          }
+        }
+      ],
+      "options": {},
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "toolcall_start",
+          "index": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "index": 0,
+          "delta": "{\"path\":\"\ud83d"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call1|fc_1",
+            "name": "read",
+            "arguments": {
+              "path": "\ud83d"
+            },
+            "partialJson": "{\"path\":\"\ud83d"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "responseId": "terminal",
+        "rawStopReason": "completed"
+      }
+    },
+    {
+      "name": "tool-split-surrogate",
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "type": "function_call",
+            "id": "fc_1",
+            "call_id": "call1",
+            "name": "read",
+            "arguments": ""
+          }
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "output_index": 0,
+          "delta": "{\"path\":\"\ud83d"
+        },
+        {
+          "type": "response.function_call_arguments.delta",
+          "output_index": 0,
+          "delta": "\ude00\"}"
+        },
+        {
+          "type": "response.output_item.done",
+          "output_index": 0,
+          "item": {
+            "type": "function_call",
+            "id": "fc_1",
+            "call_id": "call1",
+            "name": "read",
+            "arguments": ""
+          }
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "terminal",
+            "status": "completed",
+            "output": []
+          }
+        }
+      ],
+      "options": {},
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "toolcall_start",
+          "index": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "index": 0,
+          "delta": "{\"path\":\"\ud83d"
+        },
+        {
+          "type": "toolcall_delta",
+          "index": 0,
+          "delta": "\ude00\"}"
+        },
+        {
+          "type": "toolcall_end",
+          "index": 0
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "call1|fc_1",
+            "name": "read",
+            "arguments": {
+              "path": "😀"
+            }
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "responseId": "terminal",
+        "rawStopReason": "completed"
+      }
+    },
+    {
+      "name": "text-split-surrogate",
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "type": "message",
+            "id": "msg_1",
+            "phase": "final_answer",
+            "role": "assistant",
+            "content": [
+              {
+                "type": "output_text",
+                "text": "Answer",
+                "annotations": []
+              }
+            ]
+          }
+        },
+        {
+          "type": "response.output_text.delta",
+          "output_index": 0,
+          "delta": "\ud83d"
+        },
+        {
+          "type": "response.output_text.delta",
+          "output_index": 0,
+          "delta": "\ude00"
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "terminal",
+            "status": "completed",
+            "output": []
+          }
+        }
+      ],
+      "options": {},
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "text_start",
+          "index": 0
+        },
+        {
+          "type": "text_delta",
+          "index": 0,
+          "delta": "\ud83d"
+        },
+        {
+          "type": "text_delta",
+          "index": 0,
+          "delta": "\ude00"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "😀"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "responseId": "terminal",
+        "rawStopReason": "completed"
+      }
+    },
+    {
+      "name": "thinking-split-surrogate",
+      "model": {
+        "id": "gpt-5.5",
+        "name": "Fixture",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "http://localhost/backend-api",
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "type": "response.output_item.added",
+          "output_index": 0,
+          "item": {
+            "type": "reasoning",
+            "id": "rs_1",
+            "summary": [
+              {
+                "type": "summary_text",
+                "text": "Summary"
+              }
+            ],
+            "encrypted_content": "opaque"
+          }
+        },
+        {
+          "type": "response.reasoning_text.delta",
+          "output_index": 0,
+          "delta": "\ud83d"
+        },
+        {
+          "type": "response.reasoning_text.delta",
+          "output_index": 0,
+          "delta": "\ude00"
+        },
+        {
+          "type": "response.completed",
+          "response": {
+            "id": "terminal",
+            "status": "completed",
+            "output": []
+          }
+        }
+      ],
+      "options": {},
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "thinking_start",
+          "index": 0
+        },
+        {
+          "type": "thinking_delta",
+          "index": 0,
+          "delta": "\ud83d"
+        },
+        {
+          "type": "thinking_delta",
+          "index": 0,
+          "delta": "\ude00"
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "😀"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "responseId": "terminal",
+        "rawStopReason": "completed"
+      }
+    },
+    {
       "name": "text-empty-start",
       "model": {
         "id": "gpt-5.5",
@@ -4357,7 +4805,7 @@
       }
     },
     {
-      "name": "error-49",
+      "name": "error-53",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -4450,7 +4898,7 @@
       }
     },
     {
-      "name": "error-50",
+      "name": "error-54",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -4545,7 +4993,7 @@
       }
     },
     {
-      "name": "error-51",
+      "name": "error-55",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -4637,7 +5085,7 @@
       }
     },
     {
-      "name": "error-52",
+      "name": "error-56",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -4729,7 +5177,7 @@
       }
     },
     {
-      "name": "error-53",
+      "name": "error-57",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -4826,7 +5274,7 @@
       }
     },
     {
-      "name": "error-54",
+      "name": "error-58",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -4918,7 +5366,7 @@
       }
     },
     {
-      "name": "usage-55-default",
+      "name": "usage-59-default",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -4991,7 +5439,7 @@
       }
     },
     {
-      "name": "usage-56-priority",
+      "name": "usage-60-priority",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5064,7 +5512,7 @@
       }
     },
     {
-      "name": "usage-57-flex",
+      "name": "usage-61-flex",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5137,7 +5585,7 @@
       }
     },
     {
-      "name": "usage-58-default",
+      "name": "usage-62-default",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5209,7 +5657,7 @@
       }
     },
     {
-      "name": "usage-59-priority",
+      "name": "usage-63-priority",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5281,7 +5729,7 @@
       }
     },
     {
-      "name": "usage-60-flex",
+      "name": "usage-64-flex",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5353,7 +5801,7 @@
       }
     },
     {
-      "name": "usage-61-default",
+      "name": "usage-65-default",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5432,7 +5880,7 @@
       }
     },
     {
-      "name": "usage-62-priority",
+      "name": "usage-66-priority",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5511,7 +5959,7 @@
       }
     },
     {
-      "name": "usage-63-flex",
+      "name": "usage-67-flex",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5590,7 +6038,7 @@
       }
     },
     {
-      "name": "usage-64-default",
+      "name": "usage-68-default",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5670,7 +6118,7 @@
       }
     },
     {
-      "name": "usage-65-priority",
+      "name": "usage-69-priority",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",
@@ -5750,7 +6198,7 @@
       }
     },
     {
-      "name": "usage-66-flex",
+      "name": "usage-70-flex",
       "model": {
         "id": "gpt-5.5",
         "name": "Fixture",

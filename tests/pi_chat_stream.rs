@@ -31,7 +31,7 @@ fn compare(actual: &Value, expected: &Value, path: &str) {
 #[tokio::test]
 async fn pinned_compatible_streams_preserve_messages_errors_usage_and_partial_arguments() {
     let fixture: Value =
-        serde_json::from_str(include_str!("fixtures/pi-chat-stream.json")).unwrap();
+        bashkitten::lossless_json::from_str(include_str!("fixtures/pi-chat-stream.json")).unwrap();
     let payload = Arc::new(Mutex::new(String::new()));
     let response_payload = payload.clone();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -58,7 +58,15 @@ async fn pinned_compatible_streams_preserve_messages_errors_usage_and_partial_ar
             .as_array()
             .unwrap()
             .iter()
-            .map(|chunk| format!("data: {chunk}\n\n"))
+            .map(|chunk| {
+                format!(
+                    "data: {}\n\n",
+                    chunk["raw"]
+                        .as_str()
+                        .map(str::to_owned)
+                        .unwrap_or_else(|| bashkitten::lossless_json::to_string(chunk).unwrap())
+                )
+            })
             .collect::<String>();
         if case["done"] == true {
             data.push_str("data: [DONE]\n\n");
@@ -81,7 +89,7 @@ async fn pinned_compatible_streams_preserve_messages_errors_usage_and_partial_ar
                     assembly.push(event);
                 }
                 Err(error) => {
-                    assembly.fail(error.to_string());
+                    assembly.fail(bashkitten::json_error::exception_message(&error));
                     break;
                 }
             }
@@ -101,13 +109,13 @@ async fn pinned_compatible_streams_preserve_messages_errors_usage_and_partial_ar
 #[test]
 fn pinned_partial_json_and_repair() {
     let fixture: Value =
-        serde_json::from_str(include_str!("fixtures/pi-chat-stream.json")).unwrap();
+        bashkitten::lossless_json::from_str(include_str!("fixtures/pi-chat-stream.json")).unwrap();
     for case in fixture["jsonCases"].as_array().unwrap() {
-        let input = case["input"].as_str().unwrap();
+        let input = bashkitten::lossless_json::JsString::from_value(&case["input"]).unwrap();
         compare(
-            &bashkitten::streaming_json::parse_streaming_json(input),
+            &bashkitten::streaming_json::parse_streaming_json_js(&input),
             &case["expected"],
-            input,
+            input.as_str(),
         );
     }
 }

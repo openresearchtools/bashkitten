@@ -102,7 +102,7 @@ async fn pinned_websocket_reuse_continuation_retry_and_fallback() {
 if start.starts_with(b"GET "){
    received.lock().await.connections+=1;let mut socket=tokio_tungstenite::accept_async(stream).await.unwrap();while let Some(Ok(message))=socket.next().await {let Message::Text(text)=message else {continue};received.lock().await.requests.push(serde_json::from_str(&text).unwrap());let plan={let mut plans=plans.lock().await;assert!(!plans.is_empty(),"unexpected WebSocket request");plans.remove(0)};for frame in plan.as_array().unwrap(){tokio::time::sleep(std::time::Duration::from_millis(2)).await;if frame["wait"]==true{continue;}
 if let Some(close)=frame.get("close"){let _=socket.send(Message::Close(Some(CloseFrame{code:CloseCode::from(close["code"].as_u64().unwrap() as u16),reason:close["reason"].as_str().unwrap().to_owned().into()}))).await;return;}
-if socket.send(Message::Text(frame.to_string().into())).await.is_err(){return;}}}
+if socket.send(Message::Text(frame["raw"].as_str().map(str::to_owned).unwrap_or_else(||frame.to_string()).into())).await.is_err(){return;}}}
   }else{
    let mut bytes=Vec::new();let end=loop{let mut chunk=[0;4096];let n=stream.read(&mut chunk).await.unwrap();if n==0{return;}bytes.extend_from_slice(&chunk[..n]);if let Some(i)=bytes.windows(4).position(|v|v==b"\r\n\r\n"){break i+4;}};let headers=String::from_utf8_lossy(&bytes[..end]);let length=headers.lines().find_map(|l|l.to_lowercase().strip_prefix("content-length: ").map(|v|v.parse::<usize>().unwrap())).unwrap();while bytes.len()-end<length{let mut chunk=[0;4096];let n=stream.read(&mut chunk).await.unwrap();if n==0{return;}bytes.extend_from_slice(&chunk[..n]);}let decoded=zstd::bulk::decompress(&bytes[end..end+length],1_000_000).unwrap();let mut captured=received.lock().await;captured.fetch_requests.push(serde_json::from_slice(&decoded).unwrap());let body=success(&format!("sse{}",captured.fetch_requests.len())).iter().map(|v|format!("data: {v}\n\n")).collect::<String>();drop(captured);let response=format!("HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",body.len());stream.write_all(response.as_bytes()).await.unwrap();
   }});
@@ -148,7 +148,7 @@ if socket.send(Message::Text(frame.to_string().into())).await.is_err(){return;}}
                         output.push(event);
                     }
                     Err(error) => {
-                        output.fail(error.to_string());
+                        output.fail(bashkitten::json_error::exception_message(&error));
                         break;
                     }
                 }

@@ -33,7 +33,7 @@ fn compare(actual: &Value, expected: &Value, path: &str) {
 #[tokio::test]
 async fn pinned_codex_streams_preserve_messages_errors_usage_and_partial_arguments() {
     let fixture: Value =
-        serde_json::from_str(include_str!("fixtures/pi-codex-stream.json")).unwrap();
+        bashkitten::lossless_json::from_str(include_str!("fixtures/pi-codex-stream.json")).unwrap();
     let payload = Arc::new(Mutex::new(String::new()));
     let response_payload = payload.clone();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -74,7 +74,12 @@ async fn pinned_codex_streams_preserve_messages_errors_usage_and_partial_argumen
                     .as_array()
                     .unwrap()
                     .iter()
-                    .map(|chunk| format!("data: {chunk}\n\n"))
+                    .map(|chunk| {
+                        format!(
+                            "data: {}\n\n",
+                            bashkitten::lossless_json::to_string(chunk).unwrap()
+                        )
+                    })
                     .collect::<String>()
             });
         *payload.lock().await = data;
@@ -100,7 +105,7 @@ async fn pinned_codex_streams_preserve_messages_errors_usage_and_partial_argumen
                     assembly.push(event);
                 }
                 Err(error) => {
-                    assembly.fail(error.to_string());
+                    assembly.fail(bashkitten::json_error::exception_message(&error));
                     break;
                 }
             }

@@ -4,6 +4,7 @@ use anyhow::{Context, Result, bail};
 use argon2::Argon2;
 use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
 use fs2::FileExt;
+use rand::TryRngCore;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fs::{self, OpenOptions};
@@ -35,9 +36,12 @@ pub struct NewLogin {
     pub expires_at: i64,
 }
 
-fn random_token() -> String {
-    let bytes: [u8; 32] = rand::random();
-    hex::encode(bytes)
+fn random_token() -> Result<String> {
+    let mut bytes = [0_u8; 32];
+    rand::rngs::OsRng
+        .try_fill_bytes(&mut bytes)
+        .context("OS random number generation failed")?;
+    Ok(hex::encode(bytes))
 }
 
 fn hash_secret(value: &str) -> String {
@@ -45,12 +49,14 @@ fn hash_secret(value: &str) -> String {
 }
 
 fn lock_file(paths: &AppPaths) -> Result<std::fs::File> {
+    use std::os::unix::fs::OpenOptionsExt;
     let path = paths.config.join("web-auth.lock");
     let file = OpenOptions::new()
         .create(true)
         .truncate(false)
         .read(true)
         .write(true)
+        .mode(0o600)
         .open(&path)?;
     set_private_file(&path)?;
     file.lock_exclusive()?;
@@ -64,7 +70,10 @@ fn read_auth(path: &Path) -> Result<WebAuthFile> {
 }
 
 fn password_hash(password: &str) -> Result<String> {
-    let salt_bytes: [u8; 16] = rand::random();
+    let mut salt_bytes = [0_u8; 16];
+    rand::rngs::OsRng
+        .try_fill_bytes(&mut salt_bytes)
+        .context("OS random number generation failed")?;
     let salt = SaltString::encode_b64(&salt_bytes).map_err(|e| anyhow::anyhow!(e.to_string()))?;
     Ok(Argon2::default()
         .hash_password(password.as_bytes(), &salt)
@@ -81,9 +90,9 @@ fn password_matches(encoded: &str, password: &str) -> bool {
         .is_ok()
 }
 
-fn add_session(auth: &mut WebAuthFile) -> NewLogin {
-    let token = random_token();
-    let csrf = random_token();
+fn add_session(auth: &mut WebAuthFile) -> Result<NewLogin> {
+    let token = random_token()?;
+    let csrf = random_token()?;
     let expires_at = chrono::Utc::now().timestamp() + SESSION_SECONDS;
     auth.sessions
         .retain(|s| s.expires_at > chrono::Utc::now().timestamp());
@@ -93,11 +102,11 @@ fn add_session(auth: &mut WebAuthFile) -> NewLogin {
         previous_csrf_hashes: Vec::new(),
         expires_at,
     });
-    NewLogin {
+    Ok(NewLogin {
         token,
         csrf,
         expires_at,
-    }
+    })
 }
 
 pub fn has_user(paths: &AppPaths) -> bool {
@@ -123,7 +132,7 @@ pub fn signup(paths: &AppPaths, username: &str, password: &str) -> Result<NewLog
         password_hash: password_hash(password)?,
         sessions: Vec::new(),
     };
-    let login = add_session(&mut auth);
+    let login = add_session(&mut auth)?;
     atomic_private_json_create(&path, &auth)?;
     FileExt::unlock(&lock)?;
     Ok(login)
@@ -138,7 +147,7 @@ pub fn login(paths: &AppPaths, username: &str, password: &str) -> Result<NewLogi
         FileExt::unlock(&lock)?;
         bail!("Invalid username or password");
     }
-    let login = add_session(&mut auth);
+    let login = add_session(&mut auth)?;
     atomic_private_json(&path, &auth)?;
     FileExt::unlock(&lock)?;
     Ok(login)
@@ -175,7 +184,7 @@ pub fn prepare_csrf_tokens(paths: &AppPaths) -> Result<std::collections::BTreeMa
         let now = chrono::Utc::now().timestamp();
         auth.sessions.retain(|session| session.expires_at > now);
         for session in &mut auth.sessions {
-            let csrf = random_token();
+            let csrf = random_token()?;
             session.previous_csrf_hashes.push(std::mem::replace(
                 &mut session.csrf_hash,
                 hash_secret(&csrf),

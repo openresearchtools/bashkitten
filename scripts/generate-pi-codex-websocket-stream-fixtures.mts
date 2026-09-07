@@ -10,7 +10,7 @@ class FakeSocket {
  addEventListener(kind:string,fn:Function){if(!this.listeners.has(kind))this.listeners.set(kind,new Set());this.listeners.get(kind)!.add(fn);}
  removeEventListener(kind:string,fn:Function){this.listeners.get(kind)?.delete(fn);}
  emit(kind:string,event:any){for(const fn of this.listeners.get(kind)||[])fn(event);}
- send(data:string){requests.push(JSON.parse(data));const plan=plans.shift();if(!plan)throw Error('Missing socket plan');void(async()=>{for(const frame of plan){await new Promise(r=>setTimeout(r,2));if(this.readyState!==1)return;if(frame.wait)continue;if(frame.close){this.readyState=3;this.emit('close',{...frame.close,wasClean:true});return;}this.emit('message',{data:JSON.stringify(frame)});}})();}
+ send(data:string){requests.push(JSON.parse(data));const plan=plans.shift();if(!plan)throw Error('Missing socket plan');void(async()=>{for(const frame of plan){await new Promise(r=>setTimeout(r,2));if(this.readyState!==1)return;if(frame.wait)continue;if(frame.close){this.readyState=3;this.emit('close',{...frame.close,wasClean:true});return;}this.emit('message',{data:frame.raw??JSON.stringify(frame)});}})();}
  close(code=1000,reason='done'){this.readyState=3;this.emit('close',{code,reason,wasClean:true});}
 }
 (globalThis as any).WebSocket=FakeSocket;
@@ -18,6 +18,9 @@ const {stream,closeOpenAICodexWebSocketSessions,resetOpenAICodexWebSocketDebugSt
 function success(id:string){return [{type:'response.created',response:{id}},{type:'response.output_item.done',output_index:0,item:{type:'message',id:'msg_'+id,role:'assistant',phase:'final_answer',content:[{type:'output_text',text:'Answer '+id,annotations:[]}]}},{type:'response.completed',response:{id,status:'completed',output:[]}}];}
 const error=(code:string)=>({type:'error',code,message:code});const closed={close:{code:1011,reason:'fixture'}};const created={type:'response.created',response:{id:'partial'}};
 const specs:any[]=[
+ {name:'malformed-before-start',plans:[[{raw:'{broken'}],success('two')],turns:2},
+ {name:'malformed-after-start',plans:[[created,{raw:'{"a":}' }],success('two')],turns:2},
+ {name:'null-json-before-start',plans:[[{raw:'null'}],success('two')],turns:2},
  {name:'auto-continuation',plans:[success('one'),success('two'),success('three')],turns:3},
  {name:'changed-instructions',plans:[success('one'),success('two')],turns:2,changed:true},
  {name:'websocket-full',transport:'websocket',plans:[success('one'),success('two')],turns:2},

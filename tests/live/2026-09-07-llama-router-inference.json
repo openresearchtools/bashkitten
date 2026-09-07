@@ -1,0 +1,417 @@
+{
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "scope": "Fresh native CLI launcher and worker with one isolated actual systemd router, cached GGUF and direct explicit router load/unload. No Web process or new download. Settings workflow already covered by deterministic authenticated tests.",
+  "checks": {
+    "noSilentAutoload": true,
+    "nativeRouterModeLauncher": true,
+    "explicitLoad": true,
+    "nativeRegistryLoadedContextAndThinking": true,
+    "omittedThinkingUsesPresetDefault": true,
+    "nativeWorkerWriteAndFinalAnswer": true,
+    "modelRemainsLoadedAfterTurn": true,
+    "workerStopKeepsModelLoaded": true,
+    "explicitUnload": true,
+    "cachedFileUnchanged": true,
+    "productionServicesUnchanged": true
+  },
+  "productionBefore": {
+    "bashkitten-web.service": {
+      "Id": "bashkitten-web.service",
+      "ActiveState": "active",
+      "MainPID": "114039"
+    },
+    "bashkitten-llama.service": {
+      "Id": "bashkitten-llama.service",
+      "ActiveState": "inactive",
+      "MainPID": "0"
+    }
+  },
+  "model": {
+    "path": "/run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf",
+    "bytes": 396705472,
+    "sha256": "ac2d97712095a558e31573f62f466a3f9d93990898b0ec79d7c974c1780d524a"
+  },
+  "routerOrigin": "http://127.0.0.1:39239",
+  "unloadedCatalog": [
+    {
+      "id": "qwen3-cached-proof",
+      "aliases": [],
+      "tags": [],
+      "object": "model",
+      "owned_by": "llamacpp",
+      "created": 1788814208,
+      "status": {
+        "value": "unloaded",
+        "args": [
+          "/usr/lib/llama-cpp/llama-server",
+          "--host",
+          "127.0.0.1",
+          "--jinja",
+          "--mmap",
+          "--port",
+          "0",
+          "--alias",
+          "qwen3-cached-proof",
+          "--batch-size",
+          "512",
+          "--ctx-size",
+          "8192",
+          "--flash-attn",
+          "off",
+          "--model",
+          "/run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf",
+          "--n-gpu-layers",
+          "0",
+          "--parallel",
+          "1",
+          "--threads",
+          "4"
+        ],
+        "preset": "[qwen3-cached-proof]\njinja = true\nmlock = false\nmmap = true\nbatch-size = 512\nctx-size = 8192\nflash-attn = off\nmodel = /run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf\nn-gpu-layers = 0\nparallel = 1\nthreads = 4\n\n"
+      },
+      "architecture": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "source": "preset",
+      "can_remove": false
+    }
+  ],
+  "nativeIni": "version = 1\n\n[*]\njinja = true\nctx-size = 8192\nngl = 0\nbatch-size = 512\nparallel = 1\nmmap = true\nmlock = false\nthreads = 4\nflash-attn = off\n\n[qwen3-cached-proof]\nctx-size = 8192\nmodel = /run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf\nctx-size = 8192\nngl = 0\nthreads = 4\nbatch-size = 512\nparallel = 1\nflash-attn = off\n",
+  "routerProcess": {
+    "pid": 426099,
+    "exe": "/usr/lib/llama-cpp/llama-server",
+    "argv": [
+      "/usr/bin/llama-server",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "39239",
+      "--models-dir",
+      "/run/media/user/Data/bashkitten-builds/llama-live-2026-09-07/models",
+      "--models-max",
+      "0",
+      "--no-models-autoload",
+      "--models-preset",
+      "/run/media/user/Data/bashkitten-builds/llama-live-2026-09-07/config/llama-models.ini"
+    ]
+  },
+  "loadedCatalog": [
+    {
+      "id": "qwen3-cached-proof",
+      "aliases": [],
+      "tags": [],
+      "object": "model",
+      "owned_by": "llamacpp",
+      "created": 1788814209,
+      "status": {
+        "value": "loaded",
+        "args": [
+          "/usr/lib/llama-cpp/llama-server",
+          "--host",
+          "127.0.0.1",
+          "--jinja",
+          "--mmap",
+          "--port",
+          "36219",
+          "--alias",
+          "qwen3-cached-proof",
+          "--batch-size",
+          "512",
+          "--ctx-size",
+          "8192",
+          "--flash-attn",
+          "off",
+          "--model",
+          "/run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf",
+          "--n-gpu-layers",
+          "0",
+          "--parallel",
+          "1",
+          "--threads",
+          "4"
+        ],
+        "preset": "[qwen3-cached-proof]\njinja = true\nmlock = false\nmmap = true\nbatch-size = 512\nctx-size = 8192\nflash-attn = off\nmodel = /run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf\nn-gpu-layers = 0\nparallel = 1\nthreads = 4\n\n"
+      },
+      "architecture": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      },
+      "source": "preset",
+      "can_remove": false,
+      "meta": {
+        "vocab_type": 2,
+        "n_vocab": 151936,
+        "n_ctx": 8192,
+        "n_ctx_train": 40960,
+        "n_embd": 1024,
+        "n_params": 596049920,
+        "size": 390753280,
+        "ftype": "Q4_K - Medium"
+      }
+    }
+  ],
+  "registry": {
+    "provider": "llama.cpp",
+    "id": "qwen3-cached-proof",
+    "name": "Qwen3 0.6B cached proof",
+    "context_window": 8192,
+    "max_tokens": 1024,
+    "input": [
+      "text"
+    ],
+    "reasoning": false,
+    "thinking_levels": [
+      "off"
+    ],
+    "default_thinking": "off",
+    "cost": {
+      "input": 0.0,
+      "output": 0.0,
+      "cacheRead": 0.0,
+      "cacheWrite": 0.0
+    },
+    "available": true,
+    "authentication": "not_required",
+    "parameters": {
+      "id": "qwen3-cached-proof",
+      "name": "Qwen3 0.6B cached proof",
+      "provider": "llama.cpp",
+      "api": "openai-completions",
+      "baseUrl": "http://127.0.0.1:39239/v1",
+      "contextWindow": 8192,
+      "maxTokens": 1024,
+      "input": [
+        "text"
+      ],
+      "reasoning": false,
+      "compat": {
+        "supportsStore": false,
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false,
+        "supportsUsageInStreaming": true,
+        "supportsStrictMode": false,
+        "maxTokensField": "max_tokens"
+      },
+      "thinkingLevelMap": {},
+      "samplingParams": {
+        "temperature": 0,
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        }
+      },
+      "thinkingBudgets": {},
+      "llamaOptions": "ctx-size = 8192\nngl = 0\nthreads = 4\nbatch-size = 512\nparallel = 1\nflash-attn = off",
+      "llamaModelPath": "/run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf"
+    }
+  },
+  "inference": {
+    "sessionId": "01a07da2-b324-7c90-8d7f-587be752d124",
+    "entries": [
+      {
+        "type": "session",
+        "version": 3,
+        "id": "01a07da2-b324-7c90-8d7f-587be752d124",
+        "timestamp": "2026-09-07T20:50:09.828Z",
+        "cwd": "/run/media/user/Data/bashkitten-builds/llama-live-2026-09-07/work",
+        "provider": "llama.cpp",
+        "modelId": "qwen3-cached-proof",
+        "thinkingLevel": "off",
+        "modelParameters": {
+          "id": "qwen3-cached-proof",
+          "name": "Qwen3 0.6B cached proof",
+          "provider": "llama.cpp",
+          "api": "openai-completions",
+          "baseUrl": "http://127.0.0.1:39239/v1",
+          "contextWindow": 8192,
+          "maxTokens": 1024,
+          "input": [
+            "text"
+          ],
+          "reasoning": false,
+          "compat": {
+            "supportsStore": false,
+            "supportsDeveloperRole": false,
+            "supportsReasoningEffort": false,
+            "supportsUsageInStreaming": true,
+            "supportsStrictMode": false,
+            "maxTokensField": "max_tokens"
+          },
+          "thinkingLevelMap": {},
+          "samplingParams": {
+            "temperature": 0,
+            "chat_template_kwargs": {
+              "enable_thinking": false
+            }
+          },
+          "thinkingBudgets": {},
+          "llamaOptions": "ctx-size = 8192\nngl = 0\nthreads = 4\nbatch-size = 512\nparallel = 1\nflash-attn = off",
+          "llamaModelPath": "/run/media/user/Data/bashkitten-builds/llama-live-download/models/models--unsloth--Qwen3-0.6B-GGUF/snapshots/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_K_M.gguf"
+        }
+      },
+      {
+        "id": "bfcd79a8",
+        "parentId": null,
+        "timestamp": "2026-09-07T20:50:09.921Z",
+        "type": "message",
+        "message": {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Create a file named acceptance.txt containing exactly NATIVE-LLAMA-20260907 followed by a newline. Use the write tool."
+            }
+          ],
+          "timestamp": 1788814209921,
+          "delivery": "queue"
+        }
+      },
+      {
+        "id": "ae4bab60",
+        "parentId": "bfcd79a8",
+        "timestamp": "2026-09-07T20:50:18.811Z",
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "toolCall",
+              "id": "98DaJSIbtm5ILerMz3OmUuHqVchTgdVV",
+              "name": "write",
+              "arguments": {
+                "path": "acceptance.txt",
+                "content": "NATIVE-LLAMA-20260907\n"
+              }
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "llama.cpp",
+          "model": "qwen3-cached-proof",
+          "responseId": "chatcmpl-Kcvzr09RgwwZ5Om7zWAuOOcW4cMPENYh",
+          "usage": {
+            "input": 2074,
+            "output": 42,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 2116,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          },
+          "stopReason": "toolUse",
+          "rawStopReason": "tool_calls",
+          "timestamp": 1788814209922
+        }
+      },
+      {
+        "id": "086b5d42",
+        "parentId": "ae4bab60",
+        "timestamp": "2026-09-07T20:50:18.812Z",
+        "type": "message",
+        "message": {
+          "role": "toolResult",
+          "toolCallId": "98DaJSIbtm5ILerMz3OmUuHqVchTgdVV",
+          "toolName": "write",
+          "content": [
+            {
+              "type": "text",
+              "text": "Successfully wrote to acceptance.txt"
+            }
+          ],
+          "isError": false,
+          "timestamp": 1788814218812
+        }
+      },
+      {
+        "id": "48bce560",
+        "parentId": "086b5d42",
+        "timestamp": "2026-09-07T20:50:20.211Z",
+        "type": "message",
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "The file \"acceptance.txt\" has been successfully created with the content \"NATIVE-LLAMA-20260907\\n\"."
+            }
+          ],
+          "api": "openai-completions",
+          "provider": "llama.cpp",
+          "model": "qwen3-cached-proof",
+          "responseId": "chatcmpl-XYuJKHnb2yUitQMMiw4liwJxO6LPqUxK",
+          "usage": {
+            "input": 63,
+            "output": 32,
+            "cacheRead": 2070,
+            "cacheWrite": 0,
+            "reasoning": 0,
+            "totalTokens": 2165,
+            "cost": {
+              "input": 0.0,
+              "output": 0.0,
+              "cacheRead": 0.0,
+              "cacheWrite": 0.0,
+              "total": 0.0
+            }
+          },
+          "stopReason": "stop",
+          "rawStopReason": "stop",
+          "timestamp": 1788814218812
+        }
+      }
+    ],
+    "workerProcess": {
+      "pid": 426280,
+      "exe": "/run/media/user/Data/bashkitten-builds/target/debug/bashkitten-agent",
+      "argv": [
+        "/run/media/user/Data/bashkitten-builds/target/debug/bashkitten-agent",
+        "--session",
+        "01a07da2-b324-7c90-8d7f-587be752d124"
+      ]
+    },
+    "verifiedFileBytes": "NATIVE-LLAMA-20260907\n"
+  },
+  "result": "passed",
+  "serviceLogs": {
+    "bashkitten-llama-proof-20260907.service": "[36219] 0.00.302.271 W load: control-looking token: 128247 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden\n[36219] 0.00.850.053 I cmn          init: llama threadpool init, n_threads = 4\n[36219] 0.00.977.108 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 8192, kv_unified = 'false'\n[36219] 0.00.987.663 I srv  llama_server: model loaded\n[36219] 0.00.987.668 I srv  llama_server: listening on http://127.0.0.1:36219\n[36219] 0.00.988.100 I srv    operator(): child server monitoring thread started, waiting for EOF on stdin...\n0.01.412.874 I srv  proxy_reques: proxying request to model qwen3-cached-proof on port 36219\n[36219] 0.01.157.992 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1\n[36219] 0.01.158.386 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n[36219] 0.04.243.420 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   1024, progress = 0.49, t =   3.08 s / 331.93 tokens per second\n[36219] 0.06.175.235 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   1536, progress = 0.74, t =   5.02 s / 306.17 tokens per second\n[36219] 0.08.400.860 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   2048, progress = 0.99, t =   7.24 s / 282.78 tokens per second\n[36219] 0.10.029.678 I slot print_timing: id  0 | task 0 | prompt eval time =    7398.65 ms /  2074 tokens (    3.57 ms per token,   280.32 tokens per second)\n[36219] 0.10.029.680 I slot print_timing: id  0 | task 0 |        eval time =    1472.61 ms /    42 tokens (   35.92 ms per token,    27.84 tokens per second)\n[36219] 0.10.029.681 I slot print_timing: id  0 | task 0 |       total time =    8871.26 ms /  2116 tokens\n[36219] 0.10.029.686 I slot print_timing: id  0 | task 0 |    graphs reused =         41\n[36219] 0.10.029.805 I slot      release: id  0 | task 0 | stop processing: n_tokens = 2115, truncated = 0\n0.10.304.631 I srv  proxy_reques: proxying request to model qwen3-cached-proof on port 36219\n[36219] 0.10.049.323 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.970 (> 0.100 thold), f_keep = 0.979\n[36219] 0.10.049.563 I slot launch_slot_: id  0 | task 47 | processing task, is_child = 0\n[36219] 0.11.430.599 I slot print_timing: id  0 | task 47 | prompt eval time =     317.81 ms /    63 tokens (    5.04 ms per token,   198.23 tokens per second)\n[36219] 0.11.430.602 I slot print_timing: id  0 | task 47 |        eval time =    1063.20 ms /    32 tokens (   34.30 ms per token,    29.16 tokens per second)\n[36219] 0.11.430.602 I slot print_timing: id  0 | task 47 |       total time =    1381.01 ms /    95 tokens\n[36219] 0.11.430.603 I slot print_timing: id  0 | task 47 |    graphs reused =         71\n[36219] 0.11.430.692 I slot      release: id  0 | task 47 | stop processing: n_tokens = 2164, truncated = 0\n0.11.776.564 I srv        unload: stopping model instance name=qwen3-cached-proof\n0.11.776.581 I srv    operator(): stopping model instance name=qwen3-cached-proof\n[36219] 0.11.508.826 I srv    operator(): exit command received, exiting...\n[36219] 0.11.508.876 I srv    operator(): operator(): cleaning up before exit...\n0.11.884.749 I srv    operator(): instance name=qwen3-cached-proof exited with status 0",
+    "bashkitten-session-01a07da2-b324-7c90-8d7f-587be752d124.service": "Started bashkitten-session-01a07da2-b324-7c90-8d7f-587be752d124.service - [systemd-run] /run/media/user/Data/bashkitten-builds/target/debug/bashkitten-agent --session 01a07da2-b324-7c90-8d7f-587be752d124."
+  },
+  "cleanup": {
+    "bashkitten-llama-proof-20260907.service": {
+      "Id": "bashkitten-llama-proof-20260907.service",
+      "ActiveState": "inactive",
+      "MainPID": "0"
+    },
+    "bashkitten-session-01a07da2-b324-7c90-8d7f-587be752d124.service": {
+      "Id": "bashkitten-session-01a07da2-b324-7c90-8d7f-587be752d124.service",
+      "ActiveState": "inactive",
+      "MainPID": "0"
+    }
+  },
+  "productionAfter": {
+    "bashkitten-web.service": {
+      "Id": "bashkitten-web.service",
+      "ActiveState": "active",
+      "MainPID": "114039"
+    },
+    "bashkitten-llama.service": {
+      "Id": "bashkitten-llama.service",
+      "ActiveState": "inactive",
+      "MainPID": "0"
+    }
+  },
+  "date": "2026-09-07T20:50:20.877844+00:00"
+}

@@ -2,10 +2,12 @@ use crate::config::atomic_private_json;
 use crate::paths::{AppPaths, ensure_private_dir, set_private_file};
 use anyhow::{Context, Result, bail};
 use chrono::Utc;
+use fs2::FileExt;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::fs::{self, OpenOptions};
 use std::io::{BufRead, BufReader, Write};
+use std::os::unix::fs::OpenOptionsExt;
 use std::os::unix::net::UnixStream;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -47,6 +49,12 @@ pub struct SessionHeader {
         skip_serializing_if = "crate::agent::UsageTotals::is_zero"
     )]
     pub usage_before: crate::agent::UsageTotals,
+    #[serde(
+        rename = "cacheHitRateBefore",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub cache_hit_rate_before: Option<f64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -104,6 +112,8 @@ pub enum ControlRequest {
         action: QueueAction,
         #[serde(default)]
         content: Option<String>,
+        #[serde(default)]
+        edit_token: Option<String>,
     },
 }
 
@@ -111,6 +121,7 @@ pub enum ControlRequest {
 #[serde(rename_all = "snake_case")]
 pub enum QueueAction {
     BeginEdit,
+    TakeEdit,
     CancelEdit,
     Edit,
     Promote,
@@ -180,8 +191,12 @@ pub fn create(paths: &AppPaths, request: &NewSession) -> Result<String> {
     ensure_private_dir(&dir.join("attachments"))?;
 
     let title_path = dir.join("title");
-    fs::write(&title_path, format!("{}\n", shorten_title(&request.prompt)))?;
-    set_private_file(&title_path)?;
+    let mut title = OpenOptions::new()
+        .create_new(true)
+        .write(true)
+        .mode(0o600)
+        .open(&title_path)?;
+    writeln!(title, "{}", shorten_title(&request.prompt))?;
 
     let header = SessionHeader {
         kind: "session".into(),
@@ -196,14 +211,16 @@ pub fn create(paths: &AppPaths, request: &NewSession) -> Result<String> {
         model_parameters: request.model_parameters.clone(),
         parent_session: request.parent.clone(),
         usage_before: Default::default(),
+        cache_hit_rate_before: None,
     };
     let segment = dir.join("000001.jsonl");
     let mut file = OpenOptions::new()
         .create_new(true)
         .write(true)
+        .mode(0o600)
         .open(&segment)?;
     set_private_file(&segment)?;
-    serde_json::to_writer(&mut file, &header)?;
+    crate::lossless_json::to_writer(&mut file, &header)?;
     file.write_all(b"\n")?;
     file.sync_all()?;
     Ok(id)
@@ -245,6 +262,7 @@ pub fn socket_address(path: &Path) -> Result<SocketAddress> {
 }
 
 pub fn current_segment(dir: &Path) -> Result<(u32, PathBuf)> {
+    crate::paths::set_private_dir(dir)?;
     let mut best: Option<(u32, PathBuf)> = None;
     for entry in fs::read_dir(dir).with_context(|| format!("read {}", dir.display()))? {
         let entry = entry?;
@@ -263,11 +281,12 @@ pub fn current_segment(dir: &Path) -> Result<(u32, PathBuf)> {
 
 pub fn read_header(dir: &Path) -> Result<SessionHeader> {
     let (_, file) = current_segment(dir)?;
+    set_private_file(&file)?;
     let line = BufReader::new(fs::File::open(file)?)
         .lines()
         .next()
         .context("Empty session")??;
-    let header: SessionHeader = serde_json::from_str(&line)?;
+    let header: SessionHeader = crate::lossless_json::from_str(&line)?;
     if header.kind != "session" {
         bail!("Current segment does not begin with a session header");
     }
@@ -294,12 +313,13 @@ pub fn replace_current_header(
     event: Option<&Value>,
 ) -> Result<()> {
     let (_, path) = current_segment(dir)?;
+    set_private_file(&path)?;
     let bytes = fs::read(&path)?;
     let first_newline = bytes
         .iter()
         .position(|byte| *byte == b'\n')
         .context("Missing session header")?;
-    let first: Value = serde_json::from_slice(&bytes[..first_newline])?;
+    let first: Value = crate::lossless_json::from_slice(&bytes[..first_newline])?;
     if first["type"] != "session" {
         bail!("Current segment has no session header");
     }
@@ -311,14 +331,14 @@ pub fn replace_current_header(
             .write(true)
             .mode(0o600)
             .open(&temporary)?;
-        serde_json::to_writer(&mut output, header)?;
+        crate::lossless_json::to_writer(&mut output, header)?;
         output.write_all(b"\n")?;
         output.write_all(&bytes[first_newline + 1..])?;
         if let Some(event) = event {
             if !bytes.ends_with(b"\n") {
                 output.write_all(b"\n")?;
             }
-            serde_json::to_writer(&mut output, event)?;
+            crate::lossless_json::to_writer(&mut output, event)?;
             output.write_all(b"\n")?;
         }
         output.sync_all()?;
@@ -338,7 +358,7 @@ fn restore_fork_cwd(dir: &Path) -> Result<()> {
         header.cwd = initial.clone();
         let (_, segment) = current_segment(dir)?;
         for line in BufReader::new(fs::File::open(segment)?).lines() {
-            let value: Value = serde_json::from_str(&line?)?;
+            let value: Value = crate::lossless_json::from_str(&line?)?;
             if value["type"] == "custom"
                 && value["customType"] == "bashkitten.cwd"
                 && let Some(cwd) = value["data"]["cwd"].as_str()
@@ -363,7 +383,7 @@ pub fn effective_model(dir: &Path, header: &SessionHeader) -> (String, String) {
     let mut thinking = header.thinking_level.clone();
     if let Ok(file) = fs::File::open(file) {
         for line in BufReader::new(file).lines().map_while(Result::ok) {
-            let Ok(value) = serde_json::from_str::<Value>(&line) else {
+            let Ok(value) = crate::lossless_json::from_str::<Value>(&line) else {
                 continue;
             };
             match value.get("type").and_then(Value::as_str) {
@@ -408,10 +428,13 @@ pub fn list(paths: &AppPaths) -> Result<Vec<SessionSummary>> {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs() as i64;
-        let title = fs::read_to_string(dir.join("title"))
-            .unwrap_or_else(|_| "Untitled session".into())
-            .trim()
-            .to_owned();
+        let title_path = dir.join("title");
+        let title = if title_path.exists() {
+            set_private_file(&title_path)?;
+            fs::read_to_string(&title_path)?.trim().to_owned()
+        } else {
+            "Untitled session".into()
+        };
         let header = read_header(&dir).ok();
         sessions.push(SessionSummary {
             id: id.clone(),
@@ -445,10 +468,13 @@ pub fn read_segment(paths: &AppPaths, id: &str, number: u32) -> Result<Vec<Value
         bail!("Invalid segment number");
     }
     let path = paths.session_dir(id).join(format!("{number:06}.jsonl"));
+    crate::paths::set_private_dir(&paths.session_dir(id))?;
+    set_private_file(&path)?;
     let file = fs::File::open(path)?;
+    FileExt::lock_shared(&file)?;
     BufReader::new(file)
         .lines()
-        .map(|line| Ok(serde_json::from_str(&line?)?))
+        .map(|line| Ok(crate::lossless_json::from_str(&line?)?))
         .collect()
 }
 
@@ -494,14 +520,20 @@ pub(crate) fn attachment_relative_path(path: &str) -> Option<&Path> {
 }
 
 fn collect_history_strings(value: &Value, strings: &mut Vec<String>) {
+    if let Some(text) = crate::lossless_json::JsString::from_value(value) {
+        // Attachment paths are valid filesystem UTF-8. A lone code unit
+        // elsewhere in the same logical text must not hide the reference.
+        strings.push(text.as_str().to_owned());
+        return;
+    }
     match value {
-        Value::String(text) => strings.push(text.clone()),
         Value::Array(values) => values
             .iter()
             .for_each(|value| collect_history_strings(value, strings)),
-        Value::Object(values) => values
-            .values()
-            .for_each(|value| collect_history_strings(value, strings)),
+        Value::Object(_) => crate::lossless_json::object_entries(value)
+            .expect("logical object")
+            .into_iter()
+            .for_each(|(_, value)| collect_history_strings(value, strings)),
         _ => {}
     }
 }
@@ -517,11 +549,15 @@ fn copy_referenced_attachments(
     if !source_attachments.is_dir() {
         return Ok(());
     }
+    crate::paths::set_private_dir(&source_attachments)?;
     for entry in walkdir::WalkDir::new(&source_attachments)
         .min_depth(1)
         .follow_links(false)
     {
         let entry = entry?;
+        if entry.file_type().is_dir() {
+            crate::paths::set_private_dir(entry.path())?;
+        }
         let relative = entry.path().strip_prefix(&source_attachments)?;
         let destination = destination_attachments.join(relative);
         let reference = format!("/attachments/{}", relative.to_string_lossy());
@@ -530,6 +566,7 @@ fn copy_referenced_attachments(
                 .iter()
                 .any(|text| text.contains(&reference))
         {
+            set_private_file(entry.path())?;
             if let Some(parent) = destination.parent() {
                 ensure_private_dir(parent)?;
             }
@@ -564,6 +601,7 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
         bail!("Session does not exist");
     }
     let source_dir = fs::canonicalize(&source_dir)?;
+    crate::paths::set_private_dir(&source_dir)?;
     let new_id = Uuid::now_v7().to_string();
     let final_dir = paths.session_dir(&new_id);
     let temporary_dir = paths.sessions_dir().join(format!(".{new_id}.forking"));
@@ -589,15 +627,17 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
         let mut found = false;
 
         'segments: for (name, source_segment) in segments {
+            set_private_file(&source_segment)?;
             let destination_segment = temporary_dir.join(name);
             let mut output = OpenOptions::new()
                 .create_new(true)
                 .write(true)
+                .mode(0o600)
                 .open(&destination_segment)?;
             set_private_file(&destination_segment)?;
             for line in BufReader::new(fs::File::open(&source_segment)?).lines() {
                 let line = line?;
-                let mut value: Value = serde_json::from_str(&line)?;
+                let mut value: Value = crate::lossless_json::from_str(&line)?;
                 let is_header = value.get("type").and_then(Value::as_str) == Some("session");
                 let is_target = value.get("id").and_then(Value::as_str) == Some(target_entry_id);
                 if is_target && value.get("type").and_then(Value::as_str) != Some("message") {
@@ -616,7 +656,7 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
                     object.insert("parentSession".into(), Value::String(source_id.to_owned()));
                 }
                 if is_header {
-                    serde_json::to_writer(&mut output, &value)?;
+                    crate::lossless_json::to_writer(&mut output, &value)?;
                 } else {
                     output.write_all(line.as_bytes())?;
                 }
@@ -635,10 +675,19 @@ pub fn fork_at(paths: &AppPaths, source_id: &str, target_entry_id: &str) -> Resu
         restore_fork_cwd(&temporary_dir)?;
 
         let title_path = temporary_dir.join("title");
-        let title = fs::read_to_string(source_dir.join("title"))
-            .unwrap_or_else(|_| "Untitled session\n".into());
-        fs::write(&title_path, title)?;
-        set_private_file(&title_path)?;
+        let source_title = source_dir.join("title");
+        let title = if source_title.exists() {
+            set_private_file(&source_title)?;
+            fs::read_to_string(&source_title)?
+        } else {
+            "Untitled session\n".into()
+        };
+        let mut title_file = OpenOptions::new()
+            .create_new(true)
+            .write(true)
+            .mode(0o600)
+            .open(&title_path)?;
+        title_file.write_all(title.as_bytes())?;
         copy_referenced_attachments(&source_dir, &temporary_dir, &retained_strings)?;
         fs::rename(&temporary_dir, &final_dir)?;
         Ok(new_id.clone())
@@ -654,12 +703,25 @@ pub fn append_values(paths: &AppPaths, id: &str, values: &[Value]) -> Result<()>
     validate_id(id)?;
     let dir = paths.session_dir(id);
     let (_, path) = current_segment(&dir)?;
-    let mut file = OpenOptions::new().append(true).open(&path)?;
+    set_private_file(&path)?;
+    let mut bytes = Vec::new();
     for value in values {
-        serde_json::to_writer(&mut file, value)?;
-        file.write_all(b"\n")?;
+        crate::lossless_json::to_writer(&mut bytes, value)?;
+        bytes.push(b'\n');
     }
-    file.sync_all()?;
+    let mut file = OpenOptions::new().append(true).open(&path)?;
+    file.lock_exclusive()?;
+    let length = file.metadata()?.len();
+    if let Err(error) = file.write_all(&bytes).and_then(|_| file.sync_all()) {
+        // A retry must not duplicate a partially written batch or leave a
+        // partial JSON line ahead of the next completed turn.
+        file.set_len(length)
+            .and_then(|_| file.sync_all())
+            .with_context(|| {
+                format!("append failed ({error}); could not restore completed history boundary")
+            })?;
+        return Err(error.into());
+    }
     Ok(())
 }
 
@@ -685,10 +747,10 @@ pub fn rotate_compaction(
             .write(true)
             .mode(0o600)
             .open(&temporary)?;
-        serde_json::to_writer(&mut file, header)?;
+        crate::lossless_json::to_writer(&mut file, header)?;
         file.write_all(b"\n")?;
         for entry in entries {
-            serde_json::to_writer(&mut file, entry)?;
+            crate::lossless_json::to_writer(&mut file, entry)?;
             file.write_all(b"\n")?;
         }
         file.sync_all()?;
@@ -714,12 +776,12 @@ pub fn send(paths: &AppPaths, id: &str, request: &ControlRequest) -> Result<Cont
     let address = socket_address(&socket)?;
     let mut stream = UnixStream::connect(address.as_ref())
         .with_context(|| format!("connect {}", socket.display()))?;
-    serde_json::to_writer(&mut stream, request)?;
+    crate::lossless_json::to_writer(&mut stream, request)?;
     stream.write_all(b"\n")?;
     stream.flush()?;
     let mut line = String::new();
     BufReader::new(stream).read_line(&mut line)?;
-    Ok(serde_json::from_str(&line)?)
+    Ok(crate::lossless_json::from_str(&line)?)
 }
 
 pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {

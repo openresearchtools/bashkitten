@@ -11,9 +11,9 @@ use std::time::Duration;
 
 pub async fn find_token() -> Option<String> {
     if let Ok(token) = std::env::var("HF_TOKEN")
-        && !token.trim().is_empty()
+        && !token.trim_matches(crate::ecmascript::whitespace).is_empty()
     {
-        return Some(token.trim().into());
+        return Some(token.trim_matches(crate::ecmascript::whitespace).into());
     }
     let mut paths = Vec::new();
     if let Some(p) = std::env::var_os("HF_TOKEN_PATH").filter(|s| !s.is_empty()) {
@@ -32,9 +32,9 @@ pub async fn find_token() -> Option<String> {
     for path in paths {
         if seen.insert(path.clone())
             && let Ok(token) = tokio::fs::read_to_string(path).await
-            && !token.trim().is_empty()
+            && !token.trim_matches(crate::ecmascript::whitespace).is_empty()
         {
-            return Some(token.trim().into());
+            return Some(token.trim_matches(crate::ecmascript::whitespace).into());
         }
     }
     None
@@ -121,12 +121,41 @@ pub fn model_details(id: &str, payload: Value) -> Result<Value> {
     )
 }
 
+// Pi uses Number(header), not parseFloat: radix strings and exact Infinity
+// spellings are accepted; NaN and zero fall through to the RateLimit header.
+fn retry_after_number(value: &str) -> Option<f64> {
+    let value = value.trim_matches(crate::ecmascript::whitespace);
+    for (prefix, radix) in [
+        ("0x", 16),
+        ("0X", 16),
+        ("0b", 2),
+        ("0B", 2),
+        ("0o", 8),
+        ("0O", 8),
+    ] {
+        if let Some(digits) = value.strip_prefix(prefix) {
+            return crate::ecmascript::radix_number(digits, radix);
+        }
+    }
+    if value.is_empty() {
+        return Some(0.0);
+    }
+    static DECIMAL: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"^[+-]?(?:Infinity|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)$")
+            .unwrap()
+    });
+    DECIMAL
+        .is_match(value)
+        .then(|| value.parse().ok())
+        .flatten()
+}
+
 pub fn http_error(status: u16, headers: &reqwest::header::HeaderMap, payload: &Value) -> String {
     if status == 429 {
         let delay = headers
             .get("retry-after")
             .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.trim().parse::<f64>().ok())
+            .and_then(retry_after_number)
             .filter(|v| *v != 0.0)
             .or_else(|| {
                 headers
@@ -137,7 +166,12 @@ pub fn http_error(status: u16, headers: &reqwest::header::HeaderMap, payload: &V
             });
         return delay
             .filter(|n| *n != 0.0)
-            .map(|n| format!("Hugging Face rate limit reached; retry in {n}s"))
+            .map(|n| {
+                format!(
+                    "Hugging Face rate limit reached; retry in {}s",
+                    crate::ecmascript::number_string(n)
+                )
+            })
             .unwrap_or_else(|| "Hugging Face rate limit reached".into());
     }
     payload["error"]
@@ -166,7 +200,7 @@ impl Client {
     async fn request(&self, path: &str, cancel: &CancellationToken) -> Result<Value> {
         // Allowed network category: user explicitly requested HF search/details.
         let mut request = self.http.get(format!("{}{path}", self.base_url));
-        if let Some(token) = &self.token {
+        if let Some(token) = self.token.as_ref().filter(|token| !token.is_empty()) {
             request = request.bearer_auth(token);
         }
         let operation = async {
@@ -225,5 +259,96 @@ impl Client {
             self.request(&format!("/api/models/{encoded}?blobs=true"), cancel)
                 .await?,
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{Router, body::Body, http::Response, routing::any};
+    use std::sync::{Arc, Mutex};
+
+    #[tokio::test]
+    async fn explicit_http_actions_preserve_paths_gated_details_and_error_redaction() {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let recorded = calls.clone();
+        let app = Router::new().fallback(any(move |request: axum::extract::Request| {
+            let recorded = recorded.clone();
+            async move {
+                recorded.lock().unwrap().push((request.uri().to_string(), request.headers().get("authorization").cloned()));
+                let (status, payload) = if request.uri().path() == "/api/models/a%20b/model!" {
+                    (200, json!({"id":"a b/model!","gated":"manual","siblings":[{"rfilename":"model.Q4_K_M.gguf","size":2048}]}).to_string())
+                } else if request.uri().query().is_some_and(|query| query.contains("search=bad")) {
+                    (200, "malformed JSON".into())
+                } else if request.uri().query().is_some_and(|query| query.contains("search=private")) {
+                    (401, json!({"error":"Access rejected for fixture-token"}).to_string())
+                } else {
+                    (200, json!([{"id":"org/model","downloads":123}]).to_string())
+                };
+                Response::builder().status(status).body(Body::from(payload)).unwrap()
+            }
+        }));
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base_url = format!("http://{}", listener.local_addr().unwrap());
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = Client {
+            token: Some("fixture-token".into()),
+            base_url: base_url.clone(),
+            http: reqwest::Client::new(),
+        };
+        let cancel = CancellationToken::default();
+        assert_eq!(
+            client.search("tiny model/gguf", &cancel).await.unwrap(),
+            json!([{"id":"org/model","downloads":123.0}])
+        );
+        let details = client.details("a b/model!", &cancel).await.unwrap();
+        assert_eq!(details["gated"], "manual");
+        assert_eq!(
+            details["quantizations"],
+            json!([{"name":"Q4_K_M","size":2048.0}])
+        );
+        assert_eq!(
+            client.search("bad", &cancel).await.unwrap_err().to_string(),
+            "Hugging Face returned invalid search results"
+        );
+        assert_eq!(
+            client
+                .search("private", &cancel)
+                .await
+                .unwrap_err()
+                .to_string(),
+            "Access rejected for [redacted]"
+        );
+        cancel.cancel();
+        let before = calls.lock().unwrap().len();
+        assert_eq!(
+            client
+                .search("cancelled", &cancel)
+                .await
+                .unwrap_err()
+                .to_string(),
+            "This operation was aborted"
+        );
+        assert_eq!(calls.lock().unwrap().len(), before);
+        let public = Client {
+            token: Some(String::new()),
+            base_url,
+            http: reqwest::Client::new(),
+        };
+        public
+            .search("public", &CancellationToken::default())
+            .await
+            .unwrap();
+        let calls = calls.lock().unwrap();
+        assert_eq!(
+            calls[0].0,
+            "/api/models?search=tiny+model%2Fgguf&filter=gguf&sort=downloads&direction=-1&limit=20"
+        );
+        assert_eq!(calls[1].0, "/api/models/a%20b/model!?blobs=true");
+        assert_eq!(calls[0].1.as_ref().unwrap(), "Bearer fixture-token");
+        assert!(calls.last().unwrap().1.is_none());
+        server.abort();
     }
 }

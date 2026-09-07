@@ -2,6 +2,754 @@
   "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
   "cases": [
     {
+      "name": "tool-literal-surrogate",
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "tool_calls": [
+                  {
+                    "index": 0,
+                    "id": "a",
+                    "function": {
+                      "name": "read",
+                      "arguments": "{\"path\":\"\ud83d"
+                    }
+                  }
+                ]
+              },
+              "finish_reason": "tool_calls"
+            }
+          ]
+        }
+      ],
+      "done": true,
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "a",
+            "name": "read",
+            "arguments": {
+              "path": "\ud83d"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "responseId": "response-id",
+        "rawStopReason": "tool_calls"
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"path\":\"\ud83d"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer fixture-key",
+        "content-type": "application/json",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-stainless-arch": "x64",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "Linux",
+        "x-stainless-package-version": "6.40.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "v22.22.1"
+      }
+    },
+    {
+      "name": "tool-split-surrogate",
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "tool_calls": [
+                  {
+                    "index": 0,
+                    "id": "a",
+                    "function": {
+                      "name": "read",
+                      "arguments": "{\"path\":\"\ud83d"
+                    }
+                  }
+                ]
+              },
+              "finish_reason": null
+            }
+          ]
+        },
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "tool_calls": [
+                  {
+                    "index": 0,
+                    "id": "a",
+                    "function": {
+                      "name": "read",
+                      "arguments": "\ude00\"}"
+                    }
+                  }
+                ]
+              },
+              "finish_reason": "tool_calls"
+            }
+          ]
+        }
+      ],
+      "done": true,
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "toolCall",
+            "id": "a",
+            "name": "read",
+            "arguments": {
+              "path": "😀"
+            }
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "toolUse",
+        "responseId": "response-id",
+        "rawStopReason": "tool_calls"
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "toolcall_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "{\"path\":\"\ud83d"
+        },
+        {
+          "type": "toolcall_delta",
+          "contentIndex": 0,
+          "delta": "\ude00\"}"
+        },
+        {
+          "type": "toolcall_end",
+          "contentIndex": 0
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer fixture-key",
+        "content-type": "application/json",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-stainless-arch": "x64",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "Linux",
+        "x-stainless-package-version": "6.40.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "v22.22.1"
+      }
+    },
+    {
+      "name": "text-split-surrogate",
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "content": "\ud83d"
+              },
+              "finish_reason": null
+            }
+          ]
+        },
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "content": "\ude00"
+              },
+              "finish_reason": "stop"
+            }
+          ]
+        }
+      ],
+      "done": true,
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "😀"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "responseId": "response-id",
+        "rawStopReason": "stop"
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "\ud83d"
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "\ude00"
+        },
+        {
+          "type": "text_end",
+          "contentIndex": 0
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer fixture-key",
+        "content-type": "application/json",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-stainless-arch": "x64",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "Linux",
+        "x-stainless-package-version": "6.40.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "v22.22.1"
+      }
+    },
+    {
+      "name": "thinking-split-surrogate",
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "reasoning": "\ud83d"
+              },
+              "finish_reason": null
+            }
+          ]
+        },
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "reasoning": "\ude00"
+              },
+              "finish_reason": "stop"
+            }
+          ]
+        }
+      ],
+      "done": true,
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "😀",
+            "thinkingSignature": "reasoning"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "stop",
+        "responseId": "response-id",
+        "rawStopReason": "stop"
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "thinking_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "\ud83d"
+        },
+        {
+          "type": "thinking_delta",
+          "contentIndex": 0,
+          "delta": "\ude00"
+        },
+        {
+          "type": "thinking_end",
+          "contentIndex": 0
+        },
+        {
+          "type": "done"
+        }
+      ],
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer fixture-key",
+        "content-type": "application/json",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-stainless-arch": "x64",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "Linux",
+        "x-stainless-package-version": "6.40.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "v22.22.1"
+      }
+    },
+    {
+      "name": "malformed-before-output",
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "raw": "{broken"
+        }
+      ],
+      "done": true,
+      "expected": {
+        "role": "assistant",
+        "content": [],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "error"
+        }
+      ],
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer fixture-key",
+        "content-type": "application/json",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-stainless-arch": "x64",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "Linux",
+        "x-stainless-package-version": "6.40.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "v22.22.1"
+      }
+    },
+    {
+      "name": "malformed-after-output",
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "id": "response-id",
+          "model": "fixture",
+          "choices": [
+            {
+              "index": 0,
+              "delta": {
+                "content": "retained"
+              },
+              "finish_reason": null
+            }
+          ]
+        },
+        {
+          "raw": "{\"a\":}"
+        }
+      ],
+      "done": true,
+      "expected": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "retained"
+          }
+        ],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "responseId": "response-id",
+        "errorMessage": "Unexpected token '}', \"{\"a\":}\" is not valid JSON"
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "text_start",
+          "contentIndex": 0
+        },
+        {
+          "type": "text_delta",
+          "contentIndex": 0,
+          "delta": "retained"
+        },
+        {
+          "type": "error"
+        }
+      ],
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer fixture-key",
+        "content-type": "application/json",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-stainless-arch": "x64",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "Linux",
+        "x-stainless-package-version": "6.40.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "v22.22.1"
+      }
+    },
+    {
+      "name": "error-object",
+      "model": {
+        "id": "fixture",
+        "name": "Fixture",
+        "api": "openai-completions",
+        "provider": "fixture",
+        "baseUrl": "http://localhost/v1",
+        "contextWindow": 128000,
+        "maxTokens": 16384,
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 0.1,
+          "cacheWrite": 1.25
+        }
+      },
+      "chunks": [
+        {
+          "error": {
+            "message": "Denied",
+            "code": "fixture_error"
+          }
+        }
+      ],
+      "done": true,
+      "expected": {
+        "role": "assistant",
+        "content": [],
+        "api": "openai-completions",
+        "provider": "fixture",
+        "model": "fixture",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Denied"
+      },
+      "events": [
+        {
+          "type": "start"
+        },
+        {
+          "type": "error"
+        }
+      ],
+      "headers": {
+        "accept": "application/json",
+        "authorization": "Bearer fixture-key",
+        "content-type": "application/json",
+        "user-agent": "pi (linux 7.0.0-30-generic; x64)",
+        "x-stainless-arch": "x64",
+        "x-stainless-lang": "js",
+        "x-stainless-os": "Linux",
+        "x-stainless-package-version": "6.40.0",
+        "x-stainless-retry-count": "0",
+        "x-stainless-runtime": "node",
+        "x-stainless-runtime-version": "v22.22.1"
+      }
+    },
+    {
       "name": "finish-stop",
       "model": {
         "id": "fixture",
@@ -4581,7 +5329,7 @@
       }
     },
     {
-      "name": "usage-39",
+      "name": "usage-46",
       "model": {
         "id": "fixture",
         "name": "Fixture",
@@ -4689,7 +5437,7 @@
       }
     },
     {
-      "name": "usage-40",
+      "name": "usage-47",
       "model": {
         "id": "fixture",
         "name": "Fixture",
@@ -4797,7 +5545,7 @@
       }
     },
     {
-      "name": "usage-41",
+      "name": "usage-48",
       "model": {
         "id": "fixture",
         "name": "Fixture",
@@ -4905,7 +5653,7 @@
       }
     },
     {
-      "name": "usage-42",
+      "name": "usage-49",
       "model": {
         "id": "fixture",
         "name": "Fixture",
@@ -5021,7 +5769,7 @@
       }
     },
     {
-      "name": "usage-43",
+      "name": "usage-50",
       "model": {
         "id": "fixture",
         "name": "Fixture",
@@ -5349,6 +6097,25 @@
     }
   ],
   "jsonCases": [
+    {
+      "input": "{\"a\":\"\ud83d",
+      "expected": {
+        "a": "\ud83d"
+      }
+    },
+    {
+      "input": "{\"\ud800\":\"\udc00",
+      "expected": {
+        "\ud800": "\udc00"
+      }
+    },
+    {
+      "input": "{\"a\":\"\ud800\",\"b\":\"\\udb80\\udc00",
+      "expected": {
+        "a": "\ud800",
+        "b": "󰀀"
+      }
+    },
     {
       "input": "",
       "expected": {}

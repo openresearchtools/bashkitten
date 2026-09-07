@@ -109,15 +109,19 @@ fn image_item(image: &Value) -> Value {
     json!({"type":"input_image","detail":"auto","image_url":format!("data:{};base64,{}",s(&image["mimeType"]),s(&image["data"]))})
 }
 pub fn tool_output(model: &Value, content: &[Value]) -> Value {
-    let text = content
-        .iter()
-        .filter(|v| v["type"] == "text")
-        .map(|v| s(&v["text"]))
-        .collect::<Vec<_>>()
-        .join("\n");
+    let raw = crate::lossless_json::JsString::join(
+        &content
+            .iter()
+            .filter(|v| v["type"] == "text")
+            .map(|v| crate::lossless_json::JsString::from_value(&v["text"]).unwrap_or_default())
+            .collect::<Vec<_>>(),
+        "\n",
+    );
+    let has_text = !raw.is_empty();
+    let text = raw.sanitized();
     let images: Vec<_> = content.iter().filter(|v| v["type"] == "image").collect();
     if images.is_empty() || !list(&model["input"]).iter().any(|v| v == "image") {
-        return json!(if !text.is_empty() {
+        return json!(if has_text {
             text
         } else if !images.is_empty() {
             "(see attached image)".into()
@@ -126,18 +130,21 @@ pub fn tool_output(model: &Value, content: &[Value]) -> Value {
         });
     }
     let mut output = Vec::new();
-    if !text.is_empty() {
+    if has_text {
         output.push(json!({"type":"input_text","text":text}));
     }
     output.extend(images.into_iter().map(image_item));
     json!(output)
 }
 pub fn convert_messages(model: &Value, context: &Value) -> Result<Vec<Value>> {
-    let transformed = crate::completions::transform_messages_with(
+    let mut transformed = crate::completions::transform_messages_with(
         model,
         list(&context["messages"]),
         normalize_tool_id,
     );
+    for message in &mut transformed {
+        crate::completions::sanitize_message_text(message, false);
+    }
     let mut output = Vec::new();
     let mut index = 0;
     for message in transformed {
@@ -155,7 +162,7 @@ pub fn convert_messages(model: &Value, context: &Value) -> Result<Vec<Value>> {
                 let mut text_index=0;let mut items=Vec::new();
                 for block in list(&message["content"]) {
                     match s(&block["type"]) {
-                        "thinking" => if let Some(signature)=block["thinkingSignature"].as_str().filter(|s|!s.is_empty()){items.push(serde_json::from_str(signature)?);},
+                        "thinking" => if let Some(signature)=block["thinkingSignature"].as_str().filter(|s|!s.is_empty()){items.push(crate::lossless_json::from_str(signature)?);},
                         "text" => {
                             let fallback=if text_index==0{format!("msg_pi_{index}")}else{format!("msg_pi_{index}_{text_index}")};text_index+=1;
                             items.push(text_item(&block["text"],&block["textSignature"],fallback));
@@ -164,7 +171,7 @@ pub fn convert_messages(model: &Value, context: &Value) -> Result<Vec<Value>> {
                             let mut ids=s(&block["id"]).split('|');let call=ids.next().unwrap_or_default();let item=ids.next();
                             let mut value=json!({"type":"function_call"});
                             if let Some(id)=item.filter(|id|id.starts_with("fc_") && (!same_provider || same_model)){value["id"]=json!(id);}
-                            value["call_id"]=json!(call);value["name"]=block["name"].clone();value["arguments"]=json!(serde_json::to_string(&block["arguments"])?);
+                            value["call_id"]=json!(call);value["name"]=block["name"].clone();value["arguments"]=json!(crate::lossless_json::to_string(&block["arguments"])?);
                             if same_model && let Some(namespace)=block.get("namespace"){value["namespace"]=namespace.clone();}
                             items.push(value);
                         },
@@ -181,12 +188,13 @@ pub fn convert_messages(model: &Value, context: &Value) -> Result<Vec<Value>> {
     Ok(output)
 }
 pub fn build_body(model: &Value, context: &Value, options: &Value) -> Result<Value> {
-    let prompt = s(&context["systemPrompt"]);
+    let prompt =
+        crate::lossless_json::JsString::from_value(&context["systemPrompt"]).unwrap_or_default();
     let verbosity = options["textVerbosity"]
         .as_str()
         .filter(|v| !v.is_empty())
         .unwrap_or("low");
-    let mut body = json!({"model":model["id"],"store":false,"stream":true,"instructions":if prompt.is_empty(){"You are a helpful assistant."}else{prompt},"input":convert_messages(model,context)?,"text":{"verbosity":verbosity},"include":["reasoning.encrypted_content"]});
+    let mut body = json!({"model":model["id"],"store":false,"stream":true,"instructions":if prompt.is_empty(){json!("You are a helpful assistant.")}else{prompt.to_value()},"input":convert_messages(model,context)?,"text":{"verbosity":verbosity},"include":["reasoning.encrypted_content"]});
     if options["cacheRetention"] != "none"
         && let Some(session) = options["sessionId"].as_str()
     {

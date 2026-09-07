@@ -20,9 +20,9 @@ use std::{
         Arc, Mutex, OnceLock,
         atomic::{AtomicBool, Ordering},
     },
-    time::{Duration, Instant},
+    time::Duration,
 };
-use tokio::{net::TcpStream, sync::OwnedMutexGuard, task::AbortHandle};
+use tokio::{net::TcpStream, sync::OwnedMutexGuard, task::AbortHandle, time::Instant};
 use tokio_tungstenite::{
     MaybeTlsStream, WebSocketStream,
     tungstenite::{
@@ -174,6 +174,9 @@ impl Drop for Lease {
         if self.keep
             && let Some(key) = self.key.clone()
         {
+            // Publish the idle task and reusable flag together. A concurrent
+            // acquire must be able to cancel that task before taking the socket.
+            let mut idle_task = entry.idle.lock().unwrap();
             drop(guard);
             entry.busy.store(false, Ordering::SeqCst);
             let weak_pool = Arc::downgrade(&self.pool);
@@ -193,7 +196,7 @@ impl Drop for Lease {
                     remove(&pool, &key, &idle_entry);
                 }
             });
-            *entry.idle.lock().unwrap() = Some(task.abort_handle());
+            *idle_task = Some(task.abort_handle());
         } else {
             entry.alive.store(false, Ordering::SeqCst);
             if let Some(key) = &self.key {
@@ -301,7 +304,7 @@ async fn acquire(
 }
 #[derive(Debug)]
 struct Failure {
-    message: String,
+    message: crate::lossless_json::JsString,
     name: &'static str,
     code: Option<Value>,
     non_transport: bool,
@@ -312,6 +315,11 @@ impl std::fmt::Display for Failure {
     }
 }
 impl std::error::Error for Failure {}
+pub(crate) fn exception_message(error: &anyhow::Error) -> Option<crate::lossless_json::JsString> {
+    error
+        .downcast_ref::<Failure>()
+        .map(|error| error.message.clone())
+}
 fn api_failure(event: &Value, error: anyhow::Error) -> anyhow::Error {
     let code = if event["type"] == "response.failed" {
         event["response"]["error"]["code"].as_str()
@@ -321,7 +329,7 @@ fn api_failure(event: &Value, error: anyhow::Error) -> anyhow::Error {
             .or_else(|| event["error"]["code"].as_str())
     };
     Failure {
-        message: error.to_string(),
+        message: crate::json_error::exception_message(&error),
         name: "CodexApiError",
         code: code.map(|v| json!(v)),
         non_transport: true,
@@ -347,7 +355,8 @@ fn closed(frame: Option<CloseFrame>) -> anyhow::Error {
             } else {
                 format!(" {reason}")
             }
-        ),
+        )
+        .into(),
         name: "WebSocketCloseError",
         code: Some(json!(code)),
         non_transport: false,
@@ -368,7 +377,7 @@ fn attempt(
         let cached=matches!(request.transport,Some(Transport::Auto|Transport::WebsocketCached)) && lease.key.is_some();
         let request_body=if cached {cached_body(&body,&mut lease.entry.continuation.lock().unwrap())}else{body.clone()};
         let mut payload=json!({"type":"response.create"});payload.as_object_mut().unwrap().extend(request_body.as_object().ok_or_else(||anyhow!("invalid request body"))?.clone());
-        let socket=lease.guard.as_mut().unwrap();socket.send(Message::Text(payload.to_string().into())).await?;
+        let socket=lease.guard.as_mut().unwrap();socket.send(Message::Text(crate::lossless_json::to_string(&payload)?.into())).await?;
         let previous=serde_json::to_value(output.message("openai-codex",&request.model,&ModelCost::default()))?;
         let mut state=crate::codex_stream::State::with_blocks(request.model.clone(),previous["content"].as_array().cloned().unwrap_or_default()).with_service_tier(request.service_tier.clone());let mut started=false;
         loop {
@@ -377,7 +386,8 @@ fn attempt(
                 Some(Message::Text(value))=>value.to_string(),Some(Message::Binary(value))=>String::from_utf8_lossy(&value).into_owned(),Some(Message::Close(frame))=>Err(closed(frame))?,None=>Err(closed(None))?,Some(Message::Ping(_))=>{socket.flush().await?;continue;},_=>continue,
             };
             if text.is_empty(){continue;}
-            let value:Value=serde_json::from_str(&text).map_err(|error|Failure{message:format!("Invalid Codex WebSocket JSON: {error}"),name:"CodexProtocolError",code:None,non_transport:true})?;
+            let value:Value=crate::lossless_json::from_str(&text).map_err(|_|Failure{message:crate::json_error::error_text(&text).prefixed("Invalid Codex WebSocket JSON: "),name:"CodexProtocolError",code:None,non_transport:true})?;
+            if value.is_null(){Err(Failure{message:"Invalid Codex WebSocket JSON: Cannot read properties of null (reading 'type')".into(),name:"CodexProtocolError",code:None,non_transport:true})?;}
             if value["type"].as_str().is_none_or(str::is_empty){continue;}
             // Pi maps API failures before emitting start.
             if matches!(value["type"].as_str(),Some("error"|"response.failed")){state.push(&value).map_err(|error|api_failure(&value,error))?;}
@@ -433,9 +443,9 @@ pub fn stream(
                 if code==Some("previous_response_not_found")&&!retried_missing{retried_missing=true;continue;}
                 let limit=!started&&code==Some("websocket_connection_limit_reached");if limit&&!retried_limit{retried_limit=true;continue;}
                 if failure.is_some_and(|v|v.non_transport)&&!limit{Err(error)?;unreachable!();}
-                let mut details=json!({"configuredTransport":transport.name(),"eventsEmitted":started,"phase":if started{"after_message_stream_start"}else{"before_message_stream_start"},"requestBytes":body.to_string().len()});
+                let mut details=json!({"configuredTransport":transport.name(),"eventsEmitted":started,"phase":if started{"after_message_stream_start"}else{"before_message_stream_start"},"requestBytes":crate::lossless_json::to_vec(&body).expect("request JSON").len()});
                 if !started {details["fallbackTransport"]=json!("sse");}
-                let mut error_info=json!({"name":failure.map(|v|v.name).unwrap_or("Error"),"message":crate::provider_http::safe_error_body(&error.to_string(),std::slice::from_ref(&token))});if let Some(code)=failure.and_then(|v|v.code.clone()){error_info["code"]=code;}
+                let mut error_info=json!({"name":failure.map(|v|v.name).unwrap_or("Error"),"message":crate::json_error::exception_message(&crate::json_error::redact(anyhow!(crate::json_error::ProviderError(crate::json_error::exception_message(&error))),std::slice::from_ref(&token)))});if let Some(code)=failure.and_then(|v|v.code.clone()){error_info["code"]=code;}
                 yield Event::Diagnostic{diagnostic:json!({"type":"provider_transport_failure","timestamp":chrono::Utc::now().timestamp_millis(),"error":error_info,"details":details})};
                 if let Some(session)=&session{pool.fallback.lock().unwrap().insert(session.clone());}
                 if started{Err(error)?;unreachable!();}break;
@@ -445,4 +455,106 @@ pub fn stream(
         let mut events=crate::providers::parse_codex_responses_stream(response,request.model,request.service_tier,request.http_idle_timeout_ms);
         while let Some(event)=events.next().await{let event=event?;if matches!(event,Event::Start{..}){if start_emitted{continue;}start_emitted=true;}yield event;}
     }))
+}
+
+#[cfg(test)]
+mod lifecycle_tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn cached_socket_busy_leases_account_isolation_and_maximum_age() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("ws://{}", listener.local_addr().unwrap());
+        let (closed_tx, mut closed_rx) = tokio::sync::mpsc::unbounded_channel();
+        let server = tokio::spawn(async move {
+            let mut tasks = tokio::task::JoinSet::new();
+            loop {
+                let (socket, _) = listener.accept().await.unwrap();
+                let closed = closed_tx.clone();
+                tasks.spawn(async move {
+                    let mut socket = tokio_tungstenite::accept_async(socket).await.unwrap();
+                    while let Some(Ok(message)) = socket.next().await {
+                        if let Message::Close(frame) = message {
+                            let _ = closed
+                                .send(frame.map(|f| f.reason.to_string()).unwrap_or_default());
+                            return;
+                        }
+                    }
+                });
+            }
+        });
+        let session = uuid::Uuid::new_v4().to_string();
+        let headers = HeaderMap::new();
+        let first = acquire(&url, &headers, Some(&session), "one", None)
+            .await
+            .unwrap();
+        let cached = first.entry.clone();
+        let simultaneous = acquire(&url, &headers, Some(&session), "one", None)
+            .await
+            .unwrap();
+        assert!(simultaneous.key.is_none());
+        assert!(!Arc::ptr_eq(&cached, &simultaneous.entry));
+        drop(simultaneous);
+        assert_eq!(closed_rx.recv().await.unwrap(), "done");
+        first.keep();
+        let reused = acquire(&url, &headers, Some(&session), "one", None)
+            .await
+            .unwrap();
+        assert!(Arc::ptr_eq(&cached, &reused.entry));
+        let other_account = acquire(&url, &headers, Some(&session), "two", None)
+            .await
+            .unwrap();
+        assert!(!Arc::ptr_eq(&cached, &other_account.entry));
+        drop(other_account);
+        assert_eq!(closed_rx.recv().await.unwrap(), "done");
+        tokio::time::pause();
+        tokio::time::advance(Duration::from_secs(55 * 60)).await;
+        // An active stream survives the connection-age limit; expiry occurs
+        // when the completed socket is next acquired, as in pinned Pi.
+        assert!(cached.alive.load(Ordering::SeqCst));
+        reused.keep();
+        let replacement = acquire(&url, &headers, Some(&session), "one", Some(0))
+            .await
+            .unwrap();
+        assert!(!Arc::ptr_eq(&cached, &replacement.entry));
+        assert_eq!(closed_rx.recv().await.unwrap(), "connection_age_limit");
+        drop(replacement);
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn idle_socket_expires_after_five_minutes() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let url = format!("ws://{}", listener.local_addr().unwrap());
+        let (closed_tx, closed_rx) = tokio::sync::oneshot::channel();
+        let server = tokio::spawn(async move {
+            let (socket, _) = listener.accept().await.unwrap();
+            let mut socket = tokio_tungstenite::accept_async(socket).await.unwrap();
+            let frame = socket.next().await.unwrap().unwrap();
+            let Message::Close(Some(frame)) = frame else {
+                panic!("expected idle expiry close");
+            };
+            closed_tx.send(frame.reason.to_string()).unwrap();
+        });
+        let session = uuid::Uuid::new_v4().to_string();
+        let lease = acquire(&url, &HeaderMap::new(), Some(&session), "one", None)
+            .await
+            .unwrap();
+        let entry = lease.entry.clone();
+        tokio::time::pause();
+        lease.keep();
+        tokio::task::yield_now().await;
+        tokio::time::advance(Duration::from_secs(299)).await;
+        assert!(entry.alive.load(Ordering::SeqCst));
+        tokio::time::advance(Duration::from_secs(1)).await;
+        assert_eq!(closed_rx.await.unwrap(), "idle_timeout");
+        assert!(
+            !pool()
+                .entries
+                .lock()
+                .unwrap()
+                .contains_key(&(session, "one".into()))
+        );
+        server.await.unwrap();
+    }
 }

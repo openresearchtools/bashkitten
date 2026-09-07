@@ -169,8 +169,73 @@ pub fn resolve_model(
     Ok(model)
 }
 
+/// Pinned sdk.ts: restore the configured pair when no model override exists;
+/// otherwise use the preset's per-model thinking setting, with Codex's native
+/// clamp for its built-in catalog. Explicit thinking always goes through the
+/// strict shared validation required by BashKitten.
+pub fn resolve_new_session(
+    config: &AppConfig,
+    model: Option<&str>,
+    thinking: Option<&str>,
+    authenticated: bool,
+    llama_available: bool,
+) -> anyhow::Result<(ModelInfo, String)> {
+    let full_id = model.unwrap_or(&config.default_model);
+    let selected = find_model(config, full_id, authenticated, llama_available)
+        .filter(|model| model.available)
+        .ok_or_else(|| anyhow::anyhow!("Unknown or unavailable model: {full_id}"))?;
+    let thinking = thinking.map(str::to_owned).unwrap_or_else(|| {
+        if full_id == config.default_model {
+            config.default_thinking.clone()
+        } else if selected.provider == "openai-codex" {
+            crate::codex::clamp_thinking(&selected.parameters, &config.default_thinking)
+        } else {
+            selected.default_thinking.clone()
+        }
+    });
+    let selected = resolve_model(config, full_id, &thinking, authenticated, llama_available)?;
+    Ok((selected, thinking))
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn explicit_model_uses_its_declared_default_and_explicit_thinking_stays_strict() {
+        use crate::config::{AppConfig, CompatibleAuth, CompatibleProvider, ModelPreset};
+        let mut config = AppConfig::default();
+        let preset = ModelPreset {
+            id: "local".into(),
+            reasoning: false,
+            thinking_levels: vec!["off".into()],
+            default_thinking: "off".into(),
+            ..Default::default()
+        };
+        config.compatible_providers.push(CompatibleProvider {
+            id: "fixture".into(),
+            name: "Fixture".into(),
+            base_url: "http://127.0.0.1:8000/v1".into(),
+            auth: CompatibleAuth::None,
+            models: vec![preset],
+        });
+        let (model, thinking) =
+            super::resolve_new_session(&config, Some("fixture/local"), None, false, false).unwrap();
+        assert_eq!(model.full_id(), "fixture/local");
+        assert_eq!(thinking, "off");
+        assert!(
+            super::resolve_new_session(
+                &config,
+                Some("fixture/local"),
+                Some("medium"),
+                false,
+                false
+            )
+            .is_err()
+        );
+        let (model, thinking) =
+            super::resolve_new_session(&config, None, None, true, false).unwrap();
+        assert_eq!(model.full_id(), config.default_model);
+        assert_eq!(thinking, config.default_thinking);
+    }
     fn tier(input: f64, output: f64, cache_read: f64, cache_write: f64) -> crate::agent::CostRates {
         crate::agent::CostRates {
             input,

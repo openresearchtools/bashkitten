@@ -26,6 +26,10 @@ const assistant=(content:any,extra:any={})=>({role:'assistant',content,api:'open
 const call={type:'toolCall',id:'call',name:'read',arguments:{path:'a'}};
 const result={role:'toolResult',toolCallId:'call',toolName:'read',content:[{type:'text',text:'output'}],isError:false,timestamp:2};
 const text={type:'text',text:'answer'};const thinking={type:'thinking',thinking:'reasoning',thinkingSignature:'reasoning_content'};
+add('unicode-system',{}, {...context,systemPrompt:'\ud83d'});
+add('unicode-tool-only',{}, {...context,messages:[assistant([call]),{...result,content:[{type:'text',text:'\ud83d'}]}]});
+add('unicode-thinking-as-text',{compat:{requiresThinkingAsText:true}}, {...context,messages:[assistant([{...thinking,thinking:'\ud83d'}])]});
+add('unicode-thinking-raw',{}, {...context,messages:[assistant([{...thinking,thinking:'\ud83d'},text])]});
 const histories:any[]=[
  [assistant([text])],[assistant([{type:'text',text:' \n '},text])],[assistant([])],[assistant([thinking])],[assistant([thinking,text])],[assistant([{...thinking,thinkingSignature:'reasoning_text'},text])],[assistant([{...thinking,thinkingSignature:undefined},text])],
  [assistant([call]),result,{role:'user',content:'next',timestamp:3}],

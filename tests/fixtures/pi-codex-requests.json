@@ -375,6 +375,261 @@
   ],
   "cases": [
     {
+      "name": "unicode-system",
+      "model": {
+        "id": "gpt-5.5",
+        "name": "GPT-5.5",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "https://chatgpt.com/backend-api",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 5,
+          "output": 30,
+          "cacheRead": 0.5,
+          "cacheWrite": 0,
+          "tiers": [
+            {
+              "inputTokensAbove": 272000,
+              "input": 10,
+              "output": 45,
+              "cacheRead": 1,
+              "cacheWrite": 0
+            }
+          ]
+        },
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "minimal": "low"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true,
+          "supportsToolSearch": true
+        }
+      },
+      "context": {
+        "systemPrompt": "\ud83d",
+        "messages": [
+          {
+            "role": "user",
+            "content": "Question",
+            "timestamp": 1
+          }
+        ],
+        "tools": [
+          {
+            "name": "read",
+            "description": "Read a file",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        ]
+      },
+      "options": {},
+      "simple": false,
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "\ud83d",
+        "input": [
+          {
+            "role": "user",
+            "content": [
+              {
+                "type": "input_text",
+                "text": "Question"
+              }
+            ]
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "tools": [
+          {
+            "type": "function",
+            "name": "read",
+            "description": "Read a file",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "unicode-tool-only",
+      "model": {
+        "id": "gpt-5.5",
+        "name": "GPT-5.5",
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "baseUrl": "https://chatgpt.com/backend-api",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 5,
+          "output": 30,
+          "cacheRead": 0.5,
+          "cacheWrite": 0,
+          "tiers": [
+            {
+              "inputTokensAbove": 272000,
+              "input": 10,
+              "output": 45,
+              "cacheRead": 1,
+              "cacheWrite": 0
+            }
+          ]
+        },
+        "contextWindow": 272000,
+        "maxTokens": 128000,
+        "thinkingLevelMap": {
+          "xhigh": "xhigh",
+          "minimal": "low"
+        },
+        "compat": {
+          "supportsOpenAIGrammarTools": true,
+          "supportsToolSearch": true
+        }
+      },
+      "context": {
+        "systemPrompt": "  System instructions\n",
+        "messages": [
+          {
+            "role": "assistant",
+            "api": "openai-codex-responses",
+            "provider": "openai-codex",
+            "model": "gpt-5.5",
+            "stopReason": "toolUse",
+            "timestamp": 1,
+            "content": [
+              {
+                "type": "toolCall",
+                "id": "call|fc_call",
+                "name": "read",
+                "arguments": {
+                  "path": "a"
+                }
+              }
+            ]
+          },
+          {
+            "role": "toolResult",
+            "toolCallId": "call|fc_call",
+            "toolName": "read",
+            "content": [
+              {
+                "type": "text",
+                "text": "\ud83d"
+              }
+            ],
+            "isError": false,
+            "timestamp": 2
+          }
+        ],
+        "tools": [
+          {
+            "name": "read",
+            "description": "Read a file",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            }
+          }
+        ]
+      },
+      "options": {},
+      "simple": false,
+      "expected": {
+        "model": "gpt-5.5",
+        "store": false,
+        "stream": true,
+        "instructions": "  System instructions\n",
+        "input": [
+          {
+            "type": "function_call",
+            "id": "fc_call",
+            "call_id": "call",
+            "name": "read",
+            "arguments": "{\"path\":\"a\"}"
+          },
+          {
+            "type": "function_call_output",
+            "call_id": "call",
+            "output": ""
+          }
+        ],
+        "text": {
+          "verbosity": "low"
+        },
+        "include": [
+          "reasoning.encrypted_content"
+        ],
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+        "tools": [
+          {
+            "type": "function",
+            "name": "read",
+            "description": "Read a file",
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "path"
+              ]
+            },
+            "strict": null
+          }
+        ]
+      }
+    },
+    {
       "name": "gpt-6-astra-off",
       "model": {
         "id": "gpt-6-astra",

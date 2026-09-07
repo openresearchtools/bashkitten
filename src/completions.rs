@@ -278,7 +278,7 @@ pub(crate) fn valid_reasoning_detail(v: &Value) -> bool {
 }
 fn reasoning_details(blocks: &[&Value], calls: &[&Value]) -> Option<Value> {
     for block in blocks {
-        if let Ok(details) = serde_json::from_str::<Value>(s(&block["thinkingSignature"]))
+        if let Ok(details) = crate::lossless_json::from_str::<Value>(s(&block["thinkingSignature"]))
             && details.is_array()
             && !list(&details).is_empty()
             && list(&details).iter().all(valid_reasoning_detail)
@@ -288,7 +288,9 @@ fn reasoning_details(blocks: &[&Value], calls: &[&Value]) -> Option<Value> {
     }
     let details: Vec<_> = calls
         .iter()
-        .filter_map(|call| serde_json::from_str::<Value>(s(&call["thoughtSignature"])).ok())
+        .filter_map(|call| {
+            crate::lossless_json::from_str::<Value>(s(&call["thoughtSignature"])).ok()
+        })
         .filter(|v| {
             valid_reasoning_detail(v)
                 && v["type"] == "reasoning.encrypted"
@@ -309,13 +311,46 @@ fn bridge() -> Value {
     json!({"role":"assistant","content":"I have processed the tool results."})
 }
 
+/// Pi sanitizes message prose at request conversion, while tool argument JSON
+/// and opaque reasoning signatures retain their original UTF-16 escapes.
+pub(crate) fn sanitize_message_text(message: &mut Value, _thinking_as_text: bool) {
+    if message["role"] == "toolResult" {
+        return;
+    }
+    if message["role"] == "user"
+        && let Some(text) = crate::lossless_json::JsString::from_value(&message["content"])
+    {
+        message["content"] = json!(text.sanitized());
+    } else if let Some(blocks) = message["content"].as_array_mut() {
+        for block in blocks {
+            let key = if block["type"] == "text" {
+                Some("text")
+            } else {
+                None
+            };
+            if let Some(key) = key
+                && let Some(text) = crate::lossless_json::JsString::from_value(&block[key])
+            {
+                block[key] = json!(text.sanitized());
+            }
+        }
+    }
+}
+
 pub fn convert_messages(model: &Value, context: &Value, compat: &Value) -> Vec<Value> {
+    let has_system = crate::lossless_json::JsString::from_value(&context["systemPrompt"])
+        .is_some_and(|value| !value.is_empty());
+    let mut context = context.clone();
+    context["systemPrompt"] = crate::lossless_json::sanitize(&context["systemPrompt"]);
     let mut out = Vec::new();
     let mut last = "";
-    if !s(&context["systemPrompt"]).is_empty() {
+    if has_system {
         out.push(json!({"role":if model["reasoning"]==true&&compat["supportsDeveloperRole"]==true{"developer"}else{"system"},"content":context["systemPrompt"]}));
     }
-    let transformed = transform_messages(model, list(&context["messages"]));
+    let mut transformed = transform_messages(model, list(&context["messages"]));
+    for message in &mut transformed {
+        sanitize_message_text(message, compat["requiresThinkingAsText"] == true);
+    }
     let mut i = 0;
     while i < transformed.len() {
         let message = &transformed[i];
@@ -345,13 +380,20 @@ pub fn convert_messages(model: &Value, context: &Value, compat: &Value) -> Vec<V
             let details = reasoning_details(&thinking, &calls);
             let nonempty: Vec<_> = thinking
                 .iter()
-                .filter(|b| !s(&b["thinking"]).trim().is_empty())
+                .filter(|b| {
+                    crate::lossless_json::JsString::from_value(&b["thinking"])
+                        .is_some_and(|v| !v.trim().is_empty())
+                })
                 .collect();
             let mut assistant = json!({"role":"assistant","content":if compat["requiresAssistantAfterToolResult"]==true{json!("")}else{Value::Null}});
             if !nonempty.is_empty() && compat["requiresThinkingAsText"] == true {
                 let thinking_text = nonempty
                     .iter()
-                    .map(|b| s(&b["thinking"]))
+                    .map(|b| {
+                        crate::lossless_json::JsString::from_value(&b["thinking"])
+                            .unwrap_or_default()
+                            .sanitized()
+                    })
                     .collect::<Vec<_>>()
                     .join("\n\n");
                 let mut content = vec![json!({"type":"text","text":thinking_text})];
@@ -373,18 +415,21 @@ pub fn convert_messages(model: &Value, context: &Value, compat: &Value) -> Vec<V
                         signature,
                         "reasoning_content" | "reasoning" | "reasoning_text"
                     ) {
-                        assistant[signature] = json!(
-                            nonempty
+                        assistant[signature] = json!(crate::lossless_json::JsString::join(
+                            &nonempty
                                 .iter()
-                                .map(|b| s(&b["thinking"]))
-                                .collect::<Vec<_>>()
-                                .join("\n")
-                        );
+                                .map(
+                                    |b| crate::lossless_json::JsString::from_value(&b["thinking"])
+                                        .unwrap_or_default()
+                                )
+                                .collect::<Vec<_>>(),
+                            "\n"
+                        ));
                     }
                 }
             }
             if !calls.is_empty() {
-                assistant["tool_calls"]=json!(calls.iter().map(|call|json!({"id":call["id"],"type":"function","function":{"name":call["name"],"arguments":call["arguments"].to_string()}})).collect::<Vec<_>>());
+                assistant["tool_calls"]=json!(calls.iter().map(|call|json!({"id":call["id"],"type":"function","function":{"name":call["name"],"arguments":crate::lossless_json::to_string(&call["arguments"]).expect("JSON value serializes")}})).collect::<Vec<_>>());
             }
             if let Some(details) = details {
                 assistant["reasoning_details"] = details;
@@ -409,14 +454,19 @@ pub fn convert_messages(model: &Value, context: &Value, compat: &Value) -> Vec<V
             while i < transformed.len() && transformed[i]["role"] == "toolResult" {
                 let message = &transformed[i];
                 let blocks = list(&message["content"]);
-                let text = blocks
-                    .iter()
-                    .filter(|b| b["type"] == "text")
-                    .map(|b| s(&b["text"]))
-                    .collect::<Vec<_>>()
-                    .join("\n");
+                let text = crate::lossless_json::JsString::join(
+                    &blocks
+                        .iter()
+                        .filter(|b| b["type"] == "text")
+                        .map(|b| {
+                            crate::lossless_json::JsString::from_value(&b["text"])
+                                .unwrap_or_default()
+                        })
+                        .collect::<Vec<_>>(),
+                    "\n",
+                );
                 let has_images = blocks.iter().any(|b| b["type"] == "image");
-                let mut result = json!({"role":"tool","content":if !text.is_empty(){text}else if has_images{"(see attached image)".into()}else{"(no tool output)".into()},"tool_call_id":message["toolCallId"]});
+                let mut result = json!({"role":"tool","content":if !text.is_empty(){text.sanitized()}else if has_images{"(see attached image)".into()}else{"(no tool output)".into()},"tool_call_id":message["toolCallId"]});
                 if compat["requiresToolResultName"] == true && truthy(&message["toolName"]) {
                     result["name"] = message["toolName"].clone();
                 }

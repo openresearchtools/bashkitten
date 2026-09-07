@@ -1,0 +1,3972 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "node": "v22.22.1",
+  "v8": "12.4.254.21-node.35",
+  "token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+  "model": {
+    "id": "gpt-5.5",
+    "name": "Fixture",
+    "api": "openai-codex-responses",
+    "provider": "openai-codex",
+    "baseUrl": "http://localhost/backend-api",
+    "contextWindow": 272000,
+    "maxTokens": 128000,
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 1,
+      "output": 2,
+      "cacheRead": 0.1,
+      "cacheWrite": 1.25
+    }
+  },
+  "cases": [
+    {
+      "input": "😀",
+      "expected": "Unexpected token '\ud83d', \"😀\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: 😀\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token '\ud83d', \"😀\" is not valid JSON"
+      }
+    },
+    {
+      "input": "{\"a\":😀}",
+      "expected": "Unexpected token '\ud83d', \"{\"a\":😀}\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":😀}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token '\ud83d', \"{\"a\":😀}\" is not valid JSON"
+      }
+    },
+    {
+      "input": "xxxxxxxxx😀xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expected": "Unexpected token 'x', \"xxxxxxxxx\ud83d\"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: xxxxxxxxx😀xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'x', \"xxxxxxxxx\ud83d\"... is not valid JSON"
+      }
+    },
+    {
+      "input": "",
+      "expected": "Unexpected end of JSON input",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "OpenAI Responses stream ended before a terminal response event"
+      }
+    },
+    {
+      "input": "{",
+      "expected": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "[",
+      "expected": "Unexpected end of JSON input",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "input": "{\"a\"",
+      "expected": "Expected ':' after property name in JSON at position 4 (line 1 column 5)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\"\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ':' after property name in JSON at position 4 (line 1 column 5)"
+      }
+    },
+    {
+      "input": "{\"a\":",
+      "expected": "Unexpected end of JSON input",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "input": "{\"a\":1",
+      "expected": "Expected ',' or '}' after property value in JSON at position 6 (line 1 column 7)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":1\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ',' or '}' after property value in JSON at position 6 (line 1 column 7)"
+      }
+    },
+    {
+      "input": "{\"a\":1,",
+      "expected": "Expected double-quoted property name in JSON at position 7 (line 1 column 8)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":1,\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected double-quoted property name in JSON at position 7 (line 1 column 8)"
+      }
+    },
+    {
+      "input": "{broken",
+      "expected": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {broken\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "{a:1}",
+      "expected": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {a:1}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "{\"a\":}",
+      "expected": "Unexpected token '}', \"{\"a\":}\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token '}', \"{\"a\":}\" is not valid JSON"
+      }
+    },
+    {
+      "input": "[1,]",
+      "expected": "Unexpected token ']', \"[1,]\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [1,]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token ']', \"[1,]\" is not valid JSON"
+      }
+    },
+    {
+      "input": "[1 2]",
+      "expected": "Expected ',' or ']' after array element in JSON at position 3 (line 1 column 4)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [1 2]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ',' or ']' after array element in JSON at position 3 (line 1 column 4)"
+      }
+    },
+    {
+      "input": "{\"a\" 1}",
+      "expected": "Expected ':' after property name in JSON at position 5 (line 1 column 6)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\" 1}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ':' after property name in JSON at position 5 (line 1 column 6)"
+      }
+    },
+    {
+      "input": "{\"a\":1 \"b\":2}",
+      "expected": "Expected ',' or '}' after property value in JSON at position 7 (line 1 column 8)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":1 \"b\":2}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ',' or '}' after property value in JSON at position 7 (line 1 column 8)"
+      }
+    },
+    {
+      "input": "\"abc",
+      "expected": "Unterminated string in JSON at position 4 (line 1 column 5)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"abc\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unterminated string in JSON at position 4 (line 1 column 5)"
+      }
+    },
+    {
+      "input": "\"a\\",
+      "expected": "Unexpected end of JSON input",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"a\\\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "input": "\"a\\x\"",
+      "expected": "Bad escaped character in JSON at position 3 (line 1 column 4)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"a\\x\"\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Bad escaped character in JSON at position 3 (line 1 column 4)"
+      }
+    },
+    {
+      "input": "\"\\u1\"",
+      "expected": "Bad Unicode escape in JSON at position 4 (line 1 column 5)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"\\u1\"\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Bad Unicode escape in JSON at position 4 (line 1 column 5)"
+      }
+    },
+    {
+      "input": "\"a\nb\"",
+      "expected": "Bad control character in string literal in JSON at position 2 (line 1 column 3)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"a\ndata: b\"\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Bad control character in string literal in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "input": "true false",
+      "expected": "Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: true false\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)"
+      }
+    },
+    {
+      "input": "undefined",
+      "expected": "\"undefined\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: undefined\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: \"undefined\" is not valid JSON"
+      }
+    },
+    {
+      "input": "NaN",
+      "expected": "\"NaN\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: NaN\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: \"NaN\" is not valid JSON"
+      }
+    },
+    {
+      "input": "Infinity",
+      "expected": "\"Infinity\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: Infinity\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: \"Infinity\" is not valid JSON"
+      }
+    },
+    {
+      "input": "-",
+      "expected": "No number after minus sign in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: -\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: No number after minus sign in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "01",
+      "expected": "Unexpected number in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: 01\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected number in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "1.",
+      "expected": "Unterminated fractional number in JSON at position 2 (line 1 column 3)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: 1.\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unterminated fractional number in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "input": "1e",
+      "expected": "Exponent part is missing a number in JSON at position 2 (line 1 column 3)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: 1e\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Exponent part is missing a number in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "input": "1e+",
+      "expected": "Exponent part is missing a number in JSON at position 3 (line 1 column 4)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: 1e+\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Exponent part is missing a number in JSON at position 3 (line 1 column 4)"
+      }
+    },
+    {
+      "input": "[.1]",
+      "expected": "Unexpected token '.', \"[.1]\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [.1]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token '.', \"[.1]\" is not valid JSON"
+      }
+    },
+    {
+      "input": "tru",
+      "expected": "Unexpected end of JSON input",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: tru\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "input": "trux",
+      "expected": "Unexpected token 'x', \"trux\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: trux\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'x', \"trux\" is not valid JSON"
+      }
+    },
+    {
+      "input": "nulx",
+      "expected": "Unexpected token 'x', \"nulx\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: nulx\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'x', \"nulx\" is not valid JSON"
+      }
+    },
+    {
+      "input": "truex",
+      "expected": "Unexpected non-whitespace character after JSON at position 4 (line 1 column 5)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: truex\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected non-whitespace character after JSON at position 4 (line 1 column 5)"
+      }
+    },
+    {
+      "input": "falsex",
+      "expected": "Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: falsex\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected non-whitespace character after JSON at position 5 (line 1 column 6)"
+      }
+    },
+    {
+      "input": "nullx",
+      "expected": "Unexpected non-whitespace character after JSON at position 4 (line 1 column 5)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: nullx\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected non-whitespace character after JSON at position 4 (line 1 column 5)"
+      }
+    },
+    {
+      "input": "{\"😀\": false x}",
+      "expected": "Expected ',' or '}' after property value in JSON at position 13 (line 1 column 14)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"😀\": false x}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ',' or '}' after property value in JSON at position 13 (line 1 column 14)"
+      }
+    },
+    {
+      "input": "{\"a\": \n false x}",
+      "expected": "Expected ',' or '}' after property value in JSON at position 14 (line 2 column 8)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\": \ndata:  false x}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ',' or '}' after property value in JSON at position 12 (line 2 column 7)"
+      }
+    },
+    {
+      "input": "[}",
+      "expected": "Unexpected token '}', \"[}\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token '}', \"[}\" is not valid JSON"
+      }
+    },
+    {
+      "input": "{]",
+      "expected": "Expected property name or '}' in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "[1:2]",
+      "expected": "Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [1:2]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "input": "{\"a\":01}",
+      "expected": "Unexpected number in JSON at position 6 (line 1 column 7)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":01}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected number in JSON at position 6 (line 1 column 7)"
+      }
+    },
+    {
+      "input": " [1]\rX",
+      "expected": "Unexpected non-whitespace character after JSON at position 5 (line 2 column 1)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:  [1]\rX\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected non-whitespace character after JSON at position 4 (line 2 column 1)"
+      }
+    },
+    {
+      "input": "n",
+      "expected": "Unexpected end of JSON input",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: n\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "input": "{\"a\": true, \"b\": [1, 2, 3, x]}",
+      "expected": "Unexpected token 'x', ...\"[1, 2, 3, x]}\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\": true, \"b\": [1, 2, 3, x]}\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'x', ...\"[1, 2, 3, x]}\" is not valid JSON"
+      }
+    },
+    {
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expected": "Unexpected token 'x', \"xxxxxxxxxx\"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'x', \"xxxxxxxxxx\"... is not valid JSON"
+      }
+    },
+    {
+      "input": "[\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",x]",
+      "expected": "Unexpected token 'x', ...\"aaaaaaaa\",x]\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",x]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'x', ...\"aaaaaaaa\",x]\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                                                  X",
+      "expected": "Unexpected token 'X', ...\"          X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                                                   X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "true\r\n x",
+      "expected": "Unexpected non-whitespace character after JSON at position 7 (line 2 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: true\r\ndata:  x\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected non-whitespace character after JSON at position 5 (line 2 column 1)"
+      }
+    },
+    {
+      "input": "{\"a\":\r\n }",
+      "expected": "Unexpected token '}', \"{\"a\":\r\n }\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: {\"a\":\r\ndata:  }\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token '}', \"{\"a\":\n}\" is not valid JSON"
+      }
+    },
+    {
+      "input": "-x",
+      "expected": "No number after minus sign in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: -x\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: No number after minus sign in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "-01",
+      "expected": "Unexpected number in JSON at position 2 (line 1 column 3)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: -01\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected number in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "input": "1.e",
+      "expected": "Unterminated fractional number in JSON at position 2 (line 1 column 3)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: 1.e\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unterminated fractional number in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "input": "[1",
+      "expected": "Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [1\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Expected ',' or ']' after array element in JSON at position 2 (line 1 column 3)"
+      }
+    },
+    {
+      "input": "[1,",
+      "expected": "Unexpected end of JSON input",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [1,\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected end of JSON input"
+      }
+    },
+    {
+      "input": "\"\\u",
+      "expected": "Bad Unicode escape in JSON at position 3 (line 1 column 4)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"\\u\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Bad Unicode escape in JSON at position 3 (line 1 column 4)"
+      }
+    },
+    {
+      "input": "\"\\u123",
+      "expected": "Bad Unicode escape in JSON at position 6 (line 1 column 7)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"\\u123\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Bad Unicode escape in JSON at position 6 (line 1 column 7)"
+      }
+    },
+    {
+      "input": "\"\t\"",
+      "expected": "Bad control character in string literal in JSON at position 1 (line 1 column 2)",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: \"\t\"\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Bad control character in string literal in JSON at position 1 (line 1 column 2)"
+      }
+    },
+    {
+      "input": "[object Object]",
+      "expected": "\"[object Object]\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [object Object]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: \"[object Object]\" is not valid JSON"
+      }
+    },
+    {
+      "input": "[undefined]",
+      "expected": "Unexpected token 'u', \"[undefined]\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: [undefined]\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'u', \"[undefined]\" is not valid JSON"
+      }
+    },
+    {
+      "input": "X",
+      "expected": "Unexpected token 'X', \"X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "X     ",
+      "expected": "Unexpected token 'X', \"X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "X         ",
+      "expected": "Unexpected token 'X', \"X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "X          ",
+      "expected": "Unexpected token 'X', \"X          \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "X           ",
+      "expected": "Unexpected token 'X', \"X           \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "X                    ",
+      "expected": "Unexpected token 'X', \"X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata: X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": " X",
+      "expected": "Unexpected token 'X', \" X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:  X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": " X     ",
+      "expected": "Unexpected token 'X', \" X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:  X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": " X         ",
+      "expected": "Unexpected token 'X', \" X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:  X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": " X          ",
+      "expected": "Unexpected token 'X', \" X          \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:  X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": " X           ",
+      "expected": "Unexpected token 'X', \" X           \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:  X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": " X                    ",
+      "expected": "Unexpected token 'X', \" X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:  X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "        X",
+      "expected": "Unexpected token 'X', \"        X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:         X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "        X     ",
+      "expected": "Unexpected token 'X', \"        X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:         X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "        X         ",
+      "expected": "Unexpected token 'X', \"        X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:         X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "        X          ",
+      "expected": "Unexpected token 'X', \"        X          \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:         X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "        X           ",
+      "expected": "Unexpected token 'X', \"        X           \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:         X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "        X                    ",
+      "expected": "Unexpected token 'X', \"        X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:         X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "         X",
+      "expected": "Unexpected token 'X', \"         X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:          X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "         X     ",
+      "expected": "Unexpected token 'X', \"         X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:          X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "         X         ",
+      "expected": "Unexpected token 'X', \"         X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:          X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "         X          ",
+      "expected": "Unexpected token 'X', \"         X          \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:          X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "         X           ",
+      "expected": "Unexpected token 'X', \"         X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:          X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "         X                    ",
+      "expected": "Unexpected token 'X', \"         X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:          X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "          X",
+      "expected": "Unexpected token 'X', \"          X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:           X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "          X     ",
+      "expected": "Unexpected token 'X', \"          X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:           X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "          X         ",
+      "expected": "Unexpected token 'X', \"          X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:           X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "          X          ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:           X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "          X           ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:           X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "          X                    ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:           X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "           X",
+      "expected": "Unexpected token 'X', \"           X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:            X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "           X     ",
+      "expected": "Unexpected token 'X', \"           X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:            X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "           X         ",
+      "expected": "Unexpected token 'X', ...\"          X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:            X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "           X          ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:            X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "           X           ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:            X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "           X                    ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:            X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "               X",
+      "expected": "Unexpected token 'X', \"               X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "               X     ",
+      "expected": "Unexpected token 'X', ...\"          X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "               X         ",
+      "expected": "Unexpected token 'X', ...\"          X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "               X          ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "               X           ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "               X                    ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                    X",
+      "expected": "Unexpected token 'X', ...\"          X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                     X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                    X     ",
+      "expected": "Unexpected token 'X', ...\"          X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                     X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                    X         ",
+      "expected": "Unexpected token 'X', ...\"          X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                     X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                    X          ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                     X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                    X           ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                     X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                    X                    ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                     X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                              X",
+      "expected": "Unexpected token 'X', ...\"          X\" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                               X\n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                              X     ",
+      "expected": "Unexpected token 'X', ...\"          X     \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                               X     \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                              X         ",
+      "expected": "Unexpected token 'X', ...\"          X         \" is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                               X         \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                              X          ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                               X          \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                              X           ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                               X           \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    },
+    {
+      "input": "                              X                    ",
+      "expected": "Unexpected token 'X', ...\"          X         \"... is not valid JSON",
+      "payload": "data: {\"type\":\"response.output_item.done\",\"output_index\":0,\"item\":{\"type\":\"message\",\"id\":\"msg_1\",\"role\":\"assistant\",\"phase\":\"final_answer\",\"content\":[{\"type\":\"output_text\",\"text\":\"Retained\",\"annotations\":[]}]}}\n\ndata:                               X                    \n\n",
+      "output": {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Retained",
+            "textSignature": "{\"v\":1,\"id\":\"msg_1\",\"phase\":\"final_answer\"}"
+          }
+        ],
+        "api": "openai-codex-responses",
+        "provider": "openai-codex",
+        "model": "gpt-5.5",
+        "usage": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "totalTokens": 0,
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "total": 0
+          }
+        },
+        "stopReason": "error",
+        "errorMessage": "Invalid Codex SSE JSON: Unexpected token 'X', \"X\" is not valid JSON"
+      }
+    }
+  ]
+}

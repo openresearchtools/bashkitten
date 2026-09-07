@@ -27,7 +27,9 @@ function add(name:string,model:any=base,ctx:any=context,options:any={},simple=fa
  if(simple){const level=options.reasoning?clampThinkingLevel(model,options.reasoning):undefined;resolved.reasoningEffort=level==='off'?undefined:level;}
  const cacheSessionId=options.cacheRetention==='none'?undefined:clampOpenAIPromptCacheKey(options.sessionId);
  cases.push({name,model,context:ctx,options,simple,expected:buildRequestBody(model,ctx,resolved,cacheSessionId)});
-}
+}add('unicode-system',base,{...context,systemPrompt:'\ud83d'});
+add('unicode-tool-only',base,{...context,messages:[{role:'assistant',api:'openai-codex-responses',provider:'openai-codex',model:'gpt-5.5',stopReason:'toolUse',timestamp:1,content:[{type:'toolCall',id:'call|fc_call',name:'read',arguments:{path:'a'}}]},{role:'toolResult',toolCallId:'call|fc_call',toolName:'read',content:[{type:'text',text:'\ud83d'}],isError:false,timestamp:2}]});
+
 for(const model of models)for(const reasoning of ['off','minimal','low','medium','high','xhigh','max'])add(`${model.id}-${reasoning}`,model,context,{reasoning,sessionId:'stable'},true);
 for(const systemPrompt of ['', ' ', '\n  Keep whitespace \n'])add(`prompt-${JSON.stringify(systemPrompt)}`,base,{...context,systemPrompt});
 for(const cacheRetention of ['none','short','long'])for(const sessionId of [undefined,'','a'.repeat(90),'😀'.repeat(70)])add(`cache-${cacheRetention}-${sessionId?.length}`,base,context,{cacheRetention,sessionId});

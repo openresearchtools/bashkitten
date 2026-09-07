@@ -74,6 +74,10 @@ pub fn ensure_private_dir(path: &Path) -> Result<()> {
         .mode(0o700)
         .create(path)
         .with_context(|| format!("create {}", path.display()))?;
+    set_private_dir(path)
+}
+
+pub fn set_private_dir(path: &Path) -> Result<()> {
     fs::set_permissions(path, fs::Permissions::from_mode(0o700))
         .with_context(|| format!("chmod 0700 {}", path.display()))?;
     Ok(())

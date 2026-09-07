@@ -17,62 +17,6 @@ fn systemctl(args: &[&str]) -> Result<()> {
     Ok(())
 }
 
-fn save_settings(paths: &AppPaths, startup: bool, restart: bool, port: u16) -> Result<()> {
-    let mut config = AppConfig::load(paths)?;
-    let old_port = config.web_port;
-    if port != old_port {
-        std::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, port))
-            .with_context(|| format!("Port {port} is unavailable"))?;
-    }
-    let service = Command::new("systemctl")
-        .args([
-            "--user",
-            "show",
-            "bashkitten-web.service",
-            "--property=Id",
-            "--value",
-        ])
-        .output()
-        .context("resolve Web UI service")?;
-    let service_name = String::from_utf8(service.stdout)?.trim().to_owned();
-    if !service.status.success()
-        || !service_name.ends_with(".service")
-        || service_name.contains('/')
-    {
-        bail!("Could not resolve the Web UI service");
-    }
-    let user_config = std::env::var_os("XDG_CONFIG_HOME")
-        .map(std::path::PathBuf::from)
-        .or_else(|| {
-            std::env::var_os("HOME").map(|home| std::path::PathBuf::from(home).join(".config"))
-        })
-        .context("User configuration directory is unavailable")?;
-    let dropin = user_config
-        .join("systemd/user")
-        .join(format!("{service_name}.d/restart.conf"));
-    config.start_at_login = startup;
-    config.web_restart_on_failure = restart;
-    config.web_port = port;
-    config.save(paths)?;
-    bashkitten::config::atomic_private_bytes(
-        &dropin,
-        format!(
-            "[Service]\nRestart={}\n",
-            if restart { "on-failure" } else { "no" }
-        )
-        .as_bytes(),
-    )?;
-    systemctl(&[
-        if startup { "enable" } else { "disable" },
-        "bashkitten-controller.service",
-    ])?;
-    systemctl(&["daemon-reload"])?;
-    if old_port != port {
-        systemctl(&["restart", "bashkitten-web.service"])?;
-    }
-    Ok(())
-}
-
 fn main() -> Result<()> {
     let app = gtk4::Application::builder()
         .application_id("org.openresearchtools.BashKitten")
@@ -166,7 +110,7 @@ fn build_window(app: &gtk4::Application, paths: AppPaths) {
     let port_for_save = port.clone();
     let save_status = status.clone();
     save.connect_clicked(move |_| {
-        match save_settings(
+        match bashkitten::controller::save_settings(
             &path_for_save,
             startup_for_save.is_active(),
             restart_for_save.is_active(),

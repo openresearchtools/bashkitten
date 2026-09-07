@@ -40,25 +40,26 @@ Additional offline generators use the same verified checkout and tsx setup:
   by exact encoded byte hashes, dimensions, MIME and wording.
 - `generate-pi-prompt-fixtures.mts` → `pi-prompts.json`: pinned model-visible
   prompt/tool wording and project instruction loading.
-- `generate-pi-llama-fixtures.mts` → `pi-llama.json`: 61 router/HF cases.
+- `generate-pi-llama-fixtures.mts` → `pi-llama.json`: 76 router/HF cases.
   The generator replaces fetch with deterministic responses and records requests;
   private progress helpers are exposed by appending exports to a temporary copy
   of unchanged upstream source. It makes no router/Hugging Face network requests.
   Rust exercises the router fixtures against an actual loopback HTTP server;
-  additional tests exercise asynchronous polling and cancellation. HF fixture
-  coverage currently verifies decoding/errors, not native HTTP request capture.
+  additional tests exercise asynchronous polling, cancellation and rollback.
+  Native Hugging Face loopback tests now verify query strings, authorization,
+  gated-model responses, quantization, sibling filtering and cancellation.
 
-- `generate-pi-completions-fixtures.mts` → `pi-completions.json`: 139 actual
+- `generate-pi-completions-fixtures.mts` → `pi-completions.json`: 143 actual
   compatibility detection, request construction, thinking-format, history,
   image omission, cache and context-limit cases. Private helpers are exposed
   by appended exports in a temporary copy; network access throws.
-- `generate-pi-chat-stream-fixtures.mts` → `pi-chat-stream.json`: 46 complete
-  streaming responses and 25 partial-JSON/repair cases. Pi's real OpenAI SDK
+- `generate-pi-chat-stream-fixtures.mts` → `pi-chat-stream.json`: 53 complete
+  streaming responses and 28 partial-JSON/repair cases. Pi's real OpenAI SDK
   receives deterministic SSE through its fetch injection. Rust consumes those
   SSE bytes through an actual loopback HTTP server and compares full persisted
   message fields, ordering, signatures, errors and usage against Pi.
 
-- `generate-pi-chat-http-fixtures.mts` → `pi-chat-http.json`: 25 actual SDK
+- `generate-pi-chat-http-fixtures.mts` → `pi-chat-http.json`: 27 actual SDK
   HTTP errors, provider retry and affinity-header cases. The Rust test compares
   native loopback requests and errors. SDK `x-stainless-*` reporting is explicitly
   excluded by the no-telemetry rule; other compared headers retain Pi behavior.
@@ -71,7 +72,7 @@ Codex request/catalog fixtures (`pi-codex-requests.json`) execute the pinned
 `buildRequestBody`, shared Responses converter, thinking clamp and the explicit
 Codex catalog block from `generate-models.ts` followed by its metadata passes.
 The generator entrypoint and CLI argument processing are not executed; fetch
-throws if reached. 160 cases cover full logical replay, source-model changes,
+throws if reached. 162 cases cover full logical replay, source-model changes,
 IDs/signatures, image downgrade, orphan results, cache keys, options and catalog
 thinking levels. The native comparison also checks serialized object order.
 `reference/openai-codex-models.json` is the resulting offline built-in catalog.
@@ -82,16 +83,17 @@ final errors, including the dedicated catch-path retry quirks. Native tests use
 a loopback HTTP server and a disposable auth store, never real credentials.
 
 `pi-codex-stream.json` executes the complete pinned SSE reader, Codex event map
-and Responses state machine. Its 100 cases compare full logical messages,
+and Responses state machine. Its 104 cases compare full logical messages,
 signatures, ordering, partial argument buffers, errors, usage and service tiers
 against native HTTP streams. The native frame-order test separately protects
-partial output when a later frame is malformed; exact V8 malformed-JSON wording
-is still an open parity edge and is not claimed by that test.
+partial output when a later frame is malformed. Exact V8 error text is also
+checked by the dedicated malformed-JSON fixtures described below. Native UTF-16
+stream cases retain split text, thinking and tool-argument code units.
 
 `pi-codex-websocket.json` exposes only the pinned private continuation/header/URL
 helpers. Rust checks exact serialized continuation bodies and nine URL cases.
 `pi-codex-websocket-stream.json` executes Pi's actual public transport against a
-small event-compatible fake socket, with deterministic SSE fallback. Its 19
+small event-compatible fake socket, with deterministic SSE fallback. Its 22
 scenarios are replayed through real native loopback WebSocket and HTTP servers.
 Only timestamps and runtime-specific diagnostic stack frames are removed from
 message comparison. Native cancellation tests additionally verify EOF during a
@@ -112,6 +114,30 @@ contains five actual Pi runs with Debian Bookworm's fd 8.6.0, whose dependency
 error wording differs from fd 10.5.0 used by the main oracle.
 
 `generate-pi-surrogate-fixtures.mts` captures exact raw tool JSON and actual
-Responses conversion in `pi-surrogate-wire.json`. Its two cases document the
-remaining lossless UTF-16 preservation gap and are excluded from the passing
-fixture count. They do not certify that gap as repaired.
+Responses conversion in `pi-surrogate-wire.json`. Three grep/history/provider
+cases, 23 tool argument/error/filesystem cases across the seven tools, three
+summary cases and six JSON cases cover native UTF-16 preservation. Rust checks
+raw code units, 50 KiB truncation metadata, typed history, numbered JSONL reload,
+server-side forks, retained attachment references, live wire serialization,
+provider sanitization and summary slices. Lone units stay in logical history;
+filesystem/argv encoding and provider prose conversion follow Pi's distinct
+rules. These fixtures now pass, including the original two failing cases.
+
+`generate-pi-json-error-fixtures.mts` → `pi-json-errors.json` contains 116 actual
+V8 JSON.parse diagnostics and pinned Codex SSE outcomes. Tests preserve output
+emitted before a malformed later frame and compare native diagnostic text,
+including source offsets, line/column positions and split-surrogate snippets.
+Only runtime-specific stack traces are excluded.
+
+`generate-pi-oauth-refresh-fixtures.mts` → `pi-oauth-refresh.json` contains nine
+actual pinned OpenAI subscription refresh outcomes using synthetic credentials.
+It records token-exchange forms, rotated account metadata, expiry boundaries,
+invalid credentials and HTTP/JSON errors. Native loopback concurrency tests
+also verify shared refresh, cancellation, failed replacement, logout and
+browser-login expiry without accessing the user's real credentials.
+
+`generate-pi-usage-checkpoint-fixtures.mts` → `pi-usage-checkpoint.json` contains
+three pinned usage histories for numbered-file checkpoints: retained cache-hit
+statistics without an assistant in the newest segment, a later cache-rate
+replacement, and chronological floating-point cost accumulation. Rust checks
+that segment rotation preserves Pi's totals and last cache-hit display.

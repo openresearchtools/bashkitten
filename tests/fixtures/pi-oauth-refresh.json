@@ -1,0 +1,183 @@
+{
+  "pin": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "now": 1700000000000,
+  "cases": [
+    {
+      "spec": {
+        "name": "rotated-account",
+        "body": {
+          "access_token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoibmV3LWFjY291bnQifX0=.fixture",
+          "refresh_token": "new-refresh",
+          "expires_in": 3600
+        }
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "credential": {
+          "type": "oauth",
+          "access": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoibmV3LWFjY291bnQifX0=.fixture",
+          "refresh": "new-refresh",
+          "expires": 1700003600000,
+          "accountId": "new-account"
+        }
+      }
+    },
+    {
+      "spec": {
+        "name": "expiry-0",
+        "body": {
+          "access_token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "refresh_token": "new-refresh",
+          "expires_in": 0
+        }
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "credential": {
+          "type": "oauth",
+          "access": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "refresh": "new-refresh",
+          "expires": 1700000000000,
+          "accountId": "fixture-account"
+        }
+      }
+    },
+    {
+      "spec": {
+        "name": "expiry--1",
+        "body": {
+          "access_token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "refresh_token": "new-refresh",
+          "expires_in": -1
+        }
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "credential": {
+          "type": "oauth",
+          "access": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "refresh": "new-refresh",
+          "expires": 1699999999000,
+          "accountId": "fixture-account"
+        }
+      }
+    },
+    {
+      "spec": {
+        "name": "expiry-0.001",
+        "body": {
+          "access_token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "refresh_token": "new-refresh",
+          "expires_in": 0.001
+        }
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "credential": {
+          "type": "oauth",
+          "access": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "refresh": "new-refresh",
+          "expires": 1700000000001,
+          "accountId": "fixture-account"
+        }
+      }
+    },
+    {
+      "spec": {
+        "name": "invalid-access",
+        "body": {
+          "access_token": "invalid",
+          "refresh_token": "new-refresh",
+          "expires_in": 3600
+        }
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "error": "Failed to extract accountId from token"
+      }
+    },
+    {
+      "spec": {
+        "name": "missing-refresh",
+        "body": {
+          "access_token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "expires_in": 3600
+        }
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "error": "OpenAI Codex token refresh response missing fields: {\"access_token\":\"e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture\",\"expires_in\":3600}"
+      }
+    },
+    {
+      "spec": {
+        "name": "missing-expiry",
+        "body": {
+          "access_token": "e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture",
+          "refresh_token": "new-refresh"
+        }
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "error": "OpenAI Codex token refresh response missing fields: {\"access_token\":\"e30.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiZml4dHVyZS1hY2NvdW50In19.fixture\",\"refresh_token\":\"new-refresh\"}"
+      }
+    },
+    {
+      "spec": {
+        "name": "http-failure",
+        "status": 400,
+        "raw": "invalid_grant"
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "error": "OpenAI Codex token refresh failed (400): invalid_grant"
+      }
+    },
+    {
+      "spec": {
+        "name": "malformed",
+        "raw": "{broken"
+      },
+      "request": {
+        "url": "https://auth.openai.com/oauth/token",
+        "method": "POST",
+        "body": "grant_type=refresh_token&refresh_token=old-refresh&client_id=app_EMoamEEZ73f0CkXaXp7hrann"
+      },
+      "expected": {
+        "error": "Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+      }
+    }
+  ]
+}

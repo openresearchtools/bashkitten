@@ -15,7 +15,7 @@ fn equal(a: &Value, b: &Value) -> bool {
 #[test]
 fn pinned_compatible_detection_requests_reasoning_history_cache_and_limits() {
     let fixture: Value =
-        serde_json::from_str(include_str!("fixtures/pi-completions.json")).unwrap();
+        bashkitten::lossless_json::from_str(include_str!("fixtures/pi-completions.json")).unwrap();
     assert_eq!(fixture["pin"], bashkitten::PI_REFERENCE_COMMIT);
     let mut failures = Vec::new();
     for case in fixture["cases"].as_array().unwrap() {

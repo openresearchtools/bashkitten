@@ -73,22 +73,44 @@ pub fn snapshot(
     subscription: bool,
     auto: bool,
 ) -> Snapshot {
-    let mut totals = agent::session_usage_totals(entries);
-    totals.merge(before);
-    let context = agent::current_context_usage(entries, messages, context_window);
-    let latest_cache_hit_rate = entries
-        .iter()
-        .rev()
-        .find_map(|entry| match &entry.kind {
-            SessionEntryKind::Message {
-                message: AgentMessage::Assistant { usage, .. },
-            } => Some(usage),
-            _ => None,
-        })
-        .and_then(|usage| {
+    snapshot_with_cache(
+        entries,
+        messages,
+        before,
+        None,
+        context_window,
+        subscription,
+        auto,
+    )
+}
+
+/// None means no assistant entry; Some(None) means the latest assistant has no
+/// prompt usage. The latter must clear an older nonzero cache-hit percentage.
+pub fn latest_cache_hit_rate(entries: &[SessionEntry]) -> Option<Option<f64>> {
+    entries.iter().rev().find_map(|entry| match &entry.kind {
+        SessionEntryKind::Message {
+            message: AgentMessage::Assistant { usage, .. },
+        } => {
             let prompt = usage.input + usage.cache_read + usage.cache_write;
-            (prompt > 0).then(|| usage.cache_read as f64 / prompt as f64 * 100.0)
-        });
+            Some((prompt > 0).then(|| usage.cache_read as f64 / prompt as f64 * 100.0))
+        }
+        _ => None,
+    })
+}
+
+pub fn snapshot_with_cache(
+    entries: &[SessionEntry],
+    messages: &[AgentMessage],
+    before: UsageTotals,
+    cache_hit_rate_before: Option<f64>,
+    context_window: u64,
+    subscription: bool,
+    auto: bool,
+) -> Snapshot {
+    let mut totals = before;
+    agent::accumulate_session_usage(&mut totals, entries);
+    let context = agent::current_context_usage(entries, messages, context_window);
+    let latest_cache_hit_rate = latest_cache_hit_rate(entries).unwrap_or(cache_hit_rate_before);
     let mut parts = Vec::new();
     for (prefix, count) in [
         ("↑", totals.input),

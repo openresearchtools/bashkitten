@@ -40,6 +40,7 @@ struct QueuedMessage {
     source_session: Option<String>,
     delivery: DeliveryKind,
     editing: bool,
+    edit_token: Option<String>,
 }
 
 #[derive(Clone, Debug)]
@@ -60,6 +61,7 @@ struct Shared {
     compaction: Mutex<Option<Option<String>>>,
     replay: std::sync::Mutex<LiveReplay>,
     usage: std::sync::Mutex<Value>,
+    model_selection: std::sync::Mutex<Value>,
 }
 
 impl Shared {
@@ -77,6 +79,7 @@ impl Shared {
             compaction: Mutex::new(None),
             replay: std::sync::Mutex::new(LiveReplay::default()),
             usage: std::sync::Mutex::new(Value::Null),
+            model_selection: std::sync::Mutex::new(Value::Null),
         }
     }
 
@@ -132,9 +135,12 @@ impl LiveReplay {
             .rev()
             .find(|value| value["type"] == event["type"] && value["index"] == event["index"])
         {
-            let mut text = previous["delta"].as_str().unwrap_or_default().to_owned();
-            text.push_str(event["delta"].as_str().unwrap_or_default());
-            previous["delta"] = Value::String(text);
+            let mut text =
+                crate::lossless_json::JsString::from_value(&previous["delta"]).unwrap_or_default();
+            text.push_js(
+                &crate::lossless_json::JsString::from_value(&event["delta"]).unwrap_or_default(),
+            );
+            previous["delta"] = json!(text);
             return;
         }
         if matches!(kind, "tool_update" | "queue_state" | "usage") {
@@ -342,7 +348,7 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
         // must not turn into noisy worker errors.
         return Ok(());
     };
-    let request: ControlRequest = serde_json::from_str(&line)?;
+    let request: ControlRequest = crate::lossless_json::from_str(&line)?;
     match request {
         ControlRequest::Subscribe => {
             // Snapshot and subscription share the publisher lock: no event can
@@ -351,13 +357,13 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
                 let replay = shared.replay.lock().expect("live replay lock");
                 (
                     shared.events.subscribe(),
-                    json!({"events":replay.events,"busy":shared.busy.load(Ordering::SeqCst),"usage":*shared.usage.lock().expect("usage lock")}),
+                    json!({"events":replay.events,"busy":shared.busy.load(Ordering::SeqCst),"usage":*shared.usage.lock().expect("usage lock"),"modelSelection":*shared.model_selection.lock().expect("model selection lock")}),
                 )
             };
             write_reply(&mut write, true, "subscribed", snapshot).await?;
             while let Ok(event) = events.recv().await {
                 write
-                    .write_all(serde_json::to_string(&event)?.as_bytes())
+                    .write_all(crate::lossless_json::to_string(&event)?.as_bytes())
                     .await?;
                 write.write_all(b"\n").await?;
             }
@@ -374,6 +380,7 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
                 attachments,
                 source_session,
                 editing: false,
+                edit_token: None,
                 delivery: match delivery {
                     Delivery::Steer => DeliveryKind::Steer,
                     Delivery::Queue => DeliveryKind::Queue,
@@ -395,6 +402,11 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             let state = queue_state_value(&queues, shared.busy.load(Ordering::SeqCst));
             let mut state = state;
             state["usage"] = shared.usage.lock().expect("usage lock").clone();
+            state["modelSelection"] = shared
+                .model_selection
+                .lock()
+                .expect("model selection lock")
+                .clone();
             write_reply(&mut write, true, "status", state).await?;
         }
         ControlRequest::Stop => {
@@ -432,74 +444,112 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             id,
             action,
             content,
+            edit_token,
         } => {
             let mut queues = shared.queues.lock().await;
-            let message = match action {
-                QueueAction::BeginEdit | QueueAction::CancelEdit => {
-                    let editing = matches!(action, QueueAction::BeginEdit);
-                    let queued = if let Some(queued) =
-                        queues.follow_up.find_mut(|message| message.id == id)
-                    {
-                        queued
-                    } else {
-                        queues
-                            .steering
-                            .find_mut(|message| message.id == id)
-                            .context("queued message no longer exists")?
-                    };
-                    queued.editing = editing;
-                    if editing {
-                        "queued message held for editing"
-                    } else {
-                        "queue edit cancelled"
+            let outcome = (|| -> Result<&str> {
+                Ok(match action {
+                    QueueAction::BeginEdit | QueueAction::TakeEdit | QueueAction::CancelEdit => {
+                        let editing = !matches!(action, QueueAction::CancelEdit);
+                        let queued = if let Some(queued) =
+                            queues.follow_up.find_mut(|message| message.id == id)
+                        {
+                            queued
+                        } else {
+                            queues
+                                .steering
+                                .find_mut(|message| message.id == id)
+                                .context("queued message no longer exists")?
+                        };
+                        let token = edit_token
+                            .as_deref()
+                            .filter(|token| !token.is_empty())
+                            .context("Queue edit identifier is required")?;
+                        if editing {
+                            if queued.editing
+                                && queued.edit_token.as_deref() != Some(token)
+                                && !matches!(action, QueueAction::TakeEdit)
+                            {
+                                bail!("Queued message is already being edited in another composer");
+                            }
+                            queued.edit_token = Some(token.to_owned());
+                        } else {
+                            if queued.edit_token.as_deref() != Some(token) {
+                                bail!("Queue edit is no longer owned by this composer");
+                            }
+                            queued.edit_token = None;
+                        }
+                        queued.editing = editing;
+                        if editing {
+                            "queued message held for editing"
+                        } else {
+                            "queue edit cancelled"
+                        }
                     }
-                }
-                QueueAction::Edit => {
-                    let value = content.context("edited queue content is required")?;
-                    let mut found = false;
-                    if let Some(queued) = queues.follow_up.find_mut(|message| message.id == id) {
-                        queued.content = value.clone();
-                        queued.editing = false;
-                        found = true;
+                    QueueAction::Edit => {
+                        let value = content.context("edited queue content is required")?;
+                        let mut found = false;
+                        if let Some(queued) = queues.follow_up.find_mut(|message| message.id == id)
+                        {
+                            if !queued.editing || queued.edit_token != edit_token {
+                                bail!("Queue edit is no longer owned by this composer");
+                            }
+                            queued.content = value.clone();
+                            queued.editing = false;
+                            queued.edit_token = None;
+                            found = true;
+                        }
+                        if !found
+                            && let Some(queued) =
+                                queues.steering.find_mut(|message| message.id == id)
+                        {
+                            if !queued.editing || queued.edit_token != edit_token {
+                                bail!("Queue edit is no longer owned by this composer");
+                            }
+                            queued.content = value;
+                            queued.editing = false;
+                            queued.edit_token = None;
+                            found = true;
+                        }
+                        if !found {
+                            bail!("queued message no longer exists");
+                        }
+                        "queued message edited"
                     }
-                    if !found
-                        && let Some(queued) = queues.steering.find_mut(|message| message.id == id)
-                    {
-                        queued.content = value;
-                        queued.editing = false;
-                        found = true;
-                    }
-                    if !found {
-                        bail!("queued message no longer exists");
-                    }
-                    "queued message edited"
-                }
-                QueueAction::Promote => {
-                    let mut queued = queues
-                        .follow_up
-                        .remove_first(|message| message.id == id)
-                        .context("queued message no longer exists")?;
-                    queued.delivery = DeliveryKind::Steer;
-                    queues.steering.enqueue(queued);
-                    "queued message promoted to steering"
-                }
-                QueueAction::Remove => {
-                    let removed = queues
-                        .follow_up
-                        .remove_first(|message| message.id == id)
-                        .is_some()
-                        || queues
-                            .steering
+                    QueueAction::Promote => {
+                        let mut queued = queues
+                            .follow_up
                             .remove_first(|message| message.id == id)
-                            .is_some();
-                    if !removed {
-                        bail!("queued message no longer exists");
+                            .context("queued message no longer exists")?;
+                        queued.delivery = DeliveryKind::Steer;
+                        queues.steering.enqueue(queued);
+                        "queued message promoted to steering"
                     }
-                    "queued message removed"
-                }
-            };
+                    QueueAction::Remove => {
+                        let removed = queues
+                            .follow_up
+                            .remove_first(|message| message.id == id)
+                            .is_some()
+                            || queues
+                                .steering
+                                .remove_first(|message| message.id == id)
+                                .is_some();
+                        if !removed {
+                            bail!("queued message no longer exists");
+                        }
+                        "queued message removed"
+                    }
+                })
+            })();
             let state = queue_state_value(&queues, shared.busy.load(Ordering::SeqCst));
             drop(queues);
+            let message = match outcome {
+                Ok(message) => message,
+                Err(error) => {
+                    write_reply(&mut write, false, &error.to_string(), state).await?;
+                    return Ok(());
+                }
+            };
             shared.emit(json!({"type":"queue_state","data":state}));
             write_reply(&mut write, true, message, state).await?;
             shared.notify.notify_one();
@@ -520,7 +570,7 @@ async fn write_reply(
         data,
     };
     write
-        .write_all(serde_json::to_string(&reply)?.as_bytes())
+        .write_all(crate::lossless_json::to_string(&reply)?.as_bytes())
         .await?;
     write.write_all(b"\n").await?;
     Ok(())
@@ -563,7 +613,7 @@ impl Runtime {
         if let Some(change) = change {
             if let Err(error) = self.apply_model_change(change).await {
                 self.shared
-                    .emit(json!({"type":"model_error","message":error.to_string()}));
+                    .emit(json!({"type":"model_error","message":error.to_string(),"model":format!("{}/{}", self.header.provider, self.header.model_id),"thinking":self.thinking}));
             }
             did_work = true;
         }
@@ -691,6 +741,8 @@ impl Runtime {
             .context("model must be provider/model-id")?;
         // Pinned AgentSession.setModel records every explicit selection,
         // including reselecting the same model after its preset was edited.
+        self.flush_pending()?;
+        let previous_id = self.last_entry_id.clone();
         let entry = self.entry(SessionEntryKind::ModelChange {
             provider: provider.to_owned(),
             model_id: model_id.to_owned(),
@@ -702,13 +754,17 @@ impl Runtime {
             });
             self.pending_entries.push(entry);
         }
+        if let Err(error) = self.flush_pending() {
+            self.pending_entries.clear();
+            self.last_entry_id = previous_id;
+            return Err(error);
+        }
         self.config = destination_config;
         self.header.provider = provider.to_owned();
         self.header.model_id = model_id.to_owned();
         self.thinking = change.thinking;
         self.header.model_parameters = destination.parameters.clone();
         self.model = destination;
-        self.flush_pending()?;
         self.shared
             .emit(json!({"type":"model_change","model":change.model,"thinking":self.thinking}));
         self.emit_usage();
@@ -919,7 +975,7 @@ impl Runtime {
                 && let Err(error) = self.apply_model_change(change).await
             {
                 self.shared
-                    .emit(json!({"type":"model_error","message":error.to_string()}));
+                    .emit(json!({"type":"model_error","message":error.to_string(),"model":format!("{}/{}", self.header.provider, self.header.model_id),"thinking":self.thinking}));
             }
             let steering = self
                 .shared
@@ -950,7 +1006,7 @@ impl Runtime {
             _ = cancellation.cancelled() => { response.abort(); None }
             result = self.provider.stream(endpoint, request) => match result {
                 Ok(stream) => Some(stream),
-                Err(error) => { response.fail(error.to_string()); None }
+                Err(error) => { response.fail(crate::json_error::exception_message(&error)); None }
             }
         };
         if let Some(mut stream) = stream {
@@ -969,7 +1025,7 @@ impl Runtime {
                         }
                     }
                     Some(Err(error)) => {
-                        response.fail(error.to_string());
+                        response.fail(crate::json_error::exception_message(&error));
                         break;
                     }
                     None => break,
@@ -1084,7 +1140,7 @@ impl Runtime {
 
     async fn summarize(
         &self,
-        prompt: String,
+        prompt: crate::lossless_json::JsString,
         max_tokens: u64,
         label: &str,
         reason: &str,
@@ -1094,7 +1150,7 @@ impl Runtime {
             vec![ProviderMessage {
                 role: MessageRole::User,
                 content: vec![ProviderContent::Text {
-                    text: prompt,
+                    text: prompt.sanitized(),
                     text_signature: None,
                 }],
             }],
@@ -1240,7 +1296,10 @@ impl Runtime {
             let mut header = self.header.clone();
             header.thinking_level = self.thinking.clone();
             header.initial_cwd = Some(header.cwd.clone());
-            header.usage_before.merge(agent::session_usage_totals(&self.entries[..kept]));
+            agent::accumulate_session_usage(&mut header.usage_before, &self.entries[..kept]);
+            if let Some(rate) = crate::usage::latest_cache_hit_rate(&self.entries[..kept]) {
+                header.cache_hit_rate_before = rate;
+            }
             let previous_id = self.last_entry_id.clone();
             let entry = self.entry(SessionEntryKind::Compaction {
                 summary: summary.clone(), first_kept_entry_id: preparation.first_kept_entry_id.clone(),
@@ -1291,7 +1350,7 @@ impl Runtime {
             // Pinned agent-loop.ts: no call from a length-limited response may
             // execute, even when its salvaged arguments happen to validate.
             for call in calls {
-                self.shared.emit(json!({"type":"tool_start","id":call.id,"name":call.name,"arguments":crate::streaming_json::parse_streaming_json(&call.arguments)}));
+                self.shared.emit(json!({"type":"tool_start","id":call.id,"name":call.name,"arguments":crate::streaming_json::parse_streaming_json_js(&call.arguments)}));
                 let error = format!(
                     "Tool call \"{}\" was not executed: the response hit the output token limit, so its arguments may be truncated. Re-issue the tool call with complete arguments.",
                     call.name
@@ -1325,7 +1384,7 @@ impl Runtime {
                 .insert("BASHKITTEN_PARENT_ID".into(), parent.clone());
         }
         for call in &calls {
-            let arguments = crate::streaming_json::parse_streaming_json(&call.arguments);
+            let arguments = crate::streaming_json::parse_streaming_json_js(&call.arguments);
             self.shared.emit(json!({
                 "type":"tool_start",
                 "id":call.id,
@@ -1337,7 +1396,7 @@ impl Runtime {
             let context = context.clone();
             let shared = self.shared.clone();
             async move {
-                let arguments = crate::streaming_json::parse_streaming_json(&call.arguments);
+                let arguments = crate::streaming_json::parse_streaming_json_js(&call.arguments);
                 let update_shared = shared.clone();
                 let update_id = call.id.clone();
                 let update_name = call.name.clone();
@@ -1347,7 +1406,7 @@ impl Runtime {
                 let result = tools::execute_tool_with_updates(&call.name, arguments, &context, Some(&on_update)).await;
                 let (output, is_error) = match &result {
                     Ok(value) => (serde_json::to_value(value).expect("tool result"), false),
-                    Err(error) => (json!({"content":[{"type":"text","text":error.to_string()}],"details":{}}), true),
+                    Err(error) => (json!({"content":[{"type":"text","text":error.text()}],"details":{}}), true),
                 };
                 // Render each completion immediately, but commit tool-result
                 // messages below in call order, as Pi's parallel loop does.
@@ -1379,8 +1438,11 @@ impl Runtime {
                 (MessageContent::Blocks(blocks), result.details, false)
             }
             Err(error) => {
-                let text = error.to_string();
-                (MessageContent::text(&text), Some(json!({})), true)
+                let text = error
+                    .downcast_ref::<tools::ToolError>()
+                    .map(|error| error.text().clone())
+                    .unwrap_or_else(|| error.to_string().into());
+                (MessageContent::text(text), Some(json!({})), true)
             }
         };
         let message = AgentMessage::ToolResult {
@@ -1506,16 +1568,22 @@ impl Runtime {
     }
 
     fn emit_usage(&self) {
+        *self
+            .shared
+            .model_selection
+            .lock()
+            .expect("model selection lock") = json!({"model":format!("{}/{}", self.header.provider, self.header.model_id),"thinking":self.thinking});
         let entries: Vec<_> = self
             .entries
             .iter()
             .chain(&self.pending_entries)
             .cloned()
             .collect();
-        let snapshot = crate::usage::snapshot(
+        let snapshot = crate::usage::snapshot_with_cache(
             &entries,
             &self.logical_messages,
             self.header.usage_before,
+            self.header.cache_hit_rate_before,
             self.model.context_window,
             self.header.provider == "openai-codex",
             self.config.compaction.enabled,
@@ -1568,13 +1636,19 @@ pub fn saved_usage(
     let (model_id, _) = session::effective_model(&dir, &header);
     let model = models::find_model(config, &model_id, false, false);
     let messages = agent::build_session_context(&entries, None);
-    Ok(crate::usage::snapshot(
+    Ok(crate::usage::snapshot_with_cache(
         &entries,
         &messages,
         header.usage_before,
+        header.cache_hit_rate_before,
         model
             .as_ref()
             .map(|model| model.context_window)
+            .or_else(|| {
+                (model_id == format!("{}/{}", header.provider, header.model_id))
+                    .then(|| header.model_parameters["contextWindow"].as_u64())
+                    .flatten()
+            })
             .unwrap_or(0),
         model_id.starts_with("openai-codex/"),
         config.compaction.enabled,
@@ -1582,8 +1656,9 @@ pub fn saved_usage(
 }
 
 fn provider_authenticated(paths: &AppPaths) -> bool {
-    fs::read(paths.provider_auth_file())
+    crate::paths::set_private_file(&paths.provider_auth_file())
         .ok()
+        .and_then(|_| fs::read(paths.provider_auth_file()).ok())
         .and_then(|data| serde_json::from_slice::<Value>(&data).ok())
         .and_then(|value| value.get("openai-codex").cloned())
         .is_some()
@@ -1595,17 +1670,18 @@ fn llama_available() -> bool {
 
 fn load_current_entries(dir: &Path) -> Result<Vec<SessionEntry>> {
     let (_, path) = session::current_segment(dir)?;
+    crate::paths::set_private_file(&path)?;
     let data = fs::read_to_string(&path)?;
     Ok(data
         .lines()
         .skip(1)
-        .filter_map(|line| serde_json::from_str(line).ok())
+        .filter_map(|line| crate::lossless_json::from_str(line).ok())
         .collect())
 }
 
 fn provider_tool_result_output(content: &MessageContent) -> Value {
     match content {
-        MessageContent::Text(text) => Value::String(text.clone()),
+        MessageContent::Text(text) => Value::String(text.sanitized()),
         MessageContent::Blocks(blocks) => {
             let mut text = Vec::new();
             let mut rich = Vec::new();
@@ -1613,8 +1689,8 @@ fn provider_tool_result_output(content: &MessageContent) -> Value {
             for block in blocks {
                 match block {
                     ContentBlock::Text { text: value, .. } => {
-                        text.push(value.clone());
-                        rich.push(json!({ "type": "input_text", "text": value }));
+                        text.push(value.sanitized());
+                        rich.push(json!({ "type": "input_text", "text": value.sanitized() }));
                     }
                     ContentBlock::Image { data, mime_type } => {
                         has_image = true;
@@ -1641,7 +1717,7 @@ fn provider_tool_result_output(content: &MessageContent) -> Value {
 fn provider_blocks(content: &MessageContent) -> Vec<ProviderContent> {
     match content {
         MessageContent::Text(text) => vec![ProviderContent::Text {
-            text: text.clone(),
+            text: text.sanitized(),
             text_signature: None,
         }],
         MessageContent::Blocks(blocks) => blocks
@@ -1651,7 +1727,7 @@ fn provider_blocks(content: &MessageContent) -> Vec<ProviderContent> {
                     text,
                     text_signature,
                 } => ProviderContent::Text {
-                    text: text.clone(),
+                    text: text.sanitized(),
                     text_signature: text_signature.clone(),
                 },
                 ContentBlock::Image { data, mime_type } => ProviderContent::Image {
@@ -1676,7 +1752,7 @@ fn provider_blocks(content: &MessageContent) -> Vec<ProviderContent> {
                     thinking_signature,
                     ..
                 } => ProviderContent::Thinking {
-                    text: thinking.clone(),
+                    text: thinking.sanitized(),
                     id: None,
                     encrypted_content: thinking_signature.clone(),
                 },
@@ -1984,7 +2060,11 @@ mod runtime_tests {
         let connection = UnixStream::connect(address.as_ref()).await.unwrap();
         let (read, mut write) = connection.into_split();
         write
-            .write_all(serde_json::to_string(&request).unwrap().as_bytes())
+            .write_all(
+                crate::lossless_json::to_string(&request)
+                    .unwrap()
+                    .as_bytes(),
+            )
             .await
             .unwrap();
         write.write_all(b"\n").await.unwrap();
@@ -1997,7 +2077,7 @@ mod runtime_tests {
             .expect("worker event timed out")
             .unwrap()
             .expect("worker stream closed");
-        serde_json::from_str(&line).unwrap()
+        crate::lossless_json::from_str(&line).unwrap()
     }
 
     async fn until(
@@ -2081,7 +2161,7 @@ mod runtime_tests {
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn pi_loop_rejects_every_truncated_call_then_executes_repaired_followup() {
         let fixture: Value =
-            serde_json::from_str(include_str!("../tests/fixtures/pi-loop.json")).unwrap();
+            crate::lossless_json::from_str(include_str!("../tests/fixtures/pi-loop.json")).unwrap();
         let replies = fixture["chunks"]
             .as_array()
             .unwrap()
@@ -2192,6 +2272,50 @@ mod runtime_tests {
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn failed_model_persistence_keeps_original_model_and_history() {
+        let (url, requests, server) =
+            sequence_server(vec![(200, completion("still original", 10, "stop"))]).await;
+        let root = tempfile::tempdir().unwrap();
+        let paths = fixture_paths(root.path(), &url);
+        let mut config = AppConfig::load(&paths).unwrap();
+        let mut other = config.compatible_providers[0].models[0].clone();
+        other.id = "other".into();
+        config.compatible_providers[0].models.push(other);
+        config.save(&paths).unwrap();
+        let (id, task) = worker(&paths, root.path()).await;
+        let mut events = connect(&paths, &id, ControlRequest::Subscribe).await;
+        next(&mut events).await;
+        let file = paths.session_dir(&id).join("000001.jsonl");
+        let backup = paths.session_dir(&id).join(".completed-history");
+        fs::rename(&file, &backup).unwrap();
+        fs::create_dir(&file).unwrap();
+        let mut reply = connect(
+            &paths,
+            &id,
+            ControlRequest::ChangeModel {
+                model: "fixture/other".into(),
+                thinking: "off".into(),
+            },
+        )
+        .await;
+        assert_eq!(next(&mut reply).await["ok"], true);
+        until(&mut events, |event| event["type"] == "model_error").await;
+        fs::remove_dir(&file).unwrap();
+        fs::rename(&backup, &file).unwrap();
+        prompt(&paths, &id).await;
+        until(&mut events, |event| event["type"] == "agent_settled").await;
+        stop(&paths, &id, task).await;
+        assert_eq!(requests.lock().await[0]["model"], "model");
+        assert!(
+            session::read_segment(&paths, &id, 1)
+                .unwrap()
+                .iter()
+                .all(|entry| entry["type"] != "model_change")
+        );
+        server.abort();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn model_selection_then_folder_change_preserves_historical_forks() {
         let root = tempfile::tempdir().unwrap();
         let (url, _, server) =
@@ -2293,7 +2417,8 @@ mod runtime_tests {
         use base64::{Engine as _, engine::general_purpose::STANDARD};
         use sha2::{Digest, Sha256};
         let fixture: Value =
-            serde_json::from_str(include_str!("../tests/fixtures/pi-images.json")).unwrap();
+            crate::lossless_json::from_str(include_str!("../tests/fixtures/pi-images.json"))
+                .unwrap();
         let case = fixture["cases"]
             .as_array()
             .unwrap()
@@ -2522,6 +2647,7 @@ mod runtime_tests {
                 id: first.clone(),
                 action: QueueAction::BeginEdit,
                 content: None,
+                edit_token: Some("fixture-editor".into()),
             },
         )
         .await;
@@ -2529,6 +2655,54 @@ mod runtime_tests {
             next(&mut reply).await["data"]["queuedMessages"][0]["editing"],
             true
         );
+        for action in [
+            QueueAction::BeginEdit,
+            QueueAction::CancelEdit,
+            QueueAction::Edit,
+        ] {
+            let mut competing = connect(
+                &paths,
+                &id,
+                ControlRequest::QueueAction {
+                    id: first.clone(),
+                    action,
+                    content: Some("stale composer text".into()),
+                    edit_token: Some("other-editor".into()),
+                },
+            )
+            .await;
+            let rejected = next(&mut competing).await;
+            assert_eq!(rejected["ok"], false, "competing {action:?}");
+            assert_eq!(
+                rejected["data"]["queuedMessages"][0]["content"],
+                "first draft"
+            );
+            assert_eq!(rejected["data"]["queuedMessages"][0]["editing"], true);
+        }
+        let mut takeover = connect(
+            &paths,
+            &id,
+            ControlRequest::QueueAction {
+                id: first.clone(),
+                action: QueueAction::TakeEdit,
+                content: None,
+                edit_token: Some("replacement-editor".into()),
+            },
+        )
+        .await;
+        assert_eq!(next(&mut takeover).await["ok"], true);
+        let mut stale = connect(
+            &paths,
+            &id,
+            ControlRequest::QueueAction {
+                id: first.clone(),
+                action: QueueAction::Edit,
+                content: Some("stale save".into()),
+                edit_token: Some("fixture-editor".into()),
+            },
+        )
+        .await;
+        assert_eq!(next(&mut stale).await["ok"], false);
         let mut reply = connect(
             &paths,
             &id,
@@ -2553,6 +2727,7 @@ mod runtime_tests {
                 id: first,
                 action: QueueAction::Edit,
                 content: Some("first edited".into()),
+                edit_token: Some("replacement-editor".into()),
             },
         )
         .await;
@@ -2738,7 +2913,7 @@ mod runtime_tests {
                 .all(|request| request["messages"].as_array().unwrap().len() == 2)
         );
         assert!(
-            serde_json::to_string(&entries)
+            crate::lossless_json::to_string(&entries)
                 .unwrap()
                 .contains("overloaded")
         );
@@ -2943,6 +3118,11 @@ mod runtime_tests {
 
     #[test]
     fn live_replay_coalesces_deltas_and_replaces_partial_tools() {
+        let mut surrogate_replay = LiveReplay::default();
+        for unit in [0xd83d, 0xde42] {
+            surrogate_replay.push(&json!({"type":"assistant_delta","index":0,"delta":crate::lossless_json::JsString::from_units(vec![unit])}));
+        }
+        assert_eq!(surrogate_replay.events[0]["delta"], "🙂");
         let mut replay = LiveReplay::default();
         replay.push(&json!({"type":"assistant_delta","index":1,"delta":"a"}));
         replay.push(&json!({"type":"assistant_delta","index":1,"delta":"b"}));

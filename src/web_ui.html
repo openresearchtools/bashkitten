@@ -651,6 +651,8 @@
     let activeSettingsTab = 'app';
     let queueState = {busy: false, steeringMessages: [], queuedMessages: []};
     let editingQueueId = null;
+    let editingQueueToken = null;
+    let queueEditStarting = false;
     let renderedTurn = null;
     let displayedUsage = null;
     let viewerZoom = 1;
@@ -1263,6 +1265,7 @@
         renderToolResult({toolCallId: event.id, toolName: event.name, content: result.content || [], details: result.details,
           isError: event.isError, timestamp: Date.now()}, event.type === 'tool_update');
       } else if (event.type === 'model_error') {
+        applyModelSelection(event);
         $('#composerHint').textContent = event.message;
       } else if (event.type === 'agent_start') {
         queueState.busy = true;
@@ -1293,6 +1296,7 @@
       } else if (event.type === 'queue_state') {
         renderQueueState(event.data);
       } else if (event.type === 'model_change') {
+        applyModelSelection(event);
         $('#composerHint').textContent = `Using ${event.model}`;
       } else if (event.type === 'cwd_change') {
         current.cwd = event.cwd;
@@ -1441,6 +1445,7 @@
       const value = await api(`/api/sessions/${current.id}/status`);
       if (view !== sessionView) return;
       renderQueueState(value.data);
+      applyModelSelection(value.data?.modelSelection);
       if (value.data?.usage) renderUsage(value.data.usage);
     }
 
@@ -1451,7 +1456,7 @@
         const value = await api(`/api/sessions/${current.id}/queue`, {
           method: 'POST',
           headers: {'content-type': 'application/json'},
-          body: JSON.stringify({id, action, content})
+          body: JSON.stringify({id, action, content, edit_token:editingQueueId === id ? editingQueueToken : null})
         });
         if (sessionView !== view) return;
         if (editingQueueId === id && (action === 'edit' || action === 'remove')) cancelQueueEdit(false);
@@ -1463,24 +1468,29 @@
     }
 
     async function beginQueueEdit(item) {
-      if (!current) return;
+      if (!current || queueEditStarting) return;
+      queueEditStarting = true;
+      try {
       const view = sessionView;
       const id = current.id;
       if (editingQueueId) await cancelQueueEdit();
-      if (sessionView !== view) return;
+      if (sessionView !== view || editingQueueId) return;
+      const token = crypto.randomUUID();
       try {
         const result = await api(`/api/sessions/${id}/queue`, {
           method:'POST', headers:{'content-type':'application/json'},
-          body:JSON.stringify({id:item.id, action:'begin_edit'})
+          body:JSON.stringify({id:item.id, action:item.editing ? 'take_edit' : 'begin_edit', edit_token:token})
         });
         if (sessionView !== view) {
           await api(`/api/sessions/${id}/queue`, {method:'POST', headers:{'content-type':'application/json'},
-            body:JSON.stringify({id:item.id, action:'cancel_edit'})});
+            body:JSON.stringify({id:item.id, action:'cancel_edit', edit_token:token})});
           return;
         }
         renderQueueState(result.data);
+        item = queuedItems().find(queued => queued.id === item.id) || item;
       } catch (error) { $('#composerHint').textContent = error.message; return; }
       editingQueueId = item.id;
+      editingQueueToken = token;
       pendingFiles = [];
       renderAttachments();
       $('#prompt').value = item.content || '';
@@ -1489,6 +1499,7 @@
       $('#attachBtn').disabled = true;
       renderQueueState(queueState);
       $('#prompt').focus();
+      } finally { queueEditStarting = false; }
     }
 
     async function cancelQueueEdit(release = true) {
@@ -1496,12 +1507,16 @@
         try {
           const result = await api(`/api/sessions/${current.id}/queue`, {
             method:'POST', headers:{'content-type':'application/json'},
-            body:JSON.stringify({id:editingQueueId, action:'cancel_edit'})
+            body:JSON.stringify({id:editingQueueId, action:'cancel_edit', edit_token:editingQueueToken})
           });
           renderQueueState(result.data);
-        } catch (error) { $('#composerHint').textContent = error.message; return; }
+        } catch (error) {
+          $('#composerHint').textContent = error.message;
+          if (!/no longer owned|no longer exists/.test(error.message)) return;
+        }
       }
       editingQueueId = null;
+      editingQueueToken = null;
       $('#prompt').value = '';
       $('#prompt').style.height = 'auto';
       $('#composerHint').textContent = queueState.busy ? 'Agent is working' : 'Paste, drag, or attach files';
@@ -1688,6 +1703,7 @@
               subscribed = true;
               clearTimeout(timeout);
               if (value.data?.usage) consume({type: 'usage', data: value.data.usage});
+              applyModelSelection(value.data?.modelSelection);
               for (const item of value.data?.events || []) consume(item);
               if (value.data?.busy) consume({type:'agent_start'});
               resolve();
@@ -1860,16 +1876,31 @@
       });
     }
 
+    function applyModelSelection(selection) {
+      if (!current || !selection?.model) return;
+      current.model = selection.model;
+      current.thinking = selection.thinking;
+      $('#model').value = selection.model;
+      setThinking($('#model'));
+      $('#thinking').value = selection.thinking;
+    }
+
     async function applyCurrentModel() {
       if (!current) return;
+      const id = current.id, view = sessionView;
+      const model = $('#model').value, thinking = $('#thinking').value;
+      if (!source) {
+        await api(`/api/sessions/${id}/resume`, {method:'POST'});
+        if (view !== sessionView) return;
+        await connectSession(id, renderEvent, view);
+      }
+      if (view !== sessionView) return;
+      $('#composerHint').textContent = `Switching to ${models.find(item => `${item.provider}/${item.id}` === model)?.name || model}`;
       await api(`/api/sessions/${current.id}/model`, {
         method: 'POST',
         headers: {'content-type': 'application/json'},
-        body: JSON.stringify({model: $('#model').value, thinking: $('#thinking').value})
+        body: JSON.stringify({model, thinking})
       });
-      current.model = $('#model').value;
-      current.thinking = $('#thinking').value;
-      $('#composerHint').textContent = `Switching to ${models.find(model => `${model.provider}/${model.id}` === current.model)?.name || current.model}`;
       loadSessions().catch(() => {});
     }
 
@@ -2069,7 +2100,10 @@
           $('#folderLabel').textContent = current.cwd;
           $('#folderBtn').disabled = false;
         }
-        if (!source) await connectSession(current.id);
+        if (!source) {
+          await api(`/api/sessions/${current.id}/resume`, {method:'POST'});
+          await connectSession(current.id);
+        }
         const messageForm = new FormData();
         messageForm.append('content', text);
         messageForm.append('delivery', 'queue');
@@ -2157,7 +2191,17 @@
         source?.close();source=null;
         $('#settingsNotice').textContent='Restarting the Web UI. Reconnecting…';
         const link=document.createElement('a');link.href=saved.restartUrl;link.textContent='Open Web UI';$('#settingsNotice').append(' ',link);
-        setTimeout(()=>location.assign(saved.restartUrl),1200);return;
+        setTimeout(async()=>{
+          try {
+            const status = await api('/api/settings');
+            if (status.restartError) {
+              $('#settingsNotice').textContent = status.restartError;
+              $('#webPort').value = status.config.web_port;
+              return;
+            }
+          } catch {}
+          location.assign(saved.restartUrl);
+        },1200);return;
       }
       $('#llamaKey').value = '';
       delete config.llama.api_key;

@@ -6,6 +6,7 @@
 //! llama.cpp model discovery.
 
 use crate::config::{CompatibleAuth, CompatibleProvider, LlamaConfig, ModelPreset};
+use crate::lossless_json::JsString;
 use crate::paths::{AppPaths, ensure_private_dir, set_private_file};
 use anyhow::{Context, Result, anyhow, bail};
 use async_stream::try_stream;
@@ -342,18 +343,18 @@ pub enum ProviderEvent {
     },
     TextDelta {
         index: u64,
-        delta: String,
+        delta: JsString,
     },
     TextDone {
         index: u64,
         #[serde(default, skip_serializing_if = "Option::is_none")]
-        text: Option<String>,
+        text: Option<JsString>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         text_signature: Option<String>,
     },
     ThinkingDelta {
         index: u64,
-        delta: String,
+        delta: JsString,
     },
     ThinkingDone {
         index: u64,
@@ -369,13 +370,13 @@ pub enum ProviderEvent {
     },
     ToolCallDelta {
         index: u64,
-        arguments_delta: String,
+        arguments_delta: JsString,
     },
     ToolCallDone {
         index: u64,
         id: String,
         name: String,
-        arguments: String,
+        arguments: JsString,
     },
     Usage {
         usage: NormalizedUsage,
@@ -608,6 +609,10 @@ impl ProviderAuthStore {
     }
 
     async fn codex_access(&self, client: &Client) -> Result<CodexAccess> {
+        self.codex_access_at(client, OPENAI_CODEX_TOKEN_URL).await
+    }
+
+    async fn codex_access_at(&self, client: &Client, token_url: &str) -> Result<CodexAccess> {
         let current = self
             .credential(OPENAI_CODEX_PROVIDER_ID)?
             .context("OpenAI Codex is not authenticated")?;
@@ -638,7 +643,7 @@ impl ProviderAuthStore {
             access,
             refresh,
             expires,
-            extra,
+            ..
         } = credential
         else {
             bail!("OpenAI Codex requires an OAuth credential");
@@ -649,17 +654,14 @@ impl ProviderAuthStore {
             return CodexAccess::from_token(access);
         }
 
-        let refreshed = refresh_codex_token(client, &refresh).await?;
-        let access = refreshed.access_token.clone();
-        auth.insert(
-            OPENAI_CODEX_PROVIDER_ID.to_owned(),
-            ProviderCredential::OAuth {
-                access: refreshed.access_token,
-                refresh: refreshed.refresh_token,
-                expires: refreshed.expires,
-                extra,
-            },
-        );
+        let refreshed = refresh_codex_token(client, token_url, &refresh)
+            .await
+            .map_err(|error| anyhow!("OAuth refresh failed for openai-codex: {error}"))?;
+        let ProviderCredential::OAuth { access, .. } = &refreshed else {
+            unreachable!()
+        };
+        let access = access.clone();
+        auth.insert(OPENAI_CODEX_PROVIDER_ID.to_owned(), refreshed);
         crate::config::atomic_private_json(&self.path, &auth)?;
         FileExt::unlock(&lock)?;
         CodexAccess::from_token(access)
@@ -698,19 +700,6 @@ impl fmt::Debug for CodexAccess {
             .field("account_id", &self.account_id)
             .finish()
     }
-}
-
-#[derive(Deserialize)]
-struct RefreshTokenResponse {
-    access_token: String,
-    refresh_token: String,
-    expires_in: i64,
-}
-
-struct RefreshedToken {
-    access_token: String,
-    refresh_token: String,
-    expires: i64,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -811,10 +800,10 @@ impl ProviderClient {
                     std::slice::from_ref(&secret),
                 ),
             }),
-            Err(error) => Err(anyhow!(crate::provider_http::safe_error_body(
-                &error.to_string(),
-                std::slice::from_ref(&secret)
-            ))),
+            Err(error) => Err(crate::json_error::redact(
+                error,
+                std::slice::from_ref(&secret),
+            )),
             event => event,
         })))
     }
@@ -858,9 +847,14 @@ fn oauth_needs_refresh(expires: i64) -> bool {
     expires <= now.saturating_add(OAUTH_REFRESH_MARGIN_MS)
 }
 
-async fn refresh_codex_token(client: &Client, refresh_token: &str) -> Result<RefreshedToken> {
+async fn refresh_codex_token(
+    client: &Client,
+    endpoint: &str,
+    refresh_token: &str,
+) -> Result<ProviderCredential> {
+    // Allowed network: selected OpenAI subscription credential refresh.
     let response = client
-        .post(OPENAI_CODEX_TOKEN_URL)
+        .post(endpoint)
         .timeout(OAUTH_REFRESH_TIMEOUT)
         .header(CONTENT_TYPE, "application/x-www-form-urlencoded")
         .form(&[
@@ -870,32 +864,23 @@ async fn refresh_codex_token(client: &Client, refresh_token: &str) -> Result<Ref
         ])
         .send()
         .await
-        .context("refresh OpenAI Codex OAuth credential")?;
-    if !response.status().is_success() {
-        bail!(
-            "OpenAI Codex OAuth refresh failed with HTTP {}",
-            response.status()
-        );
-    }
-    let token: RefreshTokenResponse = response
-        .json()
-        .await
-        .context("decode OpenAI Codex OAuth refresh response")?;
-    if token.access_token.is_empty() || token.refresh_token.is_empty() || token.expires_in <= 0 {
-        bail!("OpenAI Codex OAuth refresh response is incomplete");
-    }
-    let expires = chrono::Utc::now()
-        .timestamp_millis()
-        .checked_add(token.expires_in.saturating_mul(1_000))
-        .context("OpenAI Codex OAuth expiry overflow")?;
-    Ok(RefreshedToken {
-        access_token: token.access_token,
-        refresh_token: token.refresh_token,
-        expires,
-    })
+        .map_err(|error| {
+            anyhow!(
+                "OpenAI Codex token refresh error: {}",
+                if error.is_timeout() {
+                    "The operation was aborted due to timeout"
+                } else {
+                    "fetch failed"
+                }
+            )
+        })?;
+    crate::oauth::read_token_response(response, "refresh", &[refresh_token.to_owned()]).await
 }
 
 pub(crate) fn account_id_from_jwt(token: &str) -> Result<String> {
+    if token.split('.').count() != 3 {
+        bail!("OpenAI Codex access token is not a JWT");
+    }
     let payload = token
         .split('.')
         .nth(1)
@@ -1164,7 +1149,7 @@ fn parse_sse_frame(block: &[u8]) -> Result<Option<SseFrame>> {
 struct ChatTool {
     id: String,
     name: String,
-    arguments: String,
+    arguments: JsString,
     stream_index: Option<String>,
     custom: bool,
     custom_started: bool,
@@ -1283,14 +1268,21 @@ fn chat_frame_events(
     if frame.data.trim() == "[DONE]" {
         return Ok((finish_chat_stream(state), true));
     }
-    let value: Value =
-        serde_json::from_str(&frame.data).context("decode OpenAI-compatible SSE event")?;
-    if value.get("error").is_some() {
-        // Provider error redaction is required by BashKitten's local credential policy.
-        bail!(
-            "OpenAI-compatible stream error: {}",
-            stream_error_label(&value)
-        );
+    let value: Value = crate::lossless_json::from_str(&frame.data)
+        .map_err(|_| crate::json_error::malformed("", &frame.data))?;
+    if let Some(error) = value.get("error") {
+        let message = error["message"]
+            .as_str()
+            .filter(|value| !value.is_empty())
+            .map(str::to_owned)
+            .unwrap_or_else(|| {
+                if error.as_object().is_some_and(|v| !v.is_empty()) {
+                    error.to_string()
+                } else {
+                    "(no status code or body)".into()
+                }
+            });
+        bail!("{}", crate::provider_http::safe_error_body(&message, &[]));
     }
     let mut events = Vec::new();
     if !value.is_object() {
@@ -1322,7 +1314,7 @@ fn chat_frame_events(
         state.raw_stop_reason = Some(reason.into());
     }
     let delta = &choice["delta"];
-    if let Some(content) = delta["content"].as_str().filter(|v| !v.is_empty()) {
+    if let Some(content) = JsString::from_value(&delta["content"]).filter(|v| !v.is_empty()) {
         let index = *state.text_index.get_or_insert_with(|| {
             let index = state.next_content_index;
             state.next_content_index += 1;
@@ -1330,11 +1322,11 @@ fn chat_frame_events(
         });
         events.push(ProviderEvent::TextDelta {
             index,
-            delta: content.into(),
+            delta: content,
         });
     }
     for field in ["reasoning_content", "reasoning", "reasoning_text"] {
-        if let Some(reasoning) = delta[field].as_str().filter(|v| !v.is_empty()) {
+        if let Some(reasoning) = JsString::from_value(&delta[field]).filter(|v| !v.is_empty()) {
             let signature = if state.model["provider"] == "opencode-go" && field == "reasoning" {
                 "reasoning_content"
             } else {
@@ -1343,7 +1335,7 @@ fn chat_frame_events(
             let index = state.thinking(signature, &mut events);
             events.push(ProviderEvent::ThinkingDelta {
                 index,
-                delta: reasoning.into(),
+                delta: reasoning,
             });
             break;
         }
@@ -1360,7 +1352,7 @@ fn chat_frame_events(
             events.push(ProviderEvent::ThinkingDone {
                 index,
                 id: None,
-                encrypted_content: Some(serde_json::to_string(&state.reasoning_details)?),
+                encrypted_content: Some(crate::lossless_json::to_string(&state.reasoning_details)?),
             });
         }
     }
@@ -1464,15 +1456,14 @@ fn append_chat_tool_delta(
     }
     if custom && !tool.custom {
         tool.custom = true;
-        tool.arguments.clear();
+        tool.arguments = JsString::default();
     }
-    let mut fragment = String::new();
-    if let Some(args) = call["function"]["arguments"]
-        .as_str()
-        .filter(|v| !v.is_empty())
+    let mut fragment = JsString::default();
+    if let Some(args) =
+        JsString::from_value(&call["function"]["arguments"]).filter(|v| !v.is_empty())
     {
-        fragment = args.into();
-        tool.arguments.push_str(args);
+        fragment = args.clone();
+        tool.arguments.push_js(&args);
     } else if let Some(input) = call["custom"]["input"].as_str().filter(|v| !v.is_empty()) {
         if !tool.custom_started {
             fragment.push_str("{\"input\":\"");
@@ -1481,7 +1472,7 @@ fn append_chat_tool_delta(
         let escaped = serde_json::to_string(input).unwrap();
         fragment.push_str(&escaped[1..escaped.len() - 1]);
         tool.custom_input.push_str(input);
-        tool.arguments.push_str(&fragment);
+        tool.arguments.push_js(&fragment);
     }
     events.push(ProviderEvent::ToolCallDelta {
         index,
@@ -1494,7 +1485,7 @@ fn append_chat_tool_delta(
         id: tool.id.clone(),
         name: tool.name.clone(),
         arguments: if tool.custom {
-            json!({"input":tool.custom_input}).to_string()
+            json!({"input":tool.custom_input}).to_string().into()
         } else {
             tool.arguments.clone()
         },
@@ -1517,7 +1508,7 @@ fn finish_chat_stream(state: &mut ChatStreamState) -> Vec<ProviderEvent> {
                 index,
                 arguments_delta: fragment.into(),
             });
-            tool.arguments = json!({"input":tool.custom_input}).to_string();
+            tool.arguments = json!({"input":tool.custom_input}).to_string().into();
         }
         events.push(ProviderEvent::ToolCallDone {
             index,
@@ -1607,18 +1598,6 @@ fn codex_frame_events(
 ) -> Result<(Vec<ProviderEvent>, bool)> {
     let events = state.push(&serde_json::from_str::<Value>(&frame.data)?)?;
     Ok((events, state.done))
-}
-
-fn stream_error_label(value: &Value) -> String {
-    let error = value.get("error").unwrap_or(value);
-    error
-        .get("code")
-        .or_else(|| error.get("type"))
-        .and_then(Value::as_str)
-        .unwrap_or("unspecified")
-        .chars()
-        .take(128)
-        .collect()
 }
 
 #[cfg(test)]
@@ -1853,7 +1832,7 @@ mod tests {
         assert!(terminal);
         assert!(events.iter().any(|event| matches!(
             event,
-            ProviderEvent::ToolCallDone { arguments, .. } if arguments == "{\"path\":\"a\"}"
+            ProviderEvent::ToolCallDone { arguments, .. } if arguments.as_str() == "{\"path\":\"a\"}"
         )));
         assert!(events.iter().any(|event| matches!(
             event,
@@ -1934,3 +1913,7 @@ mod tests {
         assert_eq!(body["input"][3]["output"][1]["type"], "input_image");
     }
 }
+
+#[cfg(test)]
+#[path = "provider_auth_tests.rs"]
+mod provider_auth_tests;

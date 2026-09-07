@@ -41,6 +41,557 @@
   "cases": [
     {
       "spec": {
+        "name": "malformed-before-start",
+        "plans": [
+          [
+            {
+              "raw": "{broken"
+            }
+          ],
+          [
+            {
+              "type": "response.created",
+              "response": {
+                "id": "two"
+              }
+            },
+            {
+              "type": "response.output_item.done",
+              "output_index": 0,
+              "item": {
+                "type": "message",
+                "id": "msg_two",
+                "role": "assistant",
+                "phase": "final_answer",
+                "content": [
+                  {
+                    "type": "output_text",
+                    "text": "Answer two",
+                    "annotations": []
+                  }
+                ]
+              }
+            },
+            {
+              "type": "response.completed",
+              "response": {
+                "id": "two",
+                "status": "completed",
+                "output": []
+              }
+            }
+          ]
+        ],
+        "turns": 2
+      },
+      "outputs": [
+        {
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "openai-codex-responses",
+            "provider": "openai-codex",
+            "model": "gpt-5.5",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "errorMessage": "Invalid Codex WebSocket JSON: Expected property name or '}' in JSON at position 1 (line 1 column 2)"
+          },
+          "events": [
+            "error"
+          ]
+        },
+        {
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Answer two",
+                "textSignature": "{\"v\":1,\"id\":\"msg_two\",\"phase\":\"final_answer\"}"
+              }
+            ],
+            "api": "openai-codex-responses",
+            "provider": "openai-codex",
+            "model": "gpt-5.5",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "responseId": "two",
+            "rawStopReason": "completed"
+          },
+          "events": [
+            "start",
+            "text_start",
+            "text_end",
+            "done"
+          ]
+        }
+      ],
+      "requests": [
+        {
+          "type": "response.create",
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 0"
+                }
+              ]
+            }
+          ],
+          "text": {
+            "verbosity": "low"
+          },
+          "include": [
+            "reasoning.encrypted_content"
+          ],
+          "prompt_cache_key": "fixture-malformed-before-start",
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        {
+          "type": "response.create",
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 0"
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 1"
+                }
+              ]
+            }
+          ],
+          "text": {
+            "verbosity": "low"
+          },
+          "include": [
+            "reasoning.encrypted_content"
+          ],
+          "prompt_cache_key": "fixture-malformed-before-start",
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        }
+      ],
+      "fetchRequests": [],
+      "connections": 2
+    },
+    {
+      "spec": {
+        "name": "malformed-after-start",
+        "plans": [
+          [
+            {
+              "type": "response.created",
+              "response": {
+                "id": "partial"
+              }
+            },
+            {
+              "raw": "{\"a\":}"
+            }
+          ],
+          [
+            {
+              "type": "response.created",
+              "response": {
+                "id": "two"
+              }
+            },
+            {
+              "type": "response.output_item.done",
+              "output_index": 0,
+              "item": {
+                "type": "message",
+                "id": "msg_two",
+                "role": "assistant",
+                "phase": "final_answer",
+                "content": [
+                  {
+                    "type": "output_text",
+                    "text": "Answer two",
+                    "annotations": []
+                  }
+                ]
+              }
+            },
+            {
+              "type": "response.completed",
+              "response": {
+                "id": "two",
+                "status": "completed",
+                "output": []
+              }
+            }
+          ]
+        ],
+        "turns": 2
+      },
+      "outputs": [
+        {
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "openai-codex-responses",
+            "provider": "openai-codex",
+            "model": "gpt-5.5",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "responseId": "partial",
+            "errorMessage": "Invalid Codex WebSocket JSON: Unexpected token '}', \"{\"a\":}\" is not valid JSON"
+          },
+          "events": [
+            "start",
+            "error"
+          ]
+        },
+        {
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Answer two",
+                "textSignature": "{\"v\":1,\"id\":\"msg_two\",\"phase\":\"final_answer\"}"
+              }
+            ],
+            "api": "openai-codex-responses",
+            "provider": "openai-codex",
+            "model": "gpt-5.5",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "responseId": "two",
+            "rawStopReason": "completed"
+          },
+          "events": [
+            "start",
+            "text_start",
+            "text_end",
+            "done"
+          ]
+        }
+      ],
+      "requests": [
+        {
+          "type": "response.create",
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 0"
+                }
+              ]
+            }
+          ],
+          "text": {
+            "verbosity": "low"
+          },
+          "include": [
+            "reasoning.encrypted_content"
+          ],
+          "prompt_cache_key": "fixture-malformed-after-start",
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        {
+          "type": "response.create",
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 0"
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 1"
+                }
+              ]
+            }
+          ],
+          "text": {
+            "verbosity": "low"
+          },
+          "include": [
+            "reasoning.encrypted_content"
+          ],
+          "prompt_cache_key": "fixture-malformed-after-start",
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        }
+      ],
+      "fetchRequests": [],
+      "connections": 2
+    },
+    {
+      "spec": {
+        "name": "null-json-before-start",
+        "plans": [
+          [
+            {
+              "raw": "null"
+            }
+          ],
+          [
+            {
+              "type": "response.created",
+              "response": {
+                "id": "two"
+              }
+            },
+            {
+              "type": "response.output_item.done",
+              "output_index": 0,
+              "item": {
+                "type": "message",
+                "id": "msg_two",
+                "role": "assistant",
+                "phase": "final_answer",
+                "content": [
+                  {
+                    "type": "output_text",
+                    "text": "Answer two",
+                    "annotations": []
+                  }
+                ]
+              }
+            },
+            {
+              "type": "response.completed",
+              "response": {
+                "id": "two",
+                "status": "completed",
+                "output": []
+              }
+            }
+          ]
+        ],
+        "turns": 2
+      },
+      "outputs": [
+        {
+          "message": {
+            "role": "assistant",
+            "content": [],
+            "api": "openai-codex-responses",
+            "provider": "openai-codex",
+            "model": "gpt-5.5",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "errorMessage": "Invalid Codex WebSocket JSON: Cannot read properties of null (reading 'type')"
+          },
+          "events": [
+            "error"
+          ]
+        },
+        {
+          "message": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "Answer two",
+                "textSignature": "{\"v\":1,\"id\":\"msg_two\",\"phase\":\"final_answer\"}"
+              }
+            ],
+            "api": "openai-codex-responses",
+            "provider": "openai-codex",
+            "model": "gpt-5.5",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "responseId": "two",
+            "rawStopReason": "completed"
+          },
+          "events": [
+            "start",
+            "text_start",
+            "text_end",
+            "done"
+          ]
+        }
+      ],
+      "requests": [
+        {
+          "type": "response.create",
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 0"
+                }
+              ]
+            }
+          ],
+          "text": {
+            "verbosity": "low"
+          },
+          "include": [
+            "reasoning.encrypted_content"
+          ],
+          "prompt_cache_key": "fixture-null-json-before-start",
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        },
+        {
+          "type": "response.create",
+          "model": "gpt-5.5",
+          "store": false,
+          "stream": true,
+          "instructions": "System",
+          "input": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 0"
+                }
+              ]
+            },
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "input_text",
+                  "text": "Question 1"
+                }
+              ]
+            }
+          ],
+          "text": {
+            "verbosity": "low"
+          },
+          "include": [
+            "reasoning.encrypted_content"
+          ],
+          "prompt_cache_key": "fixture-null-json-before-start",
+          "tool_choice": "auto",
+          "parallel_tool_calls": true
+        }
+      ],
+      "fetchRequests": [],
+      "connections": 2
+    },
+    {
+      "spec": {
         "name": "auto-continuation",
         "plans": [
           [

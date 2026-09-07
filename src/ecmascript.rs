@@ -8,27 +8,28 @@ pub(crate) fn number_string(value: f64) -> String {
 /// Preserve JavaScript number rendering and integer-key enumeration even when
 /// the original JSON used integer precision or ordering not available in JS.
 pub(crate) fn pretty_json(value: &serde_json::Value) -> String {
-    fn index(key: &str) -> Option<u32> {
-        key.parse::<u32>()
-            .ok()
-            .filter(|n| *n != u32::MAX && n.to_string() == key)
-    }
     fn write(value: &serde_json::Value, output: &mut String, depth: usize) {
+        use crate::lossless_json::{self, JsString};
         use serde_json::Value;
-        let (open, close, entries): (_, _, Vec<(Option<&str>, &Value)>) = match value {
+        if JsString::from_value(value).is_some() {
+            output.push_str(&lossless_json::to_string(value).unwrap());
+            return;
+        }
+        let (open, close, entries): (_, _, Vec<(Option<JsString>, &Value)>) = match value {
             Value::Number(number) => {
                 output.push_str(&number_string(number.as_f64().unwrap()));
                 return;
             }
             Value::Array(array) => ('[', ']', array.iter().map(|value| (None, value)).collect()),
-            Value::Object(object) => {
-                let mut entries: Vec<_> = object
-                    .iter()
-                    .map(|(key, value)| (Some(key.as_str()), value))
-                    .collect();
-                entries.sort_by_key(|(key, _)| index(key.unwrap()).map_or((1, 0), |n| (0, n)));
-                ('{', '}', entries)
-            }
+            Value::Object(_) => (
+                '{',
+                '}',
+                lossless_json::object_entries(value)
+                    .unwrap()
+                    .into_iter()
+                    .map(|(key, value)| (Some(key), value))
+                    .collect(),
+            ),
             _ => {
                 output.push_str(&serde_json::to_string(value).unwrap());
                 return;
@@ -42,7 +43,7 @@ pub(crate) fn pretty_json(value: &serde_json::Value) -> String {
             output.push('\n');
             output.push_str(&"  ".repeat(depth + 1));
             if let Some(key) = key {
-                output.push_str(&serde_json::to_string(key).unwrap());
+                output.push_str(&lossless_json::to_string(key).unwrap());
                 output.push_str(": ");
             }
             write(value, output, depth + 1);
@@ -67,21 +68,32 @@ pub(crate) fn whitespace(value: char) -> bool {
 
 /// Node's default util.inspect string rendering, used by ERR_INVALID_ARG_VALUE.
 /// The pinned Pi tools propagate these native argument errors unchanged.
-pub(crate) fn inspect_argument_string(value: &str) -> String {
-    fn quote(value: &str) -> String {
-        let delimiter = if value.contains('\'') && !value.contains('"') {
+pub(crate) fn inspect_argument_string(
+    value: &crate::lossless_json::JsString,
+) -> crate::lossless_json::JsString {
+    use crate::lossless_json::JsString;
+    fn quote(value: &[u16]) -> String {
+        let has = |text: &str| {
+            value
+                .windows(text.encode_utf16().count())
+                .any(|window| window.iter().copied().eq(text.encode_utf16()))
+        };
+        let delimiter = if has("'") && !has("\"") {
             '"'
-        } else if value.contains('\'')
-            && value.contains('"')
-            && !value.contains('`')
-            && !value.contains("${")
-        {
+        } else if has("'") && has("\"") && !has("`") && !has("${") {
             '`'
         } else {
             '\''
         };
         let mut output = String::from(delimiter);
-        for character in value.chars() {
+        for decoded in char::decode_utf16(value.iter().copied()) {
+            let character = match decoded {
+                Ok(character) => character,
+                Err(error) => {
+                    output.push_str(&format!("\\u{:04x}", error.unpaired_surrogate()));
+                    continue;
+                }
+            };
             match character {
                 '\\' => output.push_str("\\\\"),
                 '\'' if delimiter == '\'' => output.push_str("\\'"),
@@ -99,23 +111,22 @@ pub(crate) fn inspect_argument_string(value: &str) -> String {
         output.push(delimiter);
         output
     }
-    let inspected = if value.encode_utf16().count() > 76 {
+    let inspected = if value.len() > 76 {
         value
-            .split_inclusive('\n')
+            .units()
+            .split_inclusive(|unit| *unit == 10)
             .map(quote)
             .collect::<Vec<_>>()
             .join(" +\n  ")
     } else {
-        quote(value)
+        quote(value.units())
     };
-    if inspected.encode_utf16().count() > 128 {
-        format!(
-            "{}...",
-            String::from_utf16_lossy(&inspected.encode_utf16().take(128).collect::<Vec<_>>())
-        )
-    } else {
-        inspected
+    let mut inspected = JsString::from(inspected);
+    if inspected.len() > 128 {
+        inspected = JsString::from_units(inspected.units()[..128].to_vec());
+        inspected.push_str("...");
     }
+    inspected
 }
 
 /// Number(string)'s unsigned binary/octal/hex forms, rounded once to binary64.

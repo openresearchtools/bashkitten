@@ -1,0 +1,47 @@
+{
+  "date": "2026-09-07",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "binary": "fresh native debug build",
+  "isolatedOrigin": "http://127.0.0.1:18971",
+  "observed": [
+    "Signup and authenticated reload",
+    "Live reasoning and tool output",
+    "Queue edit hold survives reload; explicit takeover saves at original position",
+    "FIFO recovered message executes after prior turn",
+    "Worker totals: input272 output60 cached128 cacheHitRate32%",
+    "Active model change to alternate reports context64000",
+    "Pause preserves partial answer and Request was aborted across reload",
+    "Fork before model change restores original model and context128000",
+    "Offline fork resumes through authenticated POST and completes",
+    "Browser console reports no warnings or errors"
+  ],
+  "sessions": [
+    {
+      "id": "01a07d9d-0604-7361-930a-89241834e1bc",
+      "parent": null,
+      "messages": 8,
+      "modelChanges": [
+        "alternate"
+      ],
+      "assistantStops": [
+        "toolUse",
+        "stop",
+        "stop",
+        "aborted"
+      ]
+    },
+    {
+      "id": "01a07d9e-8570-7e70-aa7b-74418e671c25",
+      "parent": "01a07d9d-0604-7361-930a-89241834e1bc",
+      "messages": 8,
+      "modelChanges": [],
+      "assistantStops": [
+        "toolUse",
+        "stop",
+        "stop",
+        "stop"
+      ]
+    }
+  ],
+  "network": "loopback deterministic compatible provider only"
+}

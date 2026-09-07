@@ -1,35 +1,70 @@
-# Pi parity repair — active, not complete
+# Pi parity implementation and verification
 
 Reference: Pi `9841914c71a74d81abe07f751aefd271fd924e63`, as recorded in
-`PI_UPSTREAM.md`. `AGENTS.md` remains the specification; this ledger is evidence,
-not a reduction in scope. Passing isolated helper tests is not completion.
+`PI_UPSTREAM.md`. `AGENTS.md` remains the specification. The current evidence
+below supersedes the historical open-item notes in the dated work log.
+Only the three required provider modes and seven tools are implemented.
 
-## Required completion gates
+## Current completion record — 2026-09-07
 
-All rows start unverified. Mark a row complete only with current source evidence,
-equivalent pinned-Pi fixtures where applicable, and tests of the actual runtime
-and exposed UI/CLI paths. Keep intentional differences limited to `AGENTS.md`.
+The previously identified implementation gaps have been repaired. This records
+specific source, fixture, native-process and browser checks; passing these tests
+is not a claim that every possible input or external service state was tested.
 
-| Area | Required implementation and verification | Status |
-| --- | --- | --- |
-| Compaction | Manual, threshold, overflow, pre-switch; exact prompts/preparation/summary usage; abort/failure; numbered-file rotation, resume and continuation | Runtime connected and tested; 7 pinned-Pi differential histories pass; further failure/race/provider integration checks pending |
-| Retry | Pi error classification, delays, limits, cancellation, stream-idle timeout and continuation | Worker and summary backoff connected; 13 pinned-Pi classification cases and actual HTTP recovery tested; provider-internal retry/timeout parity pending |
-| Cancellation | Abort provider/tools, preserve partial response and settled history, cooperative stop and target shutdown | Core worker flow implemented; fixture tests pass; signal/deployment/Pi differential checks pending |
-| Tool streaming | Argument lifecycle, incremental bash output, individual tool completion, ordered context | Worker/UI output and completion connected; actual Pi update traces now match initial events, empty/short/burst output, timer flush, post-exit descendant output, cancellation and timeout; broader argument-event audit open |
-| Seven tools | Schemas, wording, coercion, paths, image processing, cancellation, errors, truncation and edge cases against pinned Pi | 187 tool cases, five fd 8.6 dependency variants and 24 byte-exact image cases pass; byte fallback, mutation ordering, argument errors and live bash updates repaired; isolated UTF-16 preservation and further boundary/platform cases open |
-| Prompt/context | Pi system prompt construction, project instructions and overrides; documented passive skills difference | Pinned wording/loading fixtures, runtime request-prefix tests and real instruction/restart task pass; broader boundary audit open |
-| Codex | Ordered Responses items/signatures; exact replay, transport/cache/affinity, refresh, errors, images, native OAuth and logout | 160 request/catalog, 100 stream/tier, 26 HTTP, 19 WebSocket scenarios and 11 continuation cases pass; real Luna/Sol tasks and socket cancellation pass; malformed JSON, expiry/concurrency and remaining auth boundaries open; proxy support omitted by user request |
-| Compatible API | All applicable Pi compatibility settings/transforms, image tool results, thinking, streaming, usage, model presets | 139 request and 46 HTTP stream differential cases pass; complete metadata, partial JSON and usage preserved; 25 SDK HTTP/retry fixtures and saved-preset browser-to-worker path pass; further boundary checks pending |
-| Usage | Worker-owned totals, context, cache, costs, tiers, compaction resets/unknown values; UI renders authoritative values | Rust snapshot published through live/status; JavaScript arithmetic removed; 14 Pi footer cases and decimal-format fixtures pass; provider normalization and browser validation pending |
-| llama.cpp | Debian detection, router lifecycle and args, catalog/load/unload/retain, HF search/quantization/download/cancel/gated/retry, model metadata | 61 Pi cases, router/INI/browser, restore/cancel and real 397 MB HF download/CPU inference pass; broader races and error boundaries remain open |
-| Live reconnect | Atomic persisted-history/live snapshot and future stream without gaps or duplication | Native snapshot fixture and browser reconnect during thinking, live tools and partial answers pass without duplicates; broader boundary races open |
-| Provider settings | Complete compatible provider/model and llama.cpp controls; inspectable launch arguments | Native editors, saved presets, credential redaction and configured browser-to-worker fixture pass; broader invalid-input checks pending |
-| Sidebar | Cheap header/title/stat listing; actual paginated scroll; no history scans or secondary index | Header-only listing, HTTP pagination test, and 106-chat browser check pass; fixed independent scroll and preserved header/scroll position |
-| Queue editing | Held edit preserves FIFO position and attachments; safe edit/cancel/promote/remove boundaries | Actual worker and browser hold/edit/FIFO/attachment/cancel/remove/promotion checks pass; broader simultaneous-edit races open |
-| Local Web authentication | Hash-only credentials and tokens, OS entropy, local Origin/CSRF checks, restart-safe logins and read-only bootstrap | Read-only concurrent bootstrap and open tabs across restart verified; invalid Origin/CSRF rejected before mutation; concurrent signup publishes one identity without overwriting; private atomic save tests pass; broader filesystem failure audit open |
-| Lifecycle | GTK normal quit/SIGTERM, crash restart, startup toggles, web-only port restart, no interrupted sibling agents | Real GTK/systemd checks pass for supervised desktop launch, controller crash/restart, Quit, SIGTERM, window close, startup enable/disable, Web crash policies and port changes; active agent/router siblings preserved and partial responses flushed; post-save failure rollback remains unaudited |
-| Session/model invariants | Parent cwd inheritance, shared validation, effective non-secret parameters in header, safe model switches, forks/attachments | Model/folder historical forks and shared defaults tested; retained fork lines now byte-identical, nested copies and fork resume verified even after original attachment removal; broader model-parameter boundaries open |
-| Delivery | Full tests, Podman .deb build, install, browser/live-model testing, concurrent sessions, no secrets in Git, commit and push | 103 Rust tests pass; current user-local binaries, service overrides, desktop entry and CLI commands deployed; actual agent tool resolves matching CLI/registry; release .deb build and isolated Debian installation pass; host system package installation, final audit and Git delivery pending |
+| Area | Current implementation and evidence |
+| --- | --- |
+| Compaction and retry | Seven pinned differential histories plus actual worker threshold/manual/overflow/pre-switch, failed summary, cancellation, atomic rotation/restart and recovery tests. Chronological usage and omitted cache checkpoints now have a separate pinned oracle. |
+| Cancellation and tool streaming | Actual provider/socket cancellation, worker stop/SIGTERM and sibling isolation, Pi argument and live bash traces, retained partial output, browser Pause/reload. |
+| Seven tools and Unicode | 187 tool calls, five fd 8.6 variants, 24 byte-exact image cases, and 35 Unicode cases. Native UTF-16 preserves lone units through args, errors, edits, truncation, streaming, summaries, JSONLs and attachment forks; provider prose follows Pi sanitization. See `docs/parity-unicode-2026-09-07.md`. |
+| Prompt/context | Pinned verbatim prompt/tool fixtures, project-instruction loading, real instruction-only task, request-prefix/restart tests and source review. Passive flat Markdown skills remain the documented difference. |
+| OpenAI subscription | Request/catalog, complete Responses signatures/items, SSE/WebSocket continuation, retry/idle/cancellation, cache/affinity, nine pinned refresh outcomes and 116 malformed-JSON cases. Concurrent refresh/logout, failed refresh publication, login lifetime and socket expiry tests pass. Client ID, scopes, endpoints and stored credential format are unchanged. |
+| OpenAI-compatible API | Configured presets and Pi request compatibility, reasoning/image transforms, 53 stream cases, 28 partial-JSON cases, SDK HTTP/retry fixtures and browser-to-worker execution. Native UTF-16 and V8 diagnostics retain Pi errors. |
+| Usage | Worker-supplied totals/context/cache/costs; Pi footer/decimal fixtures and new checkpoint fixtures. Browser observed exact input/output/cache totals, 32% cache hit rate and 128k→64k model context transition; zero-token aborted response clears latest cache rate as Pi does. |
+| llama.cpp | 76 pinned router/Hugging Face cases, actual HTTP search/gated/quantization/redaction checks, nine load/cancel/restore race cases, INI rollback and saved-model validation. Debian launcher and real cached-model acceptance are recorded separately. |
+| Live reconnect and queues | Locked JSONL publication/readers, atomic memory subscription, browser reload during live reasoning, held-edit recovery and FIFO execution. Per-edit ownership rejects stale saves/cancels; explicit takeover recovers a lost composer. |
+| Settings and models | One native registry/default validation path; explicit models use their supported default. Model changes persist before activation, errors retain prior selection and UI uses authoritative worker state. Config publication restores the preceding llama INI on failure. |
+| Sessions, folders and attachments | Exact historical fork bytes and model/folder selection; retained attachments copied privately, including Unicode-only text references. Header-only sidebar and paginated history tests. Old sensitive files are narrowed before use; new files start private. |
+| Local Web authentication | OS entropy, hash-only password/session/CSRF storage, one-winner concurrent signup, restart-safe tabs, read-only bootstrap/SSE and Origin/CSRF-protected resume. Logout revokes already-open streams. |
+| Lifecycle | Prior real GTK/systemd crash/quit/port/sibling tests plus current exact controller-handler rollback tests. A replacement Web process recovers the old port if the new port becomes occupied after preflight; no extra supervisor is introduced. |
+| Delivery | All 131 native tests, strict Clippy, formatting and Debian package checks pass. The .deb is installed system-wide and the existing port-3939 app uses `/usr/bin` binaries. Browser, real cached llama inference and an installed Luna task using all seven tools pass. Temporary services and containers are stopped; old user-local fallback launchers are removed. |
+
+Detailed evidence: `docs/parity-runtime-2026-09-07.md`,
+`docs/parity-providers-2026-09-07.md`,
+`docs/parity-unicode-2026-09-07.md`,
+`docs/parity-llama-lifecycle-2026-09-07.md`, and `tests/live/2026-09-07-*`.
+Fixtures use the pinned checkout only during development. The native build,
+normal tests and installed application require no Pi, Node.js or npm runtime.
+
+### Authentication diagnosis and successful revalidation
+
+The initial native Codex calls returned `Provided authentication token is
+expired.` The previously installed September 5 binaries returned the identical
+error with the same saved credential; its stored/JWT expiry values agreed and
+were in the future. The comparison preserved the credential bytes and did not
+establish the server's reason. No forced refresh or credential import was added.
+
+After the user reported provider login, the installed release successfully ran
+`openai-codex/gpt-5.6-luna` through all seven tools. Supplied tests and separate
+independent tests passed, supplied tests remained unchanged, no provider errors
+occurred, and 6,656 cached-input tokens were reported across seven responses.
+See `tests/live/2026-09-07-codex-auth.json` and
+`tests/live/2026-09-07-luna-installed.json`. No Astra inference was used.
+
+### Installed release
+
+The final Debian package installs all four native binaries under `/usr/bin`.
+The normal `bashkitten-web.service` was restarted on port 3939 with that binary;
+provider credential bytes were unchanged by deployment. The old user-local
+service/desktop overrides were removed and CLI links now resolve to `/usr/bin`.
+Earlier binaries remain only as a rollback backup. Only the normal Web service
+and shared target remain running. See `tests/live/2026-09-07-release.json`.
+
+The package was also installed and exercised in a disposable Debian container:
+CLI and agent startup, all shared libraries, the eight-model offline catalog,
+Web signup/login/CSRF/restart/logout, actual GTK registration and shutdown on a
+virtual display, and absence of Node/npm/MTS runtime files. That container has
+been removed. GTK's container systemctl calls used a test double; the separate
+real systemd/GTK lifecycle evidence remains documented in the dated records.
 
 ## Evidence and work log
 
@@ -106,7 +141,7 @@ and exposed UI/CLI paths. Keep intentional differences limited to `AGENTS.md`.
 - No deployment/restart or real-provider request was performed for this repair
   checkpoint. Earlier installed build must not be confused with the new source.
 
-## Next critical path (still required, not deferred out of scope)
+## Historical plan from 2026-09-05 (superseded by current completion record)
 
 1. Continue provider transport, timeout, recovery and full tool differential
    fixtures; compaction/retry helpers now have actual worker integration.

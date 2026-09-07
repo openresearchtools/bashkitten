@@ -1,5 +1,6 @@
 //! Pinned OpenAI SDK APIError plus Pi error-body.ts/provider-retry.ts.
 //! Credential redaction is the explicit BashKitten secret-storage requirement.
+use crate::lossless_json::JsString;
 use crate::providers::ProviderRequest;
 use anyhow::{Result, bail};
 use reqwest::{Client, Response, header::HeaderMap};
@@ -44,64 +45,75 @@ pub(crate) fn safe_error_body(body: &str, secrets: &[String]) -> String {
             text = value.to_string();
         }
     }
+    // Also redact token-bearing fields in malformed/truncated JSON and in
+    // messages containing an embedded JSON error body.
+    static RAW_TOKEN_FIELD: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+    let token_field = RAW_TOKEN_FIELD.get_or_init(|| regex::Regex::new(r#"(?i)("(?:access_token|refresh_token|id_token|api_key|authorization|client_secret)"\s*:\s*)"(?:[^"\\]|\\.)*(?:"|$)"#).expect("fixed token-field regex"));
+    text = token_field
+        .replace_all(&text, "${1}\"<redacted>\"")
+        .into_owned();
     for secret in secrets.iter().filter(|v| !v.is_empty()) {
         text = text.replace(secret, "<redacted>");
     }
     text
 }
 pub fn error_message(status: u16, body: &str, secrets: &[String]) -> String {
+    error_text(status, body, secrets).to_string()
+}
+pub fn error_text(status: u16, body: &str, secrets: &[String]) -> JsString {
     let body = safe_error_body(body, secrets);
-    let parsed = serde_json::from_str::<Value>(&body).ok();
+    let parsed = crate::lossless_json::from_str::<Value>(&body).ok();
     let error = parsed.as_ref().and_then(|v| v.get("error"));
     let truthy = |v: &Value| !v.is_null() && v != false && v != "" && v != 0;
+    let stringify =
+        |value: &Value| JsString::from(crate::lossless_json::to_string(value).expect("JSON value"));
+    let text = |value: &Value| JsString::from_value(value).unwrap_or_else(|| stringify(value));
+    let contains = |text: &JsString, part: &JsString| {
+        part.is_empty()
+            || text
+                .units()
+                .windows(part.len())
+                .any(|units| units == part.units())
+    };
     let message = if let Some(error) = error.filter(|v| truthy(v)) {
         if let Some(message) = error.get("message").filter(|v| truthy(v)) {
-            message
-                .as_str()
-                .map(str::to_owned)
-                .unwrap_or_else(|| message.to_string())
+            text(message)
         } else {
-            error.to_string()
+            stringify(error)
         }
     } else if parsed.is_none() {
-        body.clone()
+        body.into()
     } else {
-        String::new()
+        JsString::default()
     };
     let mut message = if message.is_empty() {
-        format!("{status} status code (no body)")
+        format!("{status} status code (no body)").into()
     } else {
-        format!("{status} {message}")
+        message.prefixed(&format!("{status} "))
     };
     if let Some(error) = error.filter(|v| v.as_object().is_some_and(|v| !v.is_empty())) {
-        let full = error.to_string();
-        let length = full.encode_utf16().count();
-        let capped = if length > 4000 {
-            let units: Vec<_> = full.encode_utf16().take(4000).collect();
-            format!(
-                "{}... [truncated {} chars]",
-                String::from_utf16_lossy(&units),
-                length - 4000
-            )
+        let full = stringify(error);
+        let capped = if full.len() > 4000 {
+            let mut capped = JsString::from_units(full.units()[..4000].to_vec());
+            capped.push_str(&format!("... [truncated {} chars]", full.len() - 4000));
+            capped
         } else {
             full
         };
-        if !message.contains(&capped) {
-            message = format!("{status}: {capped}");
+        if !contains(&message, &capped) {
+            message = capped.prefixed(&format!("{status}: "));
         }
         if let Some(raw) = error.pointer("/metadata/raw").filter(|v| truthy(v)) {
-            let raw = raw
-                .as_str()
-                .map(str::to_owned)
-                .unwrap_or_else(|| raw.to_string());
-            if !message.contains(&raw) {
-                message.push('\n');
-                message.push_str(&raw);
+            let raw = text(raw);
+            if !contains(&message, &raw) {
+                message.push_str("\n");
+                message.push_js(&raw);
             }
         }
     }
     message
 }
+
 fn retryable(status: Option<u16>, headers: &HeaderMap) -> bool {
     match headers.get("x-should-retry").and_then(|v| v.to_str().ok()) {
         Some("true") => true,
@@ -175,7 +187,7 @@ pub async fn send_compatible(
             client
                 .post(url.clone())
                 .headers(headers.clone())
-                .json(&body)
+                .json(&crate::lossless_json::wire(&body))
                 .send(),
         )
         .await;
@@ -185,7 +197,7 @@ pub async fn send_compatible(
                 let status = response.status().as_u16();
                 let headers = response.headers().clone();
                 let text = response.text().await.unwrap_or_default();
-                (Some(status), headers, error_message(status, &text, secrets))
+                (Some(status), headers, error_text(status, &text, secrets))
             }
             Ok(Err(error)) => (
                 None,
@@ -200,7 +212,7 @@ pub async fn send_compatible(
             Err(_) => (None, HeaderMap::new(), "Request timed out.".into()),
         };
         if attempt == maximum || !retryable(status, &response_headers) {
-            bail!("{error}");
+            return Err(crate::json_error::ProviderError(error).into());
         }
         tokio::time::sleep(retry_delay(
             &response_headers,

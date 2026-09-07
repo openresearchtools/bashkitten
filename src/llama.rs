@@ -58,6 +58,9 @@ pub fn launch_environment(config: &LlamaConfig) -> Result<BTreeMap<String, Strin
 }
 
 pub fn validate_local_settings(config: &LlamaConfig) -> Result<()> {
+    if config.port == 0 {
+        bail!("Router port must be between 1 and 65535");
+    }
     launch_environment(config)?;
     for path in &config.model_search_dirs {
         if !path.is_absolute()
@@ -486,6 +489,7 @@ pub fn launch_arguments(
     reveal_key: bool,
     flash_supported: bool,
 ) -> Result<Vec<String>> {
+    validate_local_settings(config)?;
     for arg in &config.extra_arguments {
         let flag = arg.split('=').next().unwrap_or(arg);
         if matches!(
@@ -912,6 +916,10 @@ impl Client {
             &format!("http://127.0.0.1:{}", config.port),
             &config.api_key,
         )
+    }
+    pub(crate) fn matches_config(&self, config: &LlamaConfig) -> bool {
+        self.server_url == format!("http://127.0.0.1:{}", config.port)
+            && self.api_key == config.api_key
     }
     fn redact(&self, message: String) -> String {
         if self.api_key.is_empty() {

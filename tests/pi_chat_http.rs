@@ -15,7 +15,8 @@ use tokio::sync::Mutex;
 
 #[tokio::test]
 async fn pinned_compatible_http_errors_retries_and_affinity_headers() {
-    let fixture: Value = serde_json::from_str(include_str!("fixtures/pi-chat-http.json")).unwrap();
+    let fixture: Value =
+        bashkitten::lossless_json::from_str(include_str!("fixtures/pi-chat-http.json")).unwrap();
     let responses = Arc::new(Mutex::new(Vec::<Value>::new()));
     let captured = Arc::new(Mutex::new(Vec::<HeaderMap>::new()));
     let inputs = responses.clone();
@@ -85,12 +86,12 @@ async fn pinned_compatible_http_errors_retries_and_affinity_headers() {
             Ok(mut stream) => {
                 while let Some(event) = stream.next().await {
                     if let Err(e) = event {
-                        error = Some(e.to_string());
+                        error = Some(bashkitten::json_error::exception_message(&e));
                         break;
                     }
                 }
             }
-            Err(e) => error = Some(e.to_string()),
+            Err(e) => error = Some(bashkitten::json_error::exception_message(&e)),
         }
         assert_eq!(json!(error), case["expectedError"], "{name}");
         let requests = captured.lock().await;

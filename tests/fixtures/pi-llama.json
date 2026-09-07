@@ -867,7 +867,187 @@
       "error": "Hugging Face returned HTTP 503"
     },
     {
-      "name": "router-error-58",
+      "name": "hf-retry-number-NaN",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "NaN",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 37s"
+    },
+    {
+      "name": "hf-retry-number-inf",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "inf",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 37s"
+    },
+    {
+      "name": "hf-retry-number-Infinity",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "Infinity",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in Infinitys"
+    },
+    {
+      "name": "hf-retry-number--Infinity",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "-Infinity",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in -Infinitys"
+    },
+    {
+      "name": "hf-retry-number-0x10",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "0x10",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 16s"
+    },
+    {
+      "name": "hf-retry-number-0B101",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "0B101",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 5s"
+    },
+    {
+      "name": "hf-retry-number-0o17",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "0o17",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 15s"
+    },
+    {
+      "name": "hf-retry-number-+0x10",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "+0x10",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 37s"
+    },
+    {
+      "name": "hf-retry-number-  .5  ",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "  .5  ",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 0.5s"
+    },
+    {
+      "name": "hf-retry-number-1e21",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "1e21",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 1e+21s"
+    },
+    {
+      "name": "hf-retry-number-1e-8",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "1e-8",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 1e-8s"
+    },
+    {
+      "name": "hf-retry-number-1e309",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "1e309",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in Infinitys"
+    },
+    {
+      "name": "hf-retry-number--0",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "-0",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 37s"
+    },
+    {
+      "name": "hf-retry-number-false",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "false",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 37s"
+    },
+    {
+      "name": "hf-retry-number-1junk",
+      "kind": "hfError",
+      "input": {
+        "status": 429,
+        "headers": {
+          "retry-after": "1junk",
+          "ratelimit": "r=0;t=37"
+        }
+      },
+      "error": "Hugging Face rate limit reached; retry in 37s"
+    },
+    {
+      "name": "router-error-73",
       "kind": "routerError",
       "input": {
         "status": 500,
@@ -880,7 +1060,7 @@
       "error": "Router failed"
     },
     {
-      "name": "router-error-59",
+      "name": "router-error-74",
       "kind": "routerError",
       "input": {
         "status": 503,
@@ -889,7 +1069,7 @@
       "error": "llama.cpp returned HTTP 503"
     },
     {
-      "name": "router-error-60",
+      "name": "router-error-75",
       "kind": "routerError",
       "input": {
         "status": 404,

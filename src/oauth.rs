@@ -257,7 +257,10 @@ impl LoginManager {
             // The guard owns the temporary listener even if cancellation aborts this task.
             let _listener = listener;
             let result = if let Some(flow) = flow {
-                browser_login(&client, flow, rx).await
+                tokio::time::timeout(LIFETIME, browser_login(&client, flow, rx))
+                    .await
+                    .map_err(|_| anyhow::anyhow!("Browser login timed out"))
+                    .and_then(|value| value)
             } else {
                 device_login(&client, &manager, &task_id).await
             };
@@ -394,32 +397,59 @@ async fn exchange(
         .send()
         .await
         .context("OpenAI Codex token exchange request failed")?;
-    if !response.status().is_success() {
-        bail!("OpenAI Codex token exchange failed ({})", response.status());
-    }
-    // Never reflect a token response/error body into logs or the browser.
-    let json: Value = response
-        .json()
-        .await
-        .context("Invalid OpenAI Codex token exchange response")?;
-    credential_from_response(&json)
+    read_token_response(
+        response,
+        "exchange",
+        &[code.to_owned(), verifier.to_owned()],
+    )
+    .await
 }
 
+pub(crate) async fn read_token_response(
+    response: reqwest::Response,
+    operation: &str,
+    secrets: &[String],
+) -> Result<ProviderCredential> {
+    let status = response.status();
+    let raw = response.text().await?;
+    if !status.is_success() {
+        let detail = if raw.is_empty() {
+            status.canonical_reason().unwrap_or_default()
+        } else {
+            &raw
+        };
+        bail!(
+            "OpenAI Codex token {operation} failed ({}): {}",
+            status.as_u16(),
+            crate::provider_http::safe_error_body(detail, secrets)
+        );
+    }
+    let json: Value = serde_json::from_str(&raw).map_err(|_| {
+        anyhow::anyhow!(
+            "{}",
+            crate::json_error::error_message(&crate::provider_http::safe_error_body(&raw, secrets))
+        )
+    })?;
+    credential_from_response_for(&json, operation)
+}
+
+#[cfg(test)]
 fn credential_from_response(json: &Value) -> Result<ProviderCredential> {
-    let access = json["access_token"]
-        .as_str()
-        .filter(|v| !v.is_empty())
-        .context("Token response missing access token")?;
-    let refresh = json["refresh_token"]
-        .as_str()
-        .filter(|v| !v.is_empty())
-        .context("Token response missing refresh token")?;
-    let expires = json["expires_in"]
-        .as_f64()
-        .filter(|v| v.is_finite())
-        .context("Token response missing expiry")?;
-    let account_id =
-        account_id_from_jwt(access).context("Failed to extract accountId from token")?;
+    credential_from_response_for(json, "exchange")
+}
+
+fn credential_from_response_for(json: &Value, operation: &str) -> Result<ProviderCredential> {
+    let access = json["access_token"].as_str().filter(|v| !v.is_empty());
+    let refresh = json["refresh_token"].as_str().filter(|v| !v.is_empty());
+    let expires = json["expires_in"].as_f64().filter(|v| v.is_finite());
+    let (Some(access), Some(refresh), Some(expires)) = (access, refresh, expires) else {
+        bail!(
+            "OpenAI Codex token {operation} response missing fields: {}",
+            crate::provider_http::safe_error_body(&json.to_string(), &[])
+        );
+    };
+    let account_id = account_id_from_jwt(access)
+        .map_err(|_| anyhow::anyhow!("Failed to extract accountId from token"))?;
     Ok(ProviderCredential::OAuth {
         access: access.into(),
         refresh: refresh.into(),
@@ -794,6 +824,39 @@ mod tests {
         deleting.await.unwrap().unwrap();
         assert!(store.credential("openai-codex").unwrap().is_none());
         assert!(store.credential("other").unwrap().is_some());
+    }
+
+    #[tokio::test]
+    async fn browser_attempt_expires_and_preserves_existing_credentials() {
+        let temp = tempfile::tempdir().unwrap();
+        let store = ProviderAuthStore::new(temp.path().join("auth.json"));
+        store
+            .set_codex(Some(credential_from_response(&token_response()).unwrap()))
+            .await
+            .unwrap();
+        let before = std::fs::read(store.path()).unwrap();
+        let manager = LoginManager::default();
+        let status = manager
+            .start("fixture-owner".into(), "browser", store.clone())
+            .await
+            .unwrap();
+        tokio::time::pause();
+        tokio::task::yield_now().await;
+        tokio::time::advance(LIFETIME + Duration::from_millis(1)).await;
+        for _ in 0..20 {
+            if manager.status("fixture-owner").await.phase == "error" {
+                break;
+            }
+            tokio::task::yield_now().await;
+        }
+        let final_status = manager.status("fixture-owner").await;
+        assert_eq!(final_status.phase, "error");
+        assert_eq!(final_status.message, "Browser login timed out");
+        assert_eq!(std::fs::read(store.path()).unwrap(), before);
+        if status.callback_available {
+            let listener = TcpListener::bind(("127.0.0.1", 1455)).await.unwrap();
+            drop(listener);
+        }
     }
 
     #[test]

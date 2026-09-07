@@ -11,6 +11,8 @@ use std::path::{Path, PathBuf};
 #[serde(default)]
 pub struct AppConfig {
     pub web_port: u16,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub web_port_fallback: Option<u16>,
     pub web_restart_on_failure: bool,
     pub start_at_login: bool,
     pub theme: UiTheme,
@@ -124,6 +126,7 @@ impl Default for AppConfig {
             .unwrap_or_else(|| PathBuf::from("/tmp"));
         Self {
             web_port: 3939,
+            web_port_fallback: None,
             web_restart_on_failure: true,
             start_at_login: false,
             theme: UiTheme::System,
@@ -323,14 +326,60 @@ impl AppConfig {
     }
     pub fn save(&self, paths: &AppPaths) -> Result<()> {
         self.validate_models()?;
+        let preset_path = paths.config.join("llama-models.ini");
+        let previous_preset = PrivateFileSnapshot::read(&preset_path)?;
         if !self.llama.models.is_empty() {
             let contents = crate::llama::preset_contents(
                 &self.llama,
                 crate::llama::flash_attention_supported(),
             )?;
-            atomic_private_bytes(&paths.config.join("llama-models.ini"), contents.as_bytes())?;
+            atomic_private_bytes(&preset_path, contents.as_bytes())?;
         }
-        atomic_private_json(&paths.config_file(), self)
+        if let Err(error) = atomic_private_json(&paths.config_file(), self) {
+            if !self.llama.models.is_empty()
+                && let Err(rollback) = previous_preset.restore()
+            {
+                return Err(
+                    error.context(format!("Could not restore llama.cpp presets: {rollback:#}"))
+                );
+            }
+            return Err(error);
+        }
+        Ok(())
+    }
+}
+
+/// Byte-preserving rollback for the files touched by one local settings action.
+/// Snapshotting also applies the same private-file policy as ordinary reads.
+pub(crate) struct PrivateFileSnapshot {
+    path: PathBuf,
+    bytes: Option<Vec<u8>>,
+}
+impl PrivateFileSnapshot {
+    pub(crate) fn read(path: &Path) -> Result<Self> {
+        let bytes = match fs::metadata(path) {
+            Ok(_) => {
+                set_private_file(path)?;
+                Some(fs::read(path)?)
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.into()),
+        };
+        Ok(Self {
+            path: path.into(),
+            bytes,
+        })
+    }
+    pub(crate) fn restore(&self) -> Result<()> {
+        if let Some(bytes) = &self.bytes {
+            atomic_private_bytes(&self.path, bytes)
+        } else {
+            match fs::remove_file(&self.path) {
+                Ok(()) => Ok(()),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                Err(error) => Err(error.into()),
+            }
+        }
     }
 }
 
@@ -385,6 +434,39 @@ fn publish_private_bytes(path: &Path, data: &[u8], replace: bool) -> Result<()> 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn rejected_configuration_publication_restores_previous_llama_preset() {
+        for existing in [false, true] {
+            let root = tempfile::tempdir().unwrap();
+            let paths = crate::paths::AppPaths {
+                config: root.path().join("config"),
+                data: root.path().join("data"),
+                runtime: root.path().join("runtime"),
+            };
+            paths.ensure().unwrap();
+            let preset_path = paths.config.join("llama-models.ini");
+            if existing {
+                super::atomic_private_bytes(&preset_path, b"previous native preset\n").unwrap();
+            }
+            // Force JSON rename to fail after INI publication has succeeded.
+            std::fs::create_dir(paths.config_file()).unwrap();
+            let mut config = super::AppConfig::default();
+            config.llama.models.push(super::ModelPreset {
+                id: "fixture".into(),
+                ..Default::default()
+            });
+            assert!(config.save(&paths).is_err());
+            if existing {
+                assert_eq!(
+                    std::fs::read(preset_path).unwrap(),
+                    b"previous native preset\n"
+                );
+            } else {
+                assert!(!preset_path.exists());
+            }
+        }
+    }
+
     #[test]
     fn private_publication_is_atomic_and_create_never_replaces_an_identity() {
         use std::os::unix::fs::{PermissionsExt, symlink};

@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-07",
+  "artifact": "/run/media/user/Data/bashkitten-builds/artifacts/bashkitten_0.1.0_amd64.deb",
+  "artifactSha256": "3f0dceb20cfb6095c96223b06c7cc35da4426025a6e08c6f021524c516c48083",
+  "installedStatus": "install ok installed\n0.1.0",
+  "cliVersion": "bashkitten 0.1.0",
+  "catalogModels": 8,
+  "allFourBinariesLinked": true,
+  "binaries": {
+    "bashkitten": {
+      "sha256": "3f27d233dca85b7691908641809504cf9b2c34225399eb3d7a1e9ce049da8ff0",
+      "dynamicLibrariesResolved": true
+    },
+    "bashkitten-agent": {
+      "sha256": "bb720846681e9bb5f6a47480125e6519e7b6c1366ce9edafbb2a087ea2081acb",
+      "dynamicLibrariesResolved": true
+    },
+    "bashkitten-web": {
+      "sha256": "a27a5ce2cfa852b39a2d5ebc84d25a2ca0794e2e90deaadede061b61143ed0e1",
+      "dynamicLibrariesResolved": true
+    },
+    "bashkitten-controller": {
+      "sha256": "eb7d41ce948fc1de4c5f75efb52ecb656324a89dac6dbffb8814345987b7da66",
+      "dynamicLibrariesResolved": true
+    }
+  },
+  "cliAndAgentHelpSucceeded": true,
+  "webStartupAndShutdownSucceeded": true,
+  "controller": {
+    "registered": true,
+    "exitCode": 0,
+    "virtualDisplay": true,
+    "isolatedSessionBus": true,
+    "systemctlTestDouble": true
+  },
+  "controllerUnitUsesDbus": true,
+  "embeddedSettingsAndSharedPickerPresent": true,
+  "localAuth": {
+    "initialSignup": true,
+    "login": true,
+    "anonymousEndpointsReturn401": true,
+    "csrfRequired": true,
+    "wrongOriginRejected": true,
+    "cookieFlagsVerified": true,
+    "loginSurvivesWebRestart": true,
+    "logoutRevokesLogin": true
+  },
+  "installedNodeNpmMtsFiles": [],
+  "nodeAndNpmAvailable": false,
+  "referenceTypeScriptExamples": 102,
+  "isolation": {
+    "disposableContainer": true,
+    "publishedPorts": false,
+    "hostInstalled": false,
+    "hostServicesOrConfigurationChanged": false
+  },
+  "finalArtifactVerificationPending": false,
+  "verificationNote": "Root repeated final artifact installation and all smoke checks after stopping subagents. The container has no published ports."
+}

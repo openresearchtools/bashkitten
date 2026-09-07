@@ -2,7 +2,8 @@ use serde_json::{Value, json};
 #[test]
 fn pinned_codex_request_and_catalog_parity() {
     let fixture: Value =
-        serde_json::from_str(include_str!("fixtures/pi-codex-requests.json")).unwrap();
+        bashkitten::lossless_json::from_str(include_str!("fixtures/pi-codex-requests.json"))
+            .unwrap();
     assert_eq!(fixture["pin"], bashkitten::PI_REFERENCE_COMMIT);
     let models = bashkitten::models::codex_models();
     for entry in fixture["models"].as_array().unwrap() {

@@ -1,10 +1,14 @@
 //! Pinned Codex event mapping and shared Responses stream state machine.
+use crate::lossless_json::JsString;
 use crate::providers::{NormalizedUsage, ProviderEvent as Event, StopReason};
 use anyhow::{Result, bail};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 fn s(v: &Value) -> &str {
     v.as_str().unwrap_or_default()
+}
+fn text(v: &Value) -> JsString {
+    JsString::from_value(v).unwrap_or_default()
 }
 fn list(v: &Value) -> &[Value] {
     v.as_array().map(Vec::as_slice).unwrap_or(&[])
@@ -20,7 +24,7 @@ fn field(v: &Value, k: &str) -> String {
 }
 struct Slot {
     index: usize,
-    partial: Option<String>,
+    partial: Option<JsString>,
     custom: Option<CustomInput>,
 }
 struct CustomInput {
@@ -120,7 +124,7 @@ impl State {
                     });
                     json!({"input":input})
                 } else {
-                    partial = Some(s(&item["arguments"]).into());
+                    partial = Some(text(&item["arguments"]));
                     json!({})
                 };
                 events.push(Event::ToolCallStart {
@@ -194,21 +198,22 @@ impl State {
                     let expected = if thinking { "thinking" } else { "text" };
                     if self.blocks[slot.index]["type"] == expected {
                         let delta = if kind == "response.reasoning_summary_part.done" {
-                            "\n\n"
+                            JsString::from("\n\n")
                         } else {
-                            s(&event["delta"])
+                            text(&event["delta"])
                         };
-                        let value = s(&self.blocks[slot.index][expected]).to_owned() + delta;
+                        let mut value = text(&self.blocks[slot.index][expected]);
+                        value.push_js(&delta);
                         self.blocks[slot.index][expected] = json!(value);
                         events.push(if thinking {
                             Event::ThinkingDelta {
                                 index: slot.index as u64,
-                                delta: delta.into(),
+                                delta,
                             }
                         } else {
                             Event::TextDelta {
                                 index: slot.index as u64,
-                                delta: delta.into(),
+                                delta,
                             }
                         });
                     }
@@ -219,20 +224,21 @@ impl State {
                     && let Some(partial) = &mut slot.partial
                 {
                     let delta = if kind.ends_with(".delta") {
-                        let delta = s(&event["delta"]).to_owned();
-                        partial.push_str(&delta);
+                        let delta = text(&event["delta"]);
+                        partial.push_js(&delta);
                         Some(delta)
                     } else {
-                        let next = s(&event["arguments"]);
+                        let next = text(&event["arguments"]);
                         let delta = next
-                            .strip_prefix(partial.as_str())
-                            .filter(|v| !v.is_empty())
-                            .map(str::to_owned);
-                        *partial = next.into();
+                            .units()
+                            .strip_prefix(partial.units())
+                            .filter(|units| !units.is_empty())
+                            .map(|units| JsString::from_units(units.to_vec()));
+                        *partial = next;
                         delta
                     };
                     self.blocks[slot.index]["arguments"] =
-                        crate::streaming_json::parse_streaming_json(partial);
+                        crate::streaming_json::parse_streaming_json_js(partial);
                     let index = slot.index;
                     if let Some(arguments_delta) = delta {
                         events.push(Event::ToolCallDelta {
@@ -255,7 +261,7 @@ impl State {
                     if let Some(arguments_delta) = input.append(&next, kind.ends_with(".done"))? {
                         events.push(Event::ToolCallDelta {
                             index: slot.index as u64,
-                            arguments_delta,
+                            arguments_delta: arguments_delta.into(),
                         });
                     }
                     self.blocks[slot.index]["arguments"] = json!({"input":next});
@@ -276,11 +282,13 @@ impl State {
                     match s(&item["type"]) {
                         "reasoning" if block["type"] == "thinking" => {
                             let joined = |key: &str| {
-                                list(&item[key])
-                                    .iter()
-                                    .map(|v| s(&v["text"]))
-                                    .collect::<Vec<_>>()
-                                    .join("\n\n")
+                                JsString::join(
+                                    &list(&item[key])
+                                        .iter()
+                                        .map(|v| text(&v["text"]))
+                                        .collect::<Vec<_>>(),
+                                    "\n\n",
+                                )
                             };
                             let summary = joined("summary");
                             let content = joined("content");
@@ -289,21 +297,23 @@ impl State {
                             } else if !content.is_empty() {
                                 block["thinking"] = json!(content);
                             }
-                            block["thinkingSignature"] = json!(item.to_string());
+                            block["thinkingSignature"] =
+                                json!(crate::lossless_json::to_string(item)?);
                             self.reasoning.insert(field(item, "id"), index);
                             finished = true;
                         }
                         "message" if block["type"] == "text" => {
-                            block["text"] = json!(
-                                list(&item["content"])
+                            block["text"] = json!(JsString::join(
+                                &list(&item["content"])
                                     .iter()
                                     .map(|v| if v["type"] == "output_text" {
-                                        s(&v["text"])
+                                        text(&v["text"])
                                     } else {
-                                        s(&v["refusal"])
+                                        text(&v["refusal"])
                                     })
-                                    .collect::<String>()
-                            );
+                                    .collect::<Vec<_>>(),
+                                ""
+                            ));
                             let mut signature = json!({"v":1});
                             if let Some(id) = item.get("id") {
                                 signature["id"] = id.clone();
@@ -316,15 +326,14 @@ impl State {
                         }
                         "function_call" if block["type"] == "toolCall" => {
                             if let Some(partial) =
-                                self.slots.get(&key).and_then(|v| v.partial.as_deref())
+                                self.slots.get(&key).and_then(|v| v.partial.as_ref())
                             {
-                                let arguments = item["arguments"]
-                                    .as_str()
+                                let arguments = JsString::from_value(&item["arguments"])
                                     .filter(|v| !v.is_empty())
-                                    .or_else(|| (!partial.is_empty()).then_some(partial))
-                                    .unwrap_or("{}");
+                                    .or_else(|| (!partial.is_empty()).then(|| partial.clone()))
+                                    .unwrap_or_else(|| "{}".into());
                                 block["arguments"] =
-                                    crate::streaming_json::parse_streaming_json(arguments);
+                                    crate::streaming_json::parse_streaming_json_js(&arguments);
                                 if let Some(namespace) = item.get("namespace") {
                                     block["namespace"] = namespace.clone();
                                 }
@@ -332,7 +341,10 @@ impl State {
                                     index: index as u64,
                                     id: s(&block["id"]).into(),
                                     name: s(&block["name"]).into(),
-                                    arguments: block["arguments"].to_string(),
+                                    arguments: crate::lossless_json::to_string(
+                                        &block["arguments"],
+                                    )?
+                                    .into(),
                                 });
                                 finished = true;
                             }
@@ -346,7 +358,7 @@ impl State {
                                 if let Some(arguments_delta) = input.append(&next, true)? {
                                     events.push(Event::ToolCallDelta {
                                         index: index as u64,
-                                        arguments_delta,
+                                        arguments_delta: arguments_delta.into(),
                                     });
                                 }
                                 block["arguments"] = json!({"input":next});
@@ -357,7 +369,10 @@ impl State {
                                     index: index as u64,
                                     id: s(&block["id"]).into(),
                                     name: s(&block["name"]).into(),
-                                    arguments: block["arguments"].to_string(),
+                                    arguments: crate::lossless_json::to_string(
+                                        &block["arguments"],
+                                    )?
+                                    .into(),
                                 });
                                 finished = true;
                             }
@@ -525,8 +540,8 @@ impl Decoder {
             if data.is_empty() || data == "[DONE]" {
                 continue;
             }
-            let value = serde_json::from_str(data)
-                .map_err(|error| anyhow::anyhow!("Invalid Codex SSE JSON: {error}"));
+            let value = crate::lossless_json::from_str(data)
+                .map_err(|_| crate::json_error::malformed("Invalid Codex SSE JSON: ", data));
             let failed = value.is_err();
             values.push(value);
             if failed {

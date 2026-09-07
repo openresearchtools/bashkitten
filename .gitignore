@@ -12,3 +12,7 @@
 # Local runtime state used by development and browser tests
 /.runtime/
 /.test-data/
+
+# Python development-script bytecode
+__pycache__/
+*.py[cod]

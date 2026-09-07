@@ -1,0 +1,42 @@
+{
+  "systemPackageInstalled": true,
+  "packageVersion": "0.1.0",
+  "activeWebExecutable": "/usr/bin/bashkitten-web",
+  "activeWebPort": 3939,
+  "releaseBinaryHashesMatchInstalled": true,
+  "providerCredentialsUnchangedByDeployment": true,
+  "removedFallbackLaunchers": [
+    "/home/user/.config/systemd/user/bashkitten-web.service.d/90-bashkitten-current.conf",
+    "/home/user/.config/systemd/user/bashkitten-controller.service.d/90-bashkitten-current.conf",
+    "/home/user/.config/systemd/user/bashkitten-llama.service.d/90-bashkitten-current.conf",
+    "/home/user/.local/share/applications/bashkitten.desktop"
+  ],
+  "cliLinks": [
+    {
+      "path": "/home/user/.local/bin/bashkitten",
+      "previous": "/home/user/.local/lib/bashkitten/current/bashkitten",
+      "current": "/usr/bin/bashkitten"
+    },
+    {
+      "path": "/home/user/.local/bin/bashkitten-controller",
+      "previous": "/home/user/.local/lib/bashkitten/current/bashkitten-controller",
+      "current": "/usr/bin/bashkitten-controller"
+    }
+  ],
+  "oldBinaryBackup": "/home/user/.local/lib/bashkitten/previous-2026-09-07",
+  "webRespondsWithNewUi": true,
+  "date": "2026-09-07",
+  "piCommit": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "package": "/run/media/user/Data/bashkitten-builds/artifacts/bashkitten_0.1.0_amd64.deb",
+  "packageSha256": "3f0dceb20cfb6095c96223b06c7cc35da4426025a6e08c6f021524c516c48083",
+  "testsPassed": 131,
+  "clippyWarningsDenied": "passed",
+  "formatCheck": "passed",
+  "embeddedJavaScriptSyntax": "passed",
+  "realLunaAllToolsAndIndependentTests": "passed",
+  "realCachedLlamaInference": "passed",
+  "packageInstallSmoke": "passed",
+  "extraHostWebServicesStopped": true,
+  "temporaryContainersRemoved": true,
+  "credentialFilesNotCommitted": true
+}

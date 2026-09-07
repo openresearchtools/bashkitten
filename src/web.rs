@@ -35,6 +35,7 @@ pub struct WebState {
     bound_port: u16,
     csrf_tokens: Arc<RwLock<std::collections::BTreeMap<String, String>>>,
     restart_pending: Arc<std::sync::atomic::AtomicBool>,
+    restart_error: Arc<RwLock<Option<String>>>,
     pub oauth: crate::oauth::LoginManager,
     pub llama_operation: llama_api::Operations,
 }
@@ -94,6 +95,8 @@ struct QueueMutation {
     id: String,
     action: QueueAction,
     content: Option<String>,
+    #[serde(default)]
+    edit_token: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -130,12 +133,21 @@ struct Bootstrap {
 }
 
 pub fn router(paths: AppPaths, config: AppConfig) -> Result<Router> {
+    router_with_restart_error(paths, config, None)
+}
+
+fn router_with_restart_error(
+    paths: AppPaths,
+    config: AppConfig,
+    restart_error: Option<String>,
+) -> Result<Router> {
     let csrf_tokens = Arc::new(RwLock::new(auth::prepare_csrf_tokens(&paths)?));
     let state = WebState {
         paths,
         csrf_tokens,
         bound_port: config.web_port,
         restart_pending: Default::default(),
+        restart_error: Arc::new(RwLock::new(restart_error)),
         config: Arc::new(RwLock::new(config)),
         oauth: crate::oauth::LoginManager::default(),
         llama_operation: Default::default(),
@@ -154,6 +166,7 @@ pub fn router(paths: AppPaths, config: AppConfig) -> Result<Router> {
             get(read_current_segment),
         )
         .route("/api/sessions/{id}/events", get(events))
+        .route("/api/sessions/{id}/resume", post(resume_session))
         .route("/api/sessions/{id}/messages", post(send_message))
         .route("/api/sessions/{id}/fork", post(fork_session))
         .route(
@@ -329,8 +342,9 @@ async fn logout(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<
 }
 
 fn codex_authenticated(paths: &AppPaths) -> bool {
-    fs::read(paths.provider_auth_file())
+    crate::paths::set_private_file(&paths.provider_auth_file())
         .ok()
+        .and_then(|_| fs::read(paths.provider_auth_file()).ok())
         .and_then(|data| serde_json::from_slice::<Value>(&data).ok())
         .and_then(|v| v.get("openai-codex").cloned())
         .is_some()
@@ -438,6 +452,7 @@ fn save_attachments(
     id: &str,
     files: Vec<(String, Vec<u8>)>,
 ) -> Result<Vec<PathBuf>> {
+    use std::os::unix::fs::OpenOptionsExt;
     let dir = paths.session_dir(id).join("attachments");
     let mut saved = Vec::new();
     for (name, bytes) in files {
@@ -447,6 +462,7 @@ fn save_attachments(
         let mut file = fs::OpenOptions::new()
             .create_new(true)
             .write(true)
+            .mode(0o600)
             .open(&path)?;
         set_private_file(&path)?;
         file.write_all(&bytes)?;
@@ -464,26 +480,20 @@ async fn create_session(
     require_mutation(&state, &headers)?;
     let mut form = parse_form(multipart).await?;
     let config = state.config.read().expect("config lock").clone();
-    if form.model.is_empty() {
-        form.model = config.default_model.clone();
-    }
-    if form.thinking.is_empty() {
-        form.thinking = config.default_thinking.clone();
-    }
     if form.cwd.is_empty() {
         form.cwd = config.default_cwd.to_string_lossy().into_owned();
     }
-    let model_info = models::resolve_model(
+    let (model_info, thinking) = models::resolve_new_session(
         &config,
-        &form.model,
-        &form.thinking,
+        (!form.model.is_empty()).then_some(form.model.as_str()),
+        (!form.thinking.is_empty()).then_some(form.thinking.as_str()),
         codex_authenticated(&state.paths),
         llama_available(),
     )?;
     let request = NewSession {
         cwd: PathBuf::from(form.cwd),
-        model: form.model,
-        thinking: form.thinking,
+        model: model_info.full_id(),
+        thinking,
         model_parameters: model_info.parameters,
         prompt: form.prompt.clone(),
         attachments: Vec::new(),
@@ -497,13 +507,17 @@ async fn create_session(
     Ok(Json(json!({"ok": true, "id": id})))
 }
 
+fn logical_json(value: Value) -> Json<crate::lossless_json::Wire<Value>> {
+    Json(crate::lossless_json::wire(value))
+}
+
 async fn read_segment(
     State(state): State<WebState>,
     headers: HeaderMap,
     AxumPath((id, segment)): AxumPath<(String, u32)>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<crate::lossless_json::Wire<Value>>> {
     authenticated(&state, &headers)?;
-    Ok(Json(
+    Ok(logical_json(
         json!({"entries": session::read_segment(&state.paths, &id, segment)?}),
     ))
 }
@@ -512,11 +526,11 @@ async fn read_current_segment(
     State(state): State<WebState>,
     headers: HeaderMap,
     AxumPath(id): AxumPath<String>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<crate::lossless_json::Wire<Value>>> {
     authenticated(&state, &headers)?;
     session::validate_id(&id)?;
     let (segment, _) = session::current_segment(&state.paths.session_dir(&id))?;
-    Ok(Json(json!({
+    Ok(logical_json(json!({
         "segment": segment,
         "entries": session::read_segment(&state.paths, &id, segment)?
     })))
@@ -527,7 +541,7 @@ async fn send_message(
     headers: HeaderMap,
     AxumPath(id): AxumPath<String>,
     multipart: Multipart,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<crate::lossless_json::Wire<Value>>> {
     require_mutation(&state, &headers)?;
     let form = parse_form(multipart).await?;
     let socket = session::control_socket(&state.paths, &id)?;
@@ -550,7 +564,7 @@ async fn send_message(
             source_session: None,
         },
     )?;
-    Ok(Json(serde_json::to_value(reply).expect("reply")))
+    Ok(logical_json(serde_json::to_value(reply).expect("reply")))
 }
 
 async fn fork_session(
@@ -605,6 +619,8 @@ async fn download_attachment(
 
     let attachment_root = fs::canonicalize(state.paths.session_dir(&id).join("attachments"))
         .map_err(|_| ApiError(StatusCode::NOT_FOUND, "Attachment not found".into()))?;
+    crate::paths::set_private_dir(&state.paths.session_dir(&id))?;
+    crate::paths::set_private_dir(&attachment_root)?;
     let path = attachment_root.join(&upload).join(&name);
     let path = fs::canonicalize(path)
         .map_err(|_| ApiError(StatusCode::NOT_FOUND, "Attachment not found".into()))?;
@@ -615,6 +631,8 @@ async fn download_attachment(
         ));
     }
 
+    crate::paths::set_private_dir(path.parent().context("Attachment parent is missing")?)?;
+    crate::paths::set_private_file(&path)?;
     let bytes = fs::read(&path).with_context(|| format!("read attachment {}", path.display()))?;
     let mime = mime_guess::from_path(&path).first_or_octet_stream();
     let mut response = Response::new(Body::from(bytes));
@@ -630,6 +648,10 @@ async fn download_attachment(
         header::X_CONTENT_TYPE_OPTIONS,
         HeaderValue::from_static("nosniff"),
     );
+    response.headers_mut().insert(
+        header::CONTENT_SECURITY_POLICY,
+        HeaderValue::from_static("sandbox; default-src 'none'"),
+    );
     if query.download.unwrap_or(false) {
         response.headers_mut().insert(
             header::CONTENT_DISPOSITION,
@@ -644,11 +666,14 @@ async fn session_status(
     State(state): State<WebState>,
     headers: HeaderMap,
     AxumPath(id): AxumPath<String>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<crate::lossless_json::Wire<Value>>> {
     authenticated(&state, &headers)?;
     let socket = session::control_socket(&state.paths, &id)?;
     if !session::socket_is_live(&socket) {
-        return Ok(Json(json!({
+        let directory = state.paths.session_dir(&id);
+        let header = session::read_header(&directory)?;
+        let (model, thinking) = session::effective_model(&directory, &header);
+        return Ok(logical_json(json!({
             "ok": true,
             "message": "offline",
             "data": {
@@ -657,12 +682,13 @@ async fn session_status(
                 "queued": 0,
                 "steeringMessages": [],
                 "queuedMessages": [],
+                "modelSelection": {"model": model, "thinking": thinking},
                 "usage": crate::worker::saved_usage(&state.paths, &id, &state.config.read().expect("config lock"))?
             }
         })));
     }
     let reply = session::send(&state.paths, &id, &ControlRequest::Status)?;
-    Ok(Json(serde_json::to_value(reply).expect("reply")))
+    Ok(logical_json(serde_json::to_value(reply).expect("reply")))
 }
 
 #[derive(Deserialize)]
@@ -697,7 +723,7 @@ async fn mutate_queue(
     headers: HeaderMap,
     AxumPath(id): AxumPath<String>,
     Json(body): Json<QueueMutation>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<crate::lossless_json::Wire<Value>>> {
     require_mutation(&state, &headers)?;
     let socket = session::control_socket(&state.paths, &id)?;
     if !session::socket_is_live(&socket) {
@@ -713,9 +739,13 @@ async fn mutate_queue(
             id: body.id,
             action: body.action,
             content: body.content,
+            edit_token: body.edit_token,
         },
     )?;
-    Ok(Json(serde_json::to_value(reply).expect("reply")))
+    if !reply.ok {
+        return Err(ApiError(StatusCode::CONFLICT, reply.message));
+    }
+    Ok(logical_json(serde_json::to_value(reply).expect("reply")))
 }
 
 async fn list_folders(
@@ -874,11 +904,8 @@ async fn events(
     headers: HeaderMap,
     AxumPath(id): AxumPath<String>,
 ) -> ApiResult<Response> {
-    authenticated(&state, &headers)?;
+    let (token, _) = authenticated(&state, &headers)?;
     let socket = session::control_socket(&state.paths, &id)?;
-    if !session::socket_is_live(&socket) {
-        session::start_worker(&state.paths, &id)?;
-    }
     let address = session::socket_address(&socket)?;
     let output = stream! {
         match UnixStream::connect(address.as_ref()).await {
@@ -886,8 +913,21 @@ async fn events(
                 let request = serde_json::to_vec(&ControlRequest::Subscribe).unwrap_or_default();
                 if connection.write_all(&request).await.is_ok() && connection.write_all(b"\n").await.is_ok() {
                     let mut lines = BufReader::new(connection).lines();
-                    while let Ok(Some(line)) = lines.next_line().await {
-                        yield Ok(Event::default().data(line));
+                    let mut authentication_check = tokio::time::interval(Duration::from_secs(1));
+                    loop {
+                        let next = tokio::select! {
+                            value = lines.next_line() => Some(value),
+                            _ = authentication_check.tick() => None,
+                        };
+                        if auth::validate(&state.paths, &token).is_err() {
+                            yield Ok(Event::default().event("offline").data("Authentication required"));
+                            break;
+                        }
+                        match next {
+                            Some(Ok(Some(line))) => yield Ok(Event::default().data(line)),
+                            Some(_) => break,
+                            None => {},
+                        }
                     }
                 }
             }
@@ -903,6 +943,19 @@ async fn events(
                 .text("keepalive"),
         )
         .into_response())
+}
+
+async fn resume_session(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let socket = session::control_socket(&state.paths, &id)?;
+    if !session::socket_is_live(&socket) {
+        session::start_worker(&state.paths, &id)?;
+    }
+    Ok(Json(json!({"ok": true})))
 }
 
 // Cgroups identify candidate units; MainPID ensures we never restart a shell,
@@ -941,6 +994,7 @@ async fn get_settings(State(state): State<WebState>, headers: HeaderMap) -> ApiR
     authenticated(&state, &headers)?;
     let mut config = serde_json::to_value(state.config.read().expect("config lock").clone())
         .expect("serialize config");
+    config.as_object_mut().unwrap().remove("web_port_fallback");
     config["llama"].as_object_mut().unwrap().remove("api_key");
     let extra: Vec<String> = serde_json::from_value(config["llama"]["extra_arguments"].clone())
         .expect("configured argument list");
@@ -956,7 +1010,7 @@ async fn get_settings(State(state): State<WebState>, headers: HeaderMap) -> ApiR
         }
     }
     Ok(Json(
-        json!({"config": config, "llamaInstalled": llama_available(), "codexAuthenticated": codex_authenticated(&state.paths)}),
+        json!({"config": config, "llamaInstalled": llama_available(), "codexAuthenticated": codex_authenticated(&state.paths), "restartError": *state.restart_error.read().expect("restart error lock")}),
     ))
 }
 
@@ -1054,13 +1108,15 @@ async fn save_settings(
     } else {
         None
     };
+    config.web_port_fallback = restart.as_ref().map(|_| state.bound_port);
     config.save(&state.paths)?;
     *current = config;
+    *state.restart_error.write().expect("restart error lock") = None;
     if let Some((unit, url)) = restart {
         state
             .restart_pending
             .store(true, std::sync::atomic::Ordering::SeqCst);
-        let pending = state.restart_pending.clone();
+        let restart_state = state.clone();
         tokio::spawn(async move {
             tokio::time::sleep(Duration::from_millis(200)).await;
             let result = tokio::process::Command::new("systemctl")
@@ -1068,8 +1124,7 @@ async fn save_settings(
                 .status()
                 .await;
             if !result.is_ok_and(|status| status.success()) {
-                pending.store(false, std::sync::atomic::Ordering::SeqCst);
-                eprintln!("Could not restart Web UI service {unit}");
+                recover_web_restart(&restart_state);
             }
         });
         return Ok(Json(
@@ -1077,6 +1132,26 @@ async fn save_settings(
         ));
     }
     Ok(Json(json!({"ok": true, "restartRequired": false})))
+}
+
+fn recover_web_restart(state: &WebState) {
+    let mut current = state.config.write().expect("config lock");
+    let mut restored = current.clone();
+    // Other explicitly saved settings and concurrent router catalog updates
+    // remain valid; only the unapplied listener port needs restoration.
+    restored.web_port = state.bound_port;
+    restored.web_port_fallback = None;
+    let message = match restored.save(&state.paths) {
+        Ok(()) => {
+            *current = restored;
+            "Could not restart Web UI; the previous port has been restored".to_owned()
+        }
+        Err(error) => format!("Could not restart Web UI or restore its previous port: {error}"),
+    };
+    *state.restart_error.write().expect("restart error lock") = Some(message);
+    state
+        .restart_pending
+        .store(false, std::sync::atomic::Ordering::SeqCst);
 }
 
 async fn provider_login_status(
@@ -1168,12 +1243,43 @@ async fn restart_llama(
     Ok(Json(json!({"ok": true})))
 }
 
-pub async fn serve(paths: AppPaths, config: AppConfig) -> Result<()> {
+async fn bind_web_listener(
+    paths: &AppPaths,
+    mut config: AppConfig,
+) -> Result<(tokio::net::TcpListener, AppConfig, Option<String>)> {
     let address = format!("127.0.0.1:{}", config.web_port);
-    let listener = tokio::net::TcpListener::bind(&address)
-        .await
-        .with_context(|| format!("bind {address}"))?;
-    axum::serve(listener, router(paths, config)?).await?;
+    let (listener, failure) = match tokio::net::TcpListener::bind(&address).await {
+        Ok(listener) => (listener, None),
+        Err(error) => {
+            let Some(previous) = config
+                .web_port_fallback
+                .filter(|port| *port != config.web_port)
+            else {
+                return Err(error).with_context(|| format!("bind {address}"));
+            };
+            let listener = tokio::net::TcpListener::bind((std::net::Ipv4Addr::LOCALHOST, previous))
+                .await
+                .with_context(|| {
+                    format!("bind {address} failed ({error}); could not restore port {previous}")
+                })?;
+            config.web_port = previous;
+            (
+                listener,
+                Some(format!(
+                    "Could not bind {address}; the previous port {previous} has been restored"
+                )),
+            )
+        }
+    };
+    if config.web_port_fallback.take().is_some() {
+        config.save(paths)?;
+    }
+    Ok((listener, config, failure))
+}
+
+pub async fn serve(paths: AppPaths, config: AppConfig) -> Result<()> {
+    let (listener, config, failure) = bind_web_listener(&paths, config).await?;
+    axum::serve(listener, router_with_restart_error(paths, config, failure)?).await?;
     Ok(())
 }
 
@@ -1182,6 +1288,265 @@ const INDEX_HTML: &str = include_str!("web_ui.html");
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    async fn offline_stream_is_read_only_and_resume_requires_origin_and_csrf() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let config = AppConfig {
+            web_port: port,
+            ..Default::default()
+        };
+        config.save(&paths).unwrap();
+        let login = auth::signup(&paths, "test", "fixture-password").unwrap();
+        let id = session::create(
+            &paths,
+            &NewSession {
+                cwd: root.path().to_owned(),
+                model: config.default_model.clone(),
+                thinking: config.default_thinking.clone(),
+                model_parameters: Value::Null,
+                prompt: "offline history".into(),
+                attachments: vec![],
+                parent: None,
+            },
+        )
+        .unwrap();
+        let history = fs::read(paths.session_dir(&id).join("000001.jsonl")).unwrap();
+        let app = router(paths.clone(), config).unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = reqwest::Client::builder().no_proxy().build().unwrap();
+        let origin = format!("http://127.0.0.1:{port}");
+        let cookie = format!("{COOKIE}={}", login.token);
+        let url = format!("{origin}/api/sessions/{id}");
+        assert_eq!(
+            client
+                .get(format!("{url}/events"))
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::UNAUTHORIZED
+        );
+        let stream = client
+            .get(format!("{url}/events"))
+            .header("cookie", &cookie)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(stream.status(), StatusCode::OK);
+        let body = tokio::time::timeout(Duration::from_secs(2), stream.text())
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(body.contains("event: offline"), "{body}");
+        for (supplied_origin, csrf) in [
+            (&origin[..], "wrong"),
+            ("http://attacker.invalid", &login.csrf),
+        ] {
+            assert_eq!(
+                client
+                    .post(format!("{url}/resume"))
+                    .header("cookie", &cookie)
+                    .header("origin", supplied_origin)
+                    .header("x-bashkitten-csrf", csrf)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status(),
+                StatusCode::FORBIDDEN
+            );
+        }
+        assert_eq!(
+            client
+                .get(format!("{url}/resume"))
+                .header("cookie", &cookie)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::METHOD_NOT_ALLOWED
+        );
+        assert!(!paths.session_dir(&id).join("control.sock").exists());
+        assert_eq!(
+            fs::read(paths.session_dir(&id).join("000001.jsonl")).unwrap(),
+            history
+        );
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn logout_revokes_an_already_open_event_stream() {
+        use futures_util::StreamExt;
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let http = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = http.local_addr().unwrap().port();
+        let config = AppConfig {
+            web_port: port,
+            ..Default::default()
+        };
+        let login = auth::signup(&paths, "test", "fixture-password").unwrap();
+        let id = session::create(
+            &paths,
+            &NewSession {
+                cwd: root.path().to_owned(),
+                model: config.default_model.clone(),
+                thinking: config.default_thinking.clone(),
+                model_parameters: Value::Null,
+                prompt: "stream".into(),
+                attachments: vec![],
+                parent: None,
+            },
+        )
+        .unwrap();
+        let address =
+            session::socket_address(&session::control_socket(&paths, &id).unwrap()).unwrap();
+        let control = tokio::net::UnixListener::bind(address.as_ref()).unwrap();
+        let (send_after_logout, after_logout) = tokio::sync::oneshot::channel::<()>();
+        let fake_worker = tokio::spawn(async move {
+            let (mut connection, _) = control.accept().await.unwrap();
+            use tokio::io::AsyncReadExt;
+            let mut byte = [0];
+            while connection.read_exact(&mut byte).await.is_ok() && byte[0] != b'\n' {}
+            connection
+                .write_all(b"{\"ok\":true,\"message\":\"subscribed\",\"data\":{}}\n")
+                .await
+                .unwrap();
+            let _ = after_logout.await;
+            let _ = connection
+                .write_all(b"{\"type\":\"assistant_delta\",\"delta\":\"private-after-logout\"}\n")
+                .await;
+        });
+        let app = router(paths.clone(), config).unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(http, app).await.unwrap();
+        });
+        let client = reqwest::Client::builder().no_proxy().build().unwrap();
+        let origin = format!("http://127.0.0.1:{port}");
+        let cookie = format!("{COOKIE}={}", login.token);
+        let mut body = client
+            .get(format!("{origin}/api/sessions/{id}/events"))
+            .header("cookie", &cookie)
+            .send()
+            .await
+            .unwrap()
+            .bytes_stream();
+        let first = body.next().await.unwrap().unwrap();
+        assert!(String::from_utf8_lossy(&first).contains("subscribed"));
+        let response = client
+            .post(format!("{origin}/api/logout"))
+            .header("cookie", &cookie)
+            .header("origin", &origin)
+            .header("x-bashkitten-csrf", &login.csrf)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        send_after_logout.send(()).unwrap();
+        let rest = tokio::time::timeout(Duration::from_secs(2), async move {
+            let mut rest = Vec::new();
+            while let Some(chunk) = body.next().await {
+                rest.extend_from_slice(&chunk.unwrap());
+            }
+            String::from_utf8(rest).unwrap()
+        })
+        .await
+        .unwrap();
+        assert!(rest.contains("Authentication required"), "{rest}");
+        assert!(!rest.contains("private-after-logout"));
+        fake_worker.await.unwrap();
+        server.abort();
+    }
+
+    #[test]
+    fn failed_web_restart_restores_port_and_preserves_other_saved_settings() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let config = AppConfig {
+            web_port: 4888,
+            theme: crate::config::UiTheme::Light,
+            ..Default::default()
+        };
+        config.save(&paths).unwrap();
+        let state = WebState {
+            paths: paths.clone(),
+            config: Arc::new(RwLock::new(config)),
+            bound_port: 3939,
+            restart_pending: Arc::new(std::sync::atomic::AtomicBool::new(true)),
+            restart_error: Default::default(),
+            csrf_tokens: Default::default(),
+            oauth: Default::default(),
+            llama_operation: Default::default(),
+        };
+        recover_web_restart(&state);
+        assert_eq!(AppConfig::load(&paths).unwrap().web_port, 3939);
+        assert!(matches!(
+            AppConfig::load(&paths).unwrap().theme,
+            crate::config::UiTheme::Light
+        ));
+        assert_eq!(state.config.read().unwrap().web_port, 3939);
+        assert!(
+            !state
+                .restart_pending
+                .load(std::sync::atomic::Ordering::SeqCst)
+        );
+        assert!(
+            state
+                .restart_error
+                .read()
+                .unwrap()
+                .as_deref()
+                .unwrap()
+                .contains("restored")
+        );
+    }
+
+    #[tokio::test]
+    async fn new_web_process_recovers_a_port_taken_after_restart_preflight() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let stolen = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let previous = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let old_port = previous.local_addr().unwrap().port();
+        drop(previous);
+        let config = AppConfig {
+            web_port: stolen.local_addr().unwrap().port(),
+            web_port_fallback: Some(old_port),
+            ..Default::default()
+        };
+        config.save(&paths).unwrap();
+        let (listener, restored, failure) = bind_web_listener(&paths, config).await.unwrap();
+        assert_eq!(listener.local_addr().unwrap().port(), old_port);
+        assert_eq!(restored.web_port, old_port);
+        assert!(failure.unwrap().contains("restored"));
+        assert_eq!(AppConfig::load(&paths).unwrap().web_port, old_port);
+        assert!(AppConfig::load(&paths).unwrap().web_port_fallback.is_none());
+    }
 
     #[tokio::test]
     async fn bootstrap_is_read_only_and_open_tabs_work_across_web_restarts() {

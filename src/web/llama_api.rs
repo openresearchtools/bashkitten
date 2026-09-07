@@ -12,7 +12,12 @@ struct Operation {
     model: String,
     action: String,
     cancel: CancellationToken,
+    client: Client,
+    cancel_error: Option<String>,
     phase: String,
+    // Pi ignores cancellation after runWithProgress has settled, even while
+    // catalog synchronization or replacement restoration is still running.
+    cancellable: bool,
     progress: Option<Progress>,
     error: Option<String>,
 }
@@ -114,14 +119,40 @@ async fn sync_catalog(
         false
     };
     let models = public_catalog(models);
-    let mut config = state.config.write().unwrap();
-    if client.server_url != format!("http://127.0.0.1:{}", config.llama.port) {
+    let mut current = state.config.write().unwrap();
+    let mut config = current.clone();
+    if !client.matches_config(&config.llama) {
         anyhow::bail!("Router settings changed during the operation");
     }
     config.llama.catalog = models.clone();
     config.llama.router_autoload = autoload;
     config.save(&state.paths)?;
+    *current = config;
     Ok(models)
+}
+
+async fn restore_loaded(
+    state: &WebState,
+    client: &Client,
+    models: &[Value],
+    progress: &crate::llama::OnProgress,
+) -> Result<()> {
+    progress(Progress {
+        message: "Restoring previously loaded models".into(),
+        ratio: None,
+        detail: None,
+    });
+    for model in models {
+        client
+            .load_and_wait(
+                model["id"].as_str().unwrap(),
+                Arc::new(|_| {}),
+                &CancellationToken::default(),
+            )
+            .await?;
+    }
+    sync_catalog(state, client, None).await?;
+    Ok(())
 }
 
 async fn refresh(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<Json<Value>> {
@@ -178,7 +209,10 @@ async fn start(
             model: body.model.clone(),
             action: body.action.clone(),
             cancel: cancellation.clone(),
+            client: client.clone(),
+            cancel_error: None,
             phase: "running".into(),
+            cancellable: true,
             progress: None,
             error: None,
         });
@@ -219,44 +253,69 @@ async fn start(
                         .await?;
                 }
             }
-            let result = match body.action.as_str() {
+            let completed = match body.action.as_str() {
                 "load" => client
                     .load_and_wait(&body.model, progress.clone(), &cancellation)
                     .await
-                    .map(|_| ()),
-                "unload" => client.unload_and_wait(&body.model, &cancellation).await,
+                    .map(|_| None),
+                "unload" => client
+                    .unload_and_wait(&body.model, &cancellation)
+                    .await
+                    .map(|_| None),
                 _ => client
                     .download_and_wait(&body.model, progress.clone(), &cancellation)
                     .await
-                    .map(|_| ()),
+                    .map(Some),
             };
-            if cancellation.is_cancelled() && body.action != "unload" {
-                let _ = client
-                    .unload(&body.model, &CancellationToken::default())
-                    .await;
+            // Serialize the completed/cancel boundary with the HTTP handler.
+            // Keep the operation running until synchronization/restoration is
+            // done so another operation cannot race it.
+            let cancelling = {
+                let mut current = state.llama_operation.0.lock().unwrap();
+                let op = current.as_mut().filter(|op| op.id == id).unwrap();
+                op.cancellable = false;
+                op.phase == "cancelling"
+            };
+            if cancelling {
+                // Pi's runWithProgress sends /models/unload before it aborts
+                // the pending load/download. Wait for that request to settle
+                // even if the operation itself completed in the meantime.
+                cancellation.cancelled().await;
             }
-            if result.is_err() && !replaced.is_empty() {
-                progress(Progress {
-                    message: "Restoring previously loaded models".into(),
-                    ratio: None,
-                    detail: None,
-                });
-                for model in replaced {
-                    if client
-                        .load_and_wait(
-                            model["id"].as_str().unwrap(),
-                            Arc::new(|_| {}),
-                            &CancellationToken::default(),
-                        )
-                        .await
-                        .is_err()
-                    {
-                        break;
-                    }
+            let cancel_error = state
+                .llama_operation
+                .0
+                .lock()
+                .unwrap()
+                .as_ref()
+                .filter(|op| op.id == id)
+                .and_then(|op| op.cancel_error.clone());
+            let result = async {
+                if let Some(error) = cancel_error {
+                    anyhow::bail!("{error}");
                 }
+                if cancellation.is_cancelled() {
+                    if !replaced.is_empty() {
+                        restore_loaded(&state, &client, &replaced, &progress).await?;
+                    } else {
+                        // Refresh the Web's persisted catalog after the user
+                        // returns from Pi's cancelled progress dialog.
+                        sync_catalog(&state, &client, None).await?;
+                    }
+                    return Ok(());
+                }
+                let models = completed?;
+                sync_catalog(&state, &client, models).await?;
+                Ok::<_, anyhow::Error>(())
+            }
+            .await;
+            if result.is_err() && !replaced.is_empty() {
+                // Pinned Pi stops restoration at its first failure and keeps
+                // the original error. If cancellation restoration failed, its
+                // catch block makes this same second restoration attempt.
+                let _ = restore_loaded(&state, &client, &replaced, &progress).await;
             }
             result?;
-            sync_catalog(&state, &client, None).await?;
             Ok::<_, anyhow::Error>(())
         }
         .await;
@@ -271,12 +330,12 @@ async fn start(
             .as_mut()
             .filter(|o| o.id == id)
         {
-            op.phase = if cancellation.is_cancelled() {
-                "cancelled"
-            } else if result.is_ok() {
-                "complete"
-            } else {
+            op.phase = if result.is_err() {
                 "failed"
+            } else if cancellation.is_cancelled() {
+                "cancelled"
+            } else {
+                "complete"
             }
             .into();
             op.error = result.err().map(|e| e.to_string());
@@ -287,16 +346,40 @@ async fn start(
 
 async fn cancel(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<Json<Value>> {
     require_mutation(&state, &headers)?;
-    if let Some(op) = state
-        .llama_operation
-        .0
-        .lock()
-        .unwrap()
-        .as_mut()
-        .filter(|op| op.phase == "running")
-    {
-        op.phase = "cancelling".into();
-        op.cancel.cancel();
+    let pending = {
+        let mut current = state.llama_operation.0.lock().unwrap();
+        current
+            .as_mut()
+            .filter(|op| op.phase == "running" && op.cancellable)
+            .map(|op| {
+                op.phase = "cancelling".into();
+                (
+                    op.id.clone(),
+                    op.action.clone(),
+                    op.model.clone(),
+                    op.client.clone(),
+                    op.cancel.clone(),
+                )
+            })
+    };
+    if let Some((id, action, model, client, cancellation)) = pending {
+        let result = if action != "unload" {
+            client.unload(&model, &CancellationToken::default()).await
+        } else {
+            Ok(())
+        };
+        if let Some(op) = state
+            .llama_operation
+            .0
+            .lock()
+            .unwrap()
+            .as_mut()
+            .filter(|op| op.id == id)
+        {
+            op.cancel_error = result.err().map(|error| error.to_string());
+            // Signal even if unloading failed, matching Pi's finally block.
+            cancellation.cancel();
+        }
     }
     Ok(Json(json!({"operation":state.llama_operation.status()})))
 }
@@ -401,7 +484,7 @@ async fn details(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::atomic::{AtomicU8, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 
     #[tokio::test]
     async fn local_models_require_login_and_save_native_presets_without_router_requests() {
@@ -530,10 +613,25 @@ mod tests {
         let observed = calls.clone();
         let entries = catalog.clone();
         let loading_mode = mode.clone();
+        let post_load_polls = Arc::new(AtomicU8::new(0));
+        let poll_count = post_load_polls.clone();
+        let syncing = Arc::new(AtomicBool::new(false));
+        let sync_entered = syncing.clone();
+        let release_sync = Arc::new(tokio::sync::Notify::new());
+        let sync_release = release_sync.clone();
+        let unloading = Arc::new(AtomicBool::new(false));
+        let unload_entered = unloading.clone();
+        let release_unload = Arc::new(tokio::sync::Notify::new());
+        let unload_release = release_unload.clone();
         let mock = Router::new().fallback(any(move |request: axum::extract::Request| {
             let calls = observed.clone();
             let catalog = entries.clone();
             let mode = loading_mode.clone();
+            let polls = poll_count.clone();
+            let syncing = sync_entered.clone();
+            let release = sync_release.clone();
+            let unloading = unload_entered.clone();
+            let unload_release = unload_release.clone();
             async move {
                 assert_eq!(request.headers()["authorization"], "Bearer fixture-key");
                 let (parts, body) = request.into_parts();
@@ -549,6 +647,26 @@ mod tests {
                         .lock()
                         .unwrap()
                         .push(format!("{path}:{}", input["model"].as_str().unwrap()));
+                    if path == "/models/unload" && mode.load(Ordering::SeqCst) == 6 {
+                        return (
+                            StatusCode::BAD_GATEWAY,
+                            Json(json!({"error":{"message":"unload rejected"}})),
+                        )
+                            .into_response();
+                    }
+                    if path == "/models/unload" && input["model"] == "target" {
+                        if mode.load(Ordering::SeqCst) == 7 {
+                            unloading.store(true, Ordering::SeqCst);
+                            unload_release.notified().await;
+                        }
+                        if mode.load(Ordering::SeqCst) == 8 {
+                            return (
+                                StatusCode::BAD_GATEWAY,
+                                Json(json!({"error":{"message":"unload cancellation rejected"}})),
+                            )
+                                .into_response();
+                        }
+                    }
                     let mut data = catalog.lock().unwrap();
                     let model = data["data"]
                         .as_array_mut()
@@ -558,7 +676,11 @@ mod tests {
                         .unwrap();
                     model["status"] = if path == "/models/unload" {
                         json!({"value":"unloaded"})
-                    } else if input["model"] == "old" || mode.load(Ordering::SeqCst) == 2 {
+                    } else if path == "/models" {
+                        json!({"value":"downloading"})
+                    } else if input["model"] == "old"
+                        || matches!(mode.load(Ordering::SeqCst), 2..=6)
+                    {
                         json!({"value":"loaded"})
                     } else if mode.load(Ordering::SeqCst) == 0 {
                         json!({"value":"unloaded","failed":true,"exit_code":8})
@@ -566,6 +688,24 @@ mod tests {
                         json!({"value":"loading"})
                     };
                     return Json(json!({})).into_response();
+                }
+                let after_load = calls
+                    .lock()
+                    .unwrap()
+                    .iter()
+                    .any(|s| s == "/models/load:target");
+                if after_load && polls.fetch_add(1, Ordering::SeqCst) == 1 {
+                    if mode.load(Ordering::SeqCst) == 3 {
+                        return (
+                            StatusCode::BAD_GATEWAY,
+                            Json(json!({"error":{"message":"catalog synchronization failed"}})),
+                        )
+                            .into_response();
+                    }
+                    if mode.load(Ordering::SeqCst) == 4 {
+                        syncing.store(true, Ordering::SeqCst);
+                        release.notified().await;
+                    }
                 }
                 Json(catalog.lock().unwrap().clone()).into_response()
             }
@@ -619,24 +759,27 @@ mod tests {
         assert!(calls.lock().unwrap().is_empty());
         let refreshed = post("refresh").send().await.unwrap().text().await.unwrap();
         assert!(!refreshed.contains("secret-in-args"));
-        for run in 0..3 {
+        for run in 0..9 {
             mode.store(run, Ordering::SeqCst);
             calls.lock().unwrap().clear();
+            post_load_polls.store(0, Ordering::SeqCst);
+            *catalog.lock().unwrap() = json!({"data":[{"id":"old","status":{"value":"loaded"}},{"id":"target","status":{"value":"unloaded"}}]});
             let response = post("operation")
-                .json(&json!({"action":"load","model":"target","retainOthers":run==2}))
+                .json(&json!({"action":if run==5 { "download" } else { "load" },"model":"target","retainOthers":run==2 || run==4}))
                 .send()
                 .await
                 .unwrap();
             assert!(response.status().is_success());
-            if run == 1 {
+            if matches!(run, 1 | 5 | 7 | 8) {
                 tokio::time::timeout(Duration::from_secs(3), async {
                     loop {
-                        if calls
-                            .lock()
-                            .unwrap()
-                            .iter()
-                            .any(|v| v == "/models/load:target")
-                        {
+                        if calls.lock().unwrap().iter().any(|v| {
+                            v == if run == 5 {
+                                "/models:target"
+                            } else {
+                                "/models/load:target"
+                            }
+                        }) {
                             break;
                         }
                         tokio::time::sleep(Duration::from_millis(5)).await;
@@ -644,7 +787,47 @@ mod tests {
                 })
                 .await
                 .unwrap();
-                assert!(post("cancel").send().await.unwrap().status().is_success());
+                if run == 7 {
+                    let request = post("cancel");
+                    let cancelling = tokio::spawn(async move { request.send().await.unwrap() });
+                    tokio::time::timeout(Duration::from_secs(3), async {
+                        while !unloading.load(Ordering::SeqCst) {
+                            tokio::time::sleep(Duration::from_millis(5)).await;
+                        }
+                        let before = post_load_polls.load(Ordering::SeqCst);
+                        // While unload is pending, Pi leaves load polling alive.
+                        while post_load_polls.load(Ordering::SeqCst) == before {
+                            tokio::time::sleep(Duration::from_millis(5)).await;
+                        }
+                    })
+                    .await
+                    .unwrap();
+                    release_unload.notify_one();
+                    assert!(cancelling.await.unwrap().status().is_success());
+                } else {
+                    assert!(post("cancel").send().await.unwrap().status().is_success());
+                }
+            }
+            if run == 4 {
+                tokio::time::timeout(Duration::from_secs(3), async {
+                    while !syncing.load(Ordering::SeqCst) {
+                        tokio::time::sleep(Duration::from_millis(5)).await;
+                    }
+                })
+                .await
+                .unwrap();
+                let late: Value = post("cancel").send().await.unwrap().json().await.unwrap();
+                assert_eq!(late["operation"]["phase"], "running");
+                assert_eq!(
+                    post("operation")
+                        .json(&json!({"action":"unload","model":"old"}))
+                        .send()
+                        .await
+                        .unwrap()
+                        .status(),
+                    StatusCode::CONFLICT
+                );
+                release_sync.notify_one();
             }
             let settled = tokio::time::timeout(Duration::from_secs(5), async {
                 loop {
@@ -670,21 +853,44 @@ mod tests {
             .unwrap();
             assert_eq!(
                 settled["phase"],
-                ["failed", "cancelled", "complete"][run as usize]
+                [
+                    "failed",
+                    "cancelled",
+                    "complete",
+                    "failed",
+                    "complete",
+                    "cancelled",
+                    "failed",
+                    "cancelled",
+                    "failed",
+                ][run as usize]
             );
             if run == 0 {
                 assert_eq!(settled["error"], "Model exited with code 8");
             }
+            if run == 3 {
+                assert_eq!(settled["error"], "catalog synchronization failed");
+            }
+            if run == 6 {
+                assert_eq!(settled["error"], "unload rejected");
+            }
+            if run == 8 {
+                assert_eq!(settled["error"], "unload cancellation rejected");
+            }
             let calls = calls.lock().unwrap().clone();
-            if run < 2 {
-                assert_eq!(calls[0], "/models/unload:old");
-                assert_eq!(calls[1], "/models/load:target");
-                assert_eq!(calls.last().unwrap(), "/models/load:old");
-                if run == 1 {
-                    assert_eq!(calls[2], "/models/unload:target");
+            match run {
+                0 | 1 | 3 | 7 | 8 => {
+                    assert_eq!(calls[0], "/models/unload:old");
+                    assert_eq!(calls[1], "/models/load:target");
+                    assert_eq!(calls.last().unwrap(), "/models/load:old");
+                    if matches!(run, 1 | 7 | 8) {
+                        assert_eq!(calls[2], "/models/unload:target");
+                    }
                 }
-            } else {
-                assert_eq!(calls, vec!["/models/load:target"]);
+                2 | 4 => assert_eq!(calls, vec!["/models/load:target"]),
+                5 => assert_eq!(calls, vec!["/models:target", "/models/unload:target"]),
+                6 => assert_eq!(calls, vec!["/models/unload:old"]),
+                _ => unreachable!(),
             }
             assert_eq!(
                 catalog.lock().unwrap()["data"][0]["status"]["value"],

@@ -4,6 +4,7 @@
 //! Tool failures are returned as [`ToolError`] so the caller can expose them as
 //! an `isError` tool result without losing the useful error text.
 
+use crate::lossless_json::JsString;
 #[cfg(test)]
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64_STANDARD};
 use rand::RngCore;
@@ -207,7 +208,7 @@ pub fn tool_definition(name: &str) -> Option<ToolDefinition> {
 #[serde(tag = "type", rename_all = "lowercase")]
 pub enum ContentBlock {
     Text {
-        text: String,
+        text: JsString,
     },
     Image {
         data: String,
@@ -224,7 +225,7 @@ pub struct ToolResult {
 }
 
 impl ToolResult {
-    fn text(text: impl Into<String>) -> Self {
+    fn text(text: impl Into<JsString>) -> Self {
         Self {
             content: vec![ContentBlock::Text { text: text.into() }],
             details: None,
@@ -241,11 +242,14 @@ impl ToolResult {
 
 #[derive(Debug)]
 pub struct ToolError {
-    message: String,
+    message: JsString,
 }
 
 impl ToolError {
-    pub fn new(message: impl Into<String>) -> Self {
+    pub fn text(&self) -> &JsString {
+        &self.message
+    }
+    pub fn new(message: impl Into<JsString>) -> Self {
         Self {
             message: message.into(),
         }
@@ -575,12 +579,28 @@ fn resolve_read_path(path: &str, cwd: &Path) -> PathBuf {
     resolved
 }
 
+fn logical_path(path: Option<&JsString>, cwd: &Path) -> JsString {
+    let path = path
+        .cloned()
+        .unwrap_or_else(|| ".".into())
+        .algorithm_string();
+    let cwd = JsString::from(cwd.to_string_lossy().as_ref()).algorithm_string();
+    JsString::from_algorithm_string(&resolve_tool_path(&path, Path::new(&cwd)).to_string_lossy())
+}
+
+fn reject_js_nul_path(path: &JsString, cwd: &Path) -> Result<(), ToolError> {
+    if path.units().contains(&0) {
+        let original = logical_path(Some(path), cwd);
+        return Err(ToolError::new(crate::ecmascript::inspect_argument_string(&original)
+            .prefixed("The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received ")));
+    }
+    Ok(())
+}
+
 fn reject_nul_path(path: &Path) -> Result<(), ToolError> {
     if path.as_os_str().as_encoded_bytes().contains(&0) {
-        Err(ToolError::new(format!(
-            "The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received {}",
-            crate::ecmascript::inspect_argument_string(&path.to_string_lossy())
-        )))
+        Err(ToolError::new(crate::ecmascript::inspect_argument_string(&JsString::from(path.to_string_lossy().as_ref()))
+            .prefixed("The argument 'path' must be a string, Uint8Array, or URL without null bytes. Received ")))
     } else {
         Ok(())
     }
@@ -607,29 +627,29 @@ fn node_fs_error(error: io::Error, operation: &str, path: Option<&Path>) -> Tool
 }
 
 fn parse_args<T: for<'de> Deserialize<'de>>(arguments: Value) -> Result<T, ToolError> {
-    serde_json::from_value(arguments)
+    serde_json::from_value(crate::lossless_json::tool_schema_value(&arguments))
         .map_err(|error| ToolError::new(format!("Invalid tool arguments: {error}")))
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ReadArgs {
-    pub path: String,
+    pub path: JsString,
     pub offset: Option<f64>,
     pub limit: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct WriteArgs {
-    pub path: String,
-    pub content: String,
+    pub path: JsString,
+    pub content: JsString,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GrepArgs {
-    pub pattern: String,
-    pub path: Option<String>,
-    pub glob: Option<String>,
+    pub pattern: JsString,
+    pub path: Option<JsString>,
+    pub glob: Option<JsString>,
     pub ignore_case: Option<bool>,
     pub literal: Option<bool>,
     pub context: Option<f64>,
@@ -638,33 +658,33 @@ pub struct GrepArgs {
 
 #[derive(Debug, Deserialize)]
 pub struct FindArgs {
-    pub pattern: String,
-    pub path: Option<String>,
+    pub pattern: JsString,
+    pub path: Option<JsString>,
     pub limit: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LsArgs {
-    pub path: Option<String>,
+    pub path: Option<JsString>,
     pub limit: Option<f64>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TextEdit {
-    pub old_text: String,
-    pub new_text: String,
+    pub old_text: JsString,
+    pub new_text: JsString,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct EditArgs {
-    pub path: String,
+    pub path: JsString,
     pub edits: Vec<TextEdit>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct BashArgs {
-    pub command: String,
+    pub command: JsString,
     pub timeout: Option<f64>,
 }
 
@@ -724,6 +744,7 @@ fn mutation_key(path: &Path) -> Result<PathBuf, ToolError> {
 
 pub async fn read(args: ReadArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
     throw_if_cancelled(context)?;
+    reject_js_nul_path(&args.path, &context.cwd)?;
     let path = resolve_read_path(&args.path, &context.cwd);
     reject_nul_path(&path)?;
     let access_path =
@@ -771,7 +792,7 @@ pub async fn read(args: ReadArgs, context: &ToolContext) -> Result<ToolResult, T
         if !context.model_supports_images {
             note.push_str("\n[Current model does not support images. The image will be omitted from this request.]");
         }
-        let mut content = vec![ContentBlock::Text { text: note }];
+        let mut content = vec![ContentBlock::Text { text: note.into() }];
         content.extend(image);
         return Ok(ToolResult {
             content,
@@ -864,12 +885,15 @@ pub async fn read(args: ReadArgs, context: &ToolContext) -> Result<ToolResult, T
         truncation.content
     };
     Ok(ToolResult {
-        content: vec![ContentBlock::Text { text: output }],
+        content: vec![ContentBlock::Text {
+            text: output.into(),
+        }],
         details,
     })
 }
 
 pub async fn write(args: WriteArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
+    reject_js_nul_path(&args.path, &context.cwd)?;
     let path = resolve_tool_path(&args.path, &context.cwd);
     let lock = mutation_lock(&mutation_key(&path)?);
     let _guard = lock.lock().await;
@@ -882,10 +906,9 @@ pub async fn write(args: WriteArgs, context: &ToolContext) -> Result<ToolResult,
     fs::write(&path, args.content.as_bytes())
         .map_err(|error| node_fs_error(error, "open", Some(&path)))?;
     throw_if_cancelled(context)?;
-    Ok(ToolResult::text(format!(
-        "Successfully wrote to {}",
-        args.path
-    )))
+    Ok(ToolResult::text(
+        args.path.prefixed("Successfully wrote to "),
+    ))
 }
 
 pub async fn ls(args: LsArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
@@ -893,16 +916,14 @@ pub async fn ls(args: LsArgs, context: &ToolContext) -> Result<ToolResult, ToolE
     let raw_path = args.path.as_deref().unwrap_or(".");
     let path = resolve_tool_path(raw_path, &context.cwd);
     if !path.exists() {
-        return Err(ToolError::new(format!(
-            "Path not found: {}",
-            path.display()
-        )));
+        return Err(ToolError::new(
+            logical_path(args.path.as_ref(), &context.cwd).prefixed("Path not found: "),
+        ));
     }
     if !path.metadata()?.is_dir() {
-        return Err(ToolError::new(format!(
-            "Not a directory: {}",
-            path.display()
-        )));
+        return Err(ToolError::new(
+            logical_path(args.path.as_ref(), &context.cwd).prefixed("Not a directory: "),
+        ));
     }
     let effective_limit = args.limit.unwrap_or(500.0);
     let entries = fs::read_dir(&path)
@@ -964,7 +985,9 @@ pub async fn ls(args: LsArgs, context: &ToolContext) -> Result<ToolResult, ToolE
         output.push_str(&format!("\n\n[{}]", notices.join(". ")));
     }
     Ok(ToolResult {
-        content: vec![ContentBlock::Text { text: output }],
+        content: vec![ContentBlock::Text {
+            text: output.into(),
+        }],
         details: (!detail.is_empty()).then_some(Value::Object(detail)),
     })
 }
@@ -995,13 +1018,23 @@ struct CapturedProcess {
     stopped_at_limit: bool,
 }
 
-fn reject_nul_arguments(arguments: &[OsString]) -> Result<(), ToolError> {
+fn reject_nul_arguments(
+    arguments: &[OsString],
+    originals: &[(usize, &JsString)],
+) -> Result<(), ToolError> {
     for (i, argument) in arguments.iter().enumerate() {
         if argument.as_encoded_bytes().contains(&0) {
-            return Err(ToolError::new(format!(
-                "The argument 'args[{i}]' must be a string without null bytes. Received {}",
-                crate::ecmascript::inspect_argument_string(&argument.to_string_lossy())
-            )));
+            let fallback = JsString::from(argument.to_string_lossy().as_ref());
+            let native = originals
+                .iter()
+                .find(|(index, _)| *index == i)
+                .map(|(_, text)| *text)
+                .unwrap_or(&fallback);
+            return Err(ToolError::new(
+                crate::ecmascript::inspect_argument_string(native).prefixed(&format!(
+                    "The argument 'args[{i}]' must be a string without null bytes. Received "
+                )),
+            ));
         }
     }
     Ok(())
@@ -1096,17 +1129,14 @@ async fn capture_process(
     })
 }
 
-fn truncate_line(line: &str) -> (String, bool) {
-    if line.encode_utf16().count() <= GREP_MAX_LINE_LENGTH {
+fn truncate_line(line: &str) -> (JsString, bool) {
+    let units: Vec<_> = line.encode_utf16().collect();
+    if units.len() <= GREP_MAX_LINE_LENGTH {
         return (line.into(), false);
     }
-    let prefix = String::from_utf16_lossy(
-        &line
-            .encode_utf16()
-            .take(GREP_MAX_LINE_LENGTH)
-            .collect::<Vec<_>>(),
-    );
-    (format!("{prefix}... [truncated]"), true)
+    let mut prefix = JsString::from_units(units[..GREP_MAX_LINE_LENGTH].to_vec());
+    prefix.push_str("... [truncated]");
+    (prefix, true)
 }
 
 pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, ToolError> {
@@ -1116,8 +1146,9 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
     })?;
     let raw_search_path = args.path.as_deref().unwrap_or(".");
     let search_path = resolve_tool_path(raw_search_path, &context.cwd);
-    let metadata = fs::metadata(&search_path)
-        .map_err(|_| ToolError::new(format!("Path not found: {}", search_path.display())))?;
+    let metadata = fs::metadata(&search_path).map_err(|_| {
+        ToolError::new(logical_path(args.path.as_ref(), &context.cwd).prefixed("Path not found: "))
+    })?;
     let is_directory = metadata.is_dir();
     let context_lines = args.context.unwrap_or(0.0).max(0.0);
     let effective_limit = args.limit.unwrap_or(100.0).max(1.0);
@@ -1134,14 +1165,19 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
     if let Some(glob) = &args.glob
         && !glob.is_empty()
     {
-        command_args.extend(["--glob".into(), glob.into()]);
+        command_args.extend(["--glob".into(), glob.as_str().into()]);
     }
     command_args.extend([
         "--".into(),
-        args.pattern.clone().into(),
+        args.pattern.as_str().into(),
         search_path.as_os_str().into(),
     ]);
-    reject_nul_arguments(&command_args)?;
+    let mut originals = vec![(command_args.len() - 2, &args.pattern)];
+    if let Some(glob) = args.glob.as_ref().filter(|value| !value.is_empty()) {
+        let index = command_args.iter().position(|arg| arg == "--glob").unwrap() + 1;
+        originals.push((index, glob));
+    }
+    reject_nul_arguments(&command_args, &originals)?;
     let captured = capture_process(
         &rg,
         &command_args,
@@ -1233,7 +1269,7 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
             let value = value.strip_suffix('\n').unwrap_or(&value).to_string();
             let (value, truncated) = truncate_line(&value);
             lines_truncated |= truncated;
-            output_lines.push(format!("{shown_path}:{}: {value}", matched.line));
+            output_lines.push(value.prefixed(&format!("{shown_path}:{}: ", matched.line)));
         } else {
             let file_lines = file_cache.entry(matched.path.clone()).or_insert_with(|| {
                 fs::read(&matched.path).ok().map(|content| {
@@ -1246,10 +1282,8 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
                 })
             });
             let Some(file_lines) = file_lines else {
-                output_lines.push(format!(
-                    "{shown_path}:{}: (unable to read file)",
-                    matched.line
-                ));
+                output_lines
+                    .push(format!("{shown_path}:{}: (unable to read file)", matched.line).into());
                 continue;
             };
             let mut current = (matched.line as f64 - context_lines).max(1.0);
@@ -1266,26 +1300,29 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
                 let (value, truncated) = truncate_line(&value.replace('\r', ""));
                 lines_truncated |= truncated;
                 if current == matched.line as f64 {
-                    output_lines.push(format!(
-                        "{shown_path}:{}: {value}",
+                    output_lines.push(value.prefixed(&format!(
+                        "{shown_path}:{}: ",
                         crate::ecmascript::number_string(current)
-                    ));
+                    )));
                 } else {
-                    output_lines.push(format!(
-                        "{shown_path}-{}- {value}",
+                    output_lines.push(value.prefixed(&format!(
+                        "{shown_path}-{}- ",
                         crate::ecmascript::number_string(current)
-                    ));
+                    )));
                 }
                 current += 1.0;
             }
         }
     }
-    let truncation = truncate_head(
-        &output_lines.join("\n"),
-        9_007_199_254_740_991,
-        DEFAULT_MAX_BYTES,
-    );
-    let mut output = truncation.content.clone();
+    // Buffer.byteLength replaces lone UTF-16 units with U+FFFD for byte
+    // accounting. Keep the original units in the retained logical text.
+    let joined = JsString::join(&output_lines, "\n");
+    let truncation = truncate_head(joined.as_str(), 9_007_199_254_740_991, DEFAULT_MAX_BYTES);
+    let mut output = if truncation.truncated {
+        JsString::join(&output_lines[..truncation.output_lines], "\n")
+    } else {
+        joined
+    };
     let mut notices = Vec::new();
     let mut detail = serde_json::Map::new();
     if match_limit_reached {
@@ -1298,7 +1335,9 @@ pub async fn grep(args: GrepArgs, context: &ToolContext) -> Result<ToolResult, T
     }
     if truncation.truncated {
         notices.push(format!("{} limit reached", format_size(DEFAULT_MAX_BYTES)));
-        detail.insert("truncation".into(), json!(truncation));
+        let mut metadata = json!(truncation);
+        metadata["content"] = output.to_value();
+        detail.insert("truncation".into(), metadata);
     }
     if lines_truncated {
         notices.push(format!(
@@ -1353,7 +1392,7 @@ pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, T
         "--max-results".into(),
         crate::ecmascript::number_string(effective_limit).into(),
     ]);
-    let mut effective_pattern = args.pattern;
+    let mut effective_pattern = args.pattern.as_str().to_owned();
     if effective_pattern.contains('/') {
         command_args.push("--full-path".into());
         if !effective_pattern.starts_with('/')
@@ -1368,7 +1407,16 @@ pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, T
         effective_pattern.into(),
         search_path.as_os_str().into(),
     ]);
-    reject_nul_arguments(&command_args)?;
+    let pattern = if args.pattern.contains('/')
+        && !args.pattern.starts_with('/')
+        && !args.pattern.starts_with("**/")
+        && args.pattern != "**"
+    {
+        args.pattern.prefixed("**/")
+    } else {
+        args.pattern.clone()
+    };
+    reject_nul_arguments(&command_args, &[(command_args.len() - 2, &pattern)])?;
     let captured = capture_process(
         &fd,
         &command_args,
@@ -1440,7 +1488,9 @@ pub async fn find(args: FindArgs, context: &ToolContext) -> Result<ToolResult, T
         output.push_str(&format!("\n\n[{}]", notices.join(". ")));
     }
     Ok(ToolResult {
-        content: vec![ContentBlock::Text { text: output }],
+        content: vec![ContentBlock::Text {
+            text: output.into(),
+        }],
         details: (!detail.is_empty()).then_some(Value::Object(detail)),
     })
 }
@@ -1473,9 +1523,27 @@ pub fn normalize_for_fuzzy_match(text: &str) -> String {
 }
 
 fn count_occurrences(content: &str, needle: &str) -> usize {
-    let content = normalize_for_fuzzy_match(content);
-    let needle = normalize_for_fuzzy_match(needle);
+    let content = normalize_algorithm_for_fuzzy_match(content);
+    let needle = normalize_algorithm_for_fuzzy_match(needle);
     content.match_indices(&needle).count()
+}
+
+fn normalize_algorithm_for_fuzzy_match(text: &str) -> String {
+    let native = JsString::from_algorithm_string(text);
+    let mut normalized = JsString::default();
+    let mut valid = String::new();
+    for decoded in char::decode_utf16(native.units().iter().copied()) {
+        match decoded {
+            Ok(character) => valid.push(character),
+            Err(error) => {
+                normalized.push_str(&valid.nfkc().collect::<String>());
+                valid.clear();
+                normalized.push_js(&JsString::from_units(vec![error.unpaired_surrogate()]));
+            }
+        }
+    }
+    normalized.push_str(&valid.nfkc().collect::<String>());
+    normalize_for_fuzzy_match(&normalized.algorithm_string())
 }
 
 #[derive(Clone, Debug)]
@@ -1490,8 +1558,8 @@ fn find_edit(content: &str, old_text: &str) -> Option<(usize, usize, bool)> {
     if let Some(index) = content.find(old_text) {
         return Some((index, old_text.len(), false));
     }
-    let content = normalize_for_fuzzy_match(content);
-    let old_text = normalize_for_fuzzy_match(old_text);
+    let content = normalize_algorithm_for_fuzzy_match(content);
+    let old_text = normalize_algorithm_for_fuzzy_match(old_text);
     content
         .find(&old_text)
         .map(|index| (index, old_text.len(), true))
@@ -1601,11 +1669,15 @@ fn apply_edits(
     edits: &[TextEdit],
     path: &str,
 ) -> Result<(String, String), ToolError> {
-    let edits: Vec<TextEdit> = edits
+    struct AlgorithmEdit {
+        old_text: String,
+        new_text: String,
+    }
+    let edits: Vec<AlgorithmEdit> = edits
         .iter()
-        .map(|edit| TextEdit {
-            old_text: normalize_lf(&edit.old_text),
-            new_text: normalize_lf(&edit.new_text),
+        .map(|edit| AlgorithmEdit {
+            old_text: normalize_lf(&edit.old_text.algorithm_string()),
+            new_text: normalize_lf(&edit.new_text.algorithm_string()),
         })
         .collect();
     for (index, edit) in edits.iter().enumerate() {
@@ -1622,7 +1694,7 @@ fn apply_edits(
         .iter()
         .any(|edit| find_edit(content, &edit.old_text).is_some_and(|match_| match_.2));
     let replacement_base = if used_fuzzy {
-        normalize_for_fuzzy_match(content)
+        normalize_algorithm_for_fuzzy_match(content)
     } else {
         content.to_string()
     };
@@ -1695,6 +1767,7 @@ pub async fn edit(args: EditArgs, context: &ToolContext) -> Result<ToolResult, T
             "Edit tool input is invalid. edits must contain at least one replacement.",
         ));
     }
+    reject_js_nul_path(&args.path, &context.cwd)?;
     let path = resolve_tool_path(&args.path, &context.cwd);
     let lock = mutation_lock(&mutation_key(&path)?);
     let _guard = lock.lock().await;
@@ -1709,10 +1782,9 @@ pub async fn edit(args: EditArgs, context: &ToolContext) -> Result<ToolResult, T
             .raw_os_error()
             .map(errno_name)
             .unwrap_or_else(|| error.to_string());
-        return Err(ToolError::new(format!(
-            "Could not edit file: {}. Error code: {code}.",
-            args.path
-        )));
+        let mut message = args.path.prefixed("Could not edit file: ");
+        message.push_str(&format!(". Error code: {code}."));
+        return Err(ToolError::new(message));
     }
     throw_if_cancelled(context)?;
     let raw_bytes = fs::read(&path).map_err(|error| {
@@ -1737,27 +1809,36 @@ pub async fn edit(args: EditArgs, context: &ToolContext) -> Result<ToolResult, T
         "\n"
     };
     let normalized = normalize_lf(content);
-    let (base, changed) = apply_edits(&normalized, &args.edits, &args.path)?;
+    let normalized = JsString::from(normalized).algorithm_string();
+    let algorithm_path = args.path.algorithm_string();
+    let (base, changed) = apply_edits(&normalized, &args.edits, &algorithm_path)
+        .map_err(|error| ToolError::new(JsString::from_algorithm_string(error.text().as_str())))?;
     throw_if_cancelled(context)?;
     let restored = if ending == "\r\n" {
         changed.replace('\n', "\r\n")
     } else {
         changed.clone()
     };
-    fs::write(&path, format!("{bom}{restored}"))
+    let restored = JsString::from_algorithm_string(&restored);
+    fs::write(&path, format!("{bom}{}", restored.as_str()))
         .map_err(|error| node_fs_error(error, "open", Some(&path)))?;
     throw_if_cancelled(context)?;
     let (diff, first_changed_line) = display_diff(&base, &changed);
+    let diff = JsString::from_algorithm_string(&diff);
+    let patch = JsString::from_algorithm_string(&unified_patch(&algorithm_path, &base, &changed));
     Ok(ToolResult {
         content: vec![ContentBlock::Text {
-            text: format!(
-                "Successfully replaced {} block(s) in {}.",
-                args.edits.len(),
-                args.path
-            ),
+            text: {
+                let mut text = args.path.prefixed(&format!(
+                    "Successfully replaced {} block(s) in ",
+                    args.edits.len()
+                ));
+                text.push_str(".");
+                text
+            },
         }],
         details: Some(
-            json!({ "diff": diff, "patch": unified_patch(&args.path, &base, &changed), "firstChangedLine": first_changed_line }),
+            json!({ "diff": diff, "patch": patch, "firstChangedLine": first_changed_line }),
         ),
     })
 }
@@ -1983,7 +2064,7 @@ fn emit_bash_update(
     }
     callback(ToolResult {
         content: vec![ContentBlock::Text {
-            text: snapshot.content,
+            text: snapshot.content.into(),
         }],
         details: Some(Value::Object(details)),
     });
@@ -2060,8 +2141,16 @@ pub async fn bash(
         .command_prefix
         .as_ref()
         .map(|prefix| format!("{prefix}\n{}", args.command))
+        .unwrap_or_else(|| args.command.as_str().to_owned());
+    let native_command = context
+        .command_prefix
+        .as_ref()
+        .map(|prefix| args.command.prefixed(&format!("{prefix}\n")))
         .unwrap_or(args.command);
-    reject_nul_arguments(&["-c".into(), command_text.clone().into()])?;
+    reject_nul_arguments(
+        &["-c".into(), command_text.clone().into()],
+        &[(1, &native_command)],
+    )?;
     let mut command = Command::new(shell);
     command
         .arg("-c")
@@ -2190,7 +2279,9 @@ pub async fn bash(
         )));
     }
     Ok(ToolResult {
-        content: vec![ContentBlock::Text { text: output }],
+        content: vec![ContentBlock::Text {
+            text: output.into(),
+        }],
         details: bash_details(&snapshot),
     })
 }
@@ -2686,7 +2777,8 @@ mod tests {
                 command: format!(
                     "for i in $(seq 1 {}); do echo line$i; done",
                     DEFAULT_MAX_LINES + 1
-                ),
+                )
+                .into(),
                 timeout: None,
             },
             &context,

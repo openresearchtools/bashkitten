@@ -110,8 +110,9 @@ enum LlamaCommand {
 }
 
 fn codex_authenticated(paths: &AppPaths) -> bool {
-    fs::read(paths.provider_auth_file())
+    bashkitten::paths::set_private_file(&paths.provider_auth_file())
         .ok()
+        .and_then(|_| fs::read(paths.provider_auth_file()).ok())
         .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
         .and_then(|v| v.get("openai-codex").cloned())
         .is_some()
@@ -166,18 +167,14 @@ async fn main() -> Result<()> {
         }
         Commands::Session { command } => match command {
             SessionCommand::Start(args) => {
-                let model = args.model.unwrap_or_else(|| config.default_model.clone());
-                let thinking = args
-                    .thinking
-                    .unwrap_or_else(|| config.default_thinking.clone());
-                require_model(&paths, &config, &model, &thinking)?;
-                let model_info = models::find_model(
+                let (model_info, thinking) = models::resolve_new_session(
                     &config,
-                    &model,
+                    args.model.as_deref(),
+                    args.thinking.as_deref(),
                     codex_authenticated(&paths),
                     llama_available(),
-                )
-                .expect("validated model");
+                )?;
+                let model = model_info.full_id();
                 let cwd = args.cwd.unwrap_or_else(|| config.default_cwd.clone());
                 let request = NewSession {
                     cwd,
