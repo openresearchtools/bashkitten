@@ -85,6 +85,13 @@ pub struct ModelPreset {
     pub llama_options: String,
     /// User-selected local GGUF. Kept as its logical path for split cache files.
     pub llama_model_path: PathBuf,
+    /// Optional llama.cpp generation cap (`--n-predict`) for this preset.
+    #[serde(default, alias = "max_new_tokens")]
+    pub llama_max_new_tokens: Option<u64>,
+    /// Optional per-model fitting override. `None` inherits the router setting.
+    pub llama_fit: Option<bool>,
+    pub llama_fit_target_mib: Option<u64>,
+    pub llama_fit_context: Option<u64>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -94,9 +101,25 @@ pub struct LlamaConfig {
     pub models_dir: PathBuf,
     pub model_search_dirs: Vec<PathBuf>,
     pub gpu_environment: std::collections::BTreeMap<String, String>,
+    /// Friendly llama.cpp device IDs selected from `/usr/bin/llama-server --list-devices`.
+    /// Empty means llama.cpp chooses its normal device set.
+    #[serde(default)]
+    pub gpu_devices: Vec<String>,
     pub port: u16,
     pub api_key: String,
     pub context_size: u64,
+    /// Maximum generated tokens for router requests; zero leaves llama.cpp's default.
+    #[serde(default)]
+    pub max_new_tokens: u64,
+    /// Whether llama.cpp should fit unset model parameters to device memory.
+    #[serde(default = "default_llama_fit")]
+    pub fit: bool,
+    /// Memory margin passed to `--fit-target`; a single value is broadcast by llama.cpp.
+    #[serde(default = "default_llama_fit_target")]
+    pub fit_target_mib: u64,
+    /// Minimum context size used by `--fit-ctx`.
+    #[serde(default = "default_llama_fit_context")]
+    pub fit_context: u64,
     pub gpu_layers: GpuLayers,
     pub cpu_threads: u16,
     pub batch_size: u32,
@@ -117,6 +140,16 @@ pub enum GpuLayers {
     Auto,
     Cpu,
     Count(u32),
+}
+
+fn default_llama_fit() -> bool {
+    true
+}
+fn default_llama_fit_target() -> u64 {
+    1024
+}
+fn default_llama_fit_context() -> u64 {
+    4096
 }
 
 impl Default for AppConfig {
@@ -144,9 +177,14 @@ impl Default for AppConfig {
                 models_dir: home.join("models"),
                 model_search_dirs: Vec::new(),
                 gpu_environment: Default::default(),
+                gpu_devices: Vec::new(),
                 port: 8080,
                 api_key: String::new(),
                 context_size: 32768,
+                max_new_tokens: 0,
+                fit: true,
+                fit_target_mib: 1024,
+                fit_context: 4096,
                 gpu_layers: GpuLayers::Auto,
                 cpu_threads: 0,
                 batch_size: 2048,
@@ -184,6 +222,10 @@ impl Default for ModelPreset {
             thinking_budgets: serde_json::json!({}),
             llama_options: String::new(),
             llama_model_path: PathBuf::new(),
+            llama_max_new_tokens: None,
+            llama_fit: None,
+            llama_fit_target_mib: None,
+            llama_fit_context: None,
         }
     }
 }

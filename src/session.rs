@@ -55,6 +55,12 @@ pub struct SessionHeader {
         skip_serializing_if = "Option::is_none"
     )]
     pub cache_hit_rate_before: Option<f64>,
+    #[serde(
+        rename = "goalBefore",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub goal_before: Option<crate::goal::Goal>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -93,7 +99,16 @@ pub enum ControlRequest {
         #[serde(default)]
         source_session: Option<String>,
     },
+    GoalMessage {
+        content: String,
+        #[serde(default)]
+        attachments: Vec<PathBuf>,
+    },
     Subscribe,
+    Goal {
+        #[serde(flatten)]
+        action: crate::goal::Action,
+    },
     Status,
     Stop,
     Compact {
@@ -212,6 +227,7 @@ pub fn create(paths: &AppPaths, request: &NewSession) -> Result<String> {
         parent_session: request.parent.clone(),
         usage_before: Default::default(),
         cache_hit_rate_before: None,
+        goal_before: None,
     };
     let segment = dir.join("000001.jsonl");
     let mut file = OpenOptions::new()
@@ -784,8 +800,75 @@ pub fn send(paths: &AppPaths, id: &str, request: &ControlRequest) -> Result<Cont
     Ok(crate::lossless_json::from_str(&line)?)
 }
 
-pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {
+/// Serialize storage mutations with worker launch without a sidecar lock file.
+pub fn lock_session(paths: &AppPaths, id: &str) -> Result<fs::File> {
+    use std::os::unix::fs::MetadataExt;
     validate_id(id)?;
+    let dir = paths.session_dir(id);
+    let file = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NOFOLLOW | libc::O_DIRECTORY)
+        .open(&dir)
+        .context("Session folder is unavailable or is not an ordinary directory")?;
+    file.lock_exclusive()?;
+    let current = fs::symlink_metadata(&dir)?;
+    let opened = file.metadata()?;
+    anyhow::ensure!(
+        current.is_dir() && current.dev() == opened.dev() && current.ino() == opened.ino(),
+        "Session folder changed while waiting"
+    );
+    anyhow::ensure!(
+        read_header(&dir)?.id == id,
+        "Session header does not match its folder"
+    );
+    Ok(file)
+}
+
+pub fn rename(paths: &AppPaths, id: &str, name: &str) -> Result<String> {
+    let title = name.split_whitespace().collect::<Vec<_>>().join(" ");
+    anyhow::ensure!(!title.is_empty(), "Chat name cannot be empty");
+    let _guard = lock_session(paths, id)?;
+    let dir = paths.session_dir(id);
+    let temporary = dir.join(format!(".title-{}", Uuid::new_v4()));
+    let result = (|| -> Result<()> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .mode(0o600)
+            .open(&temporary)?;
+        writeln!(file, "{title}")?;
+        file.sync_all()?;
+        fs::rename(&temporary, dir.join("title"))?;
+        fs::File::open(&dir)?.sync_all()?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(temporary);
+    }
+    result?;
+    Ok(title)
+}
+
+pub fn delete(paths: &AppPaths, id: &str) -> Result<()> {
+    let _guard = lock_session(paths, id)?;
+    let dir = paths.session_dir(id);
+    let canonical = fs::canonicalize(&dir)?;
+    let header = read_header(&dir)?;
+    let cwd = fs::canonicalize(&header.cwd).unwrap_or(header.cwd);
+    anyhow::ensure!(
+        !cwd.starts_with(&canonical),
+        "Working folder is inside this session folder; move it before deleting the chat"
+    );
+    stop_worker(paths, id)?;
+    // remove_dir_all unlinks contained symlinks without following their targets.
+    // Only the ID-derived session directory is ever passed here.
+    fs::remove_dir_all(&dir).context("Remove chat history and attachments")?;
+    fs::File::open(paths.sessions_dir())?.sync_all()?;
+    Ok(())
+}
+
+pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {
+    let _guard = lock_session(paths, id)?;
     let executable = std::env::current_exe().context("locate BashKitten executable")?;
     let binary = std::env::var_os("BASHKITTEN_AGENT_BIN")
         .map(PathBuf::from)
@@ -890,6 +973,103 @@ pub fn save_provider_auth(paths: &AppPaths, value: &Value) -> Result<()> {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn rename_and_delete_only_touch_the_selected_session_storage() {
+        use std::os::unix::fs::symlink;
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let cwd = root.path().join("project");
+        fs::create_dir(&cwd).unwrap();
+        fs::write(cwd.join("keep.py"), "project stays").unwrap();
+        let request = NewSession {
+            cwd: cwd.clone(),
+            model: "p/m".into(),
+            thinking: "off".into(),
+            model_parameters: json!({}),
+            prompt: "Original chat".into(),
+            attachments: vec![],
+            parent: None,
+        };
+        let id = create(&paths, &request).unwrap();
+        let sibling = create(&paths, &request).unwrap();
+        let dir = paths.session_dir(&id);
+        let history = fs::read(dir.join("000001.jsonl")).unwrap();
+        fs::write(dir.join("attachments/example.txt"), "private copy").unwrap();
+        symlink(&cwd, dir.join("attachments/project-link")).unwrap();
+        assert_eq!(
+            rename(&paths, &id, "  Renamed  chat 🐈  ").unwrap(),
+            "Renamed chat 🐈"
+        );
+        assert_eq!(fs::read(dir.join("000001.jsonl")).unwrap(), history);
+        assert_eq!(
+            fs::metadata(dir.join("title"))
+                .unwrap()
+                .permissions()
+                .mode()
+                & 0o777,
+            0o600
+        );
+        assert!(rename(&paths, &id, "  ").is_err());
+        delete(&paths, &id).unwrap();
+        assert!(!dir.exists());
+        assert!(paths.session_dir(&sibling).is_dir());
+        assert_eq!(
+            fs::read_to_string(cwd.join("keep.py")).unwrap(),
+            "project stays"
+        );
+        assert!(lock_session(&paths, &id).is_err());
+        assert!(delete(&paths, "../project").is_err());
+        let linked = "linked-session";
+        symlink(&cwd, paths.session_dir(linked)).unwrap();
+        assert!(delete(&paths, linked).is_err());
+        assert!(rename(&paths, linked, "Bad").is_err());
+        assert!(cwd.join("keep.py").exists());
+    }
+
+    #[test]
+    fn deletion_refuses_a_working_folder_inside_session_storage() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let id = create(
+            &paths,
+            &NewSession {
+                cwd: root.path().into(),
+                model: "p/m".into(),
+                thinking: "off".into(),
+                model_parameters: json!({}),
+                prompt: "Nested".into(),
+                attachments: vec![],
+                parent: None,
+            },
+        )
+        .unwrap();
+        let dir = paths.session_dir(&id);
+        let project = dir.join("project");
+        fs::create_dir(&project).unwrap();
+        let mut header = read_header(&dir).unwrap();
+        header.cwd = project.clone();
+        let mut file = fs::File::create(dir.join("000001.jsonl")).unwrap();
+        serde_json::to_writer(&mut file, &header).unwrap();
+        writeln!(file).unwrap();
+        assert!(
+            delete(&paths, &id)
+                .unwrap_err()
+                .to_string()
+                .contains("Working folder")
+        );
+        assert!(project.exists());
+    }
 
     #[test]
     fn title_is_local_and_short() {

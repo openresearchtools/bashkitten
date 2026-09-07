@@ -70,6 +70,12 @@ fn from_preset(provider: &str, p: &ModelPreset, available: bool) -> ModelInfo {
     }
 }
 
+fn llama_output_cap(p: &ModelPreset) -> u64 {
+    p.llama_max_new_tokens
+        .filter(|value| *value > 0)
+        .unwrap_or(p.max_tokens)
+}
+
 pub fn all_models(
     config: &AppConfig,
     codex_authenticated: bool,
@@ -129,13 +135,19 @@ pub fn all_models(
         );
         model.parameters["llamaOptions"] = serde_json::json!(p.llama_options);
         model.parameters["llamaModelPath"] = serde_json::json!(p.llama_model_path);
+        model.max_tokens = model.max_tokens.min(llama_output_cap(p));
         if let Some(entry) = reported
             .filter(|m| matches!(m["status"]["value"].as_str(), Some("loaded" | "sleeping")))
             && entry["meta"]["n_ctx"].as_u64().is_some_and(|n| n > 0)
         {
             model.context_window = entry["meta"]["n_ctx"].as_u64().unwrap();
-            model.parameters["contextWindow"] = serde_json::json!(model.context_window);
         }
+        // The router's loaded metadata reflects native --fit decisions. Use
+        // that effective context for compaction and cap generation so a static
+        // preset cannot overrun the fitted KV cache.
+        model.max_tokens = model.max_tokens.min(model.context_window);
+        model.parameters["contextWindow"] = serde_json::json!(model.context_window);
+        model.parameters["maxTokens"] = serde_json::json!(model.max_tokens);
         model
     }));
     out
@@ -235,6 +247,31 @@ mod tests {
             super::resolve_new_session(&config, None, None, true, false).unwrap();
         assert_eq!(model.full_id(), config.default_model);
         assert_eq!(thinking, config.default_thinking);
+    }
+    #[test]
+    fn loaded_llama_metadata_caps_static_preset_context_and_generation() {
+        use crate::config::{AppConfig, ModelPreset};
+        let mut config = AppConfig::default();
+        config.llama.models.push(ModelPreset {
+            id: "fit-model".into(),
+            context_window: 32_768,
+            max_tokens: 16_384,
+            llama_max_new_tokens: Some(12_000),
+            ..Default::default()
+        });
+        config.llama.catalog.push(serde_json::json!({
+            "id": "fit-model",
+            "status": {"value": "loaded"},
+            "meta": {"n_ctx": 4096, "n_ctx_train": 131072}
+        }));
+        let model = super::all_models(&config, false, true)
+            .into_iter()
+            .find(|model| model.full_id() == "llama.cpp/fit-model")
+            .unwrap();
+        assert_eq!(model.context_window, 4096);
+        assert_eq!(model.max_tokens, 4096);
+        assert_eq!(model.parameters["contextWindow"], 4096);
+        assert_eq!(model.parameters["maxTokens"], 4096);
     }
     fn tier(input: f64, output: f64, cache_read: f64, cache_write: f64) -> crate::agent::CostRates {
         crate::agent::CostRates {

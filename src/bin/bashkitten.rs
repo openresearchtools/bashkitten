@@ -28,6 +28,12 @@ enum Commands {
         command: SessionCommand,
     },
     Send(SendArguments),
+    Goal {
+        #[arg(long)]
+        session: Option<String>,
+        #[command(subcommand)]
+        command: GoalCommand,
+    },
     Auth {
         #[command(subcommand)]
         command: AuthCommand,
@@ -97,6 +103,23 @@ struct SendArguments {
 }
 
 #[derive(Subcommand)]
+enum GoalCommand {
+    Status,
+    Set {
+        objective: String,
+    },
+    Complete {
+        #[arg(long)]
+        summary: Option<String>,
+        #[arg(long)]
+        goal_id: Option<String>,
+    },
+    Pause,
+    Resume,
+    Clear,
+}
+
+#[derive(Subcommand)]
 enum AuthCommand {
     Status,
     ResetWeb,
@@ -145,6 +168,39 @@ async fn main() -> Result<()> {
     paths.ensure()?;
     let config = AppConfig::load(&paths)?;
     match cli.command {
+        Commands::Goal {
+            session: id,
+            command,
+        } => {
+            let id = id
+                .or_else(|| std::env::var("BASHKITTEN_SESSION_ID").ok())
+                .context("Use --session ID or run this command inside a BashKitten session")?;
+            let socket = session::control_socket(&paths, &id)?;
+            if matches!(command, GoalCommand::Status) {
+                let value = if session::socket_is_live(&socket) {
+                    session::send(&paths, &id, &ControlRequest::Status)?.data["goal"].clone()
+                } else {
+                    serde_json::to_value(bashkitten::worker::saved_goal(&paths, &id)?)?
+                };
+                println!("{}", serde_json::to_string_pretty(&value)?);
+            } else {
+                let action = match command {
+                    GoalCommand::Set { objective } => bashkitten::goal::Action::Set { objective },
+                    GoalCommand::Complete { summary, goal_id } => {
+                        bashkitten::goal::Action::Complete { summary, goal_id }
+                    }
+                    GoalCommand::Pause => bashkitten::goal::Action::Pause,
+                    GoalCommand::Resume => bashkitten::goal::Action::Resume,
+                    GoalCommand::Clear => bashkitten::goal::Action::Clear,
+                    GoalCommand::Status => unreachable!(),
+                };
+                if !session::socket_is_live(&socket) {
+                    session::start_worker(&paths, &id)?;
+                }
+                let reply = session::send(&paths, &id, &ControlRequest::Goal { action })?;
+                println!("{}", serde_json::to_string_pretty(&reply.data)?);
+            }
+        }
         Commands::Models { json } => {
             let list = models::all_models(&config, codex_authenticated(&paths), llama_available());
             if json {

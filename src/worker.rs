@@ -51,11 +51,13 @@ struct PendingModel {
 
 struct Shared {
     queues: Mutex<AgentQueues<QueuedMessage>>,
+    goal: std::sync::Mutex<crate::goal::State>,
     model_change: Mutex<Option<PendingModel>>,
     cwd_change: Mutex<Option<PathBuf>>,
     notify: Notify,
     events: broadcast::Sender<Value>,
     busy: AtomicBool,
+    compacting: AtomicBool,
     stop: AtomicBool,
     cancellation: std::sync::Mutex<tools::CancellationToken>,
     compaction: Mutex<Option<Option<String>>>,
@@ -69,11 +71,13 @@ impl Shared {
         let (events, _) = broadcast::channel(512);
         Self {
             queues: Mutex::new(AgentQueues::default()),
+            goal: Default::default(),
             model_change: Mutex::new(None),
             cwd_change: Mutex::new(None),
             notify: Notify::new(),
             events,
             busy: AtomicBool::new(false),
+            compacting: AtomicBool::new(false),
             stop: AtomicBool::new(false),
             cancellation: std::sync::Mutex::new(tools::CancellationToken::default()),
             compaction: Mutex::new(None),
@@ -85,6 +89,12 @@ impl Shared {
 
     fn emit(&self, event: Value) {
         let mut replay = self.replay.lock().expect("live replay lock");
+        if event["type"] == "compaction_start" {
+            self.compacting.store(true, Ordering::SeqCst);
+        }
+        if event["type"] == "compaction_end" {
+            self.compacting.store(false, Ordering::SeqCst);
+        }
         if event["type"] == "usage" {
             *self.usage.lock().expect("usage lock") = event["data"].clone();
         }
@@ -96,7 +106,14 @@ impl Shared {
         self.cancellation.lock().expect("cancellation lock").clone()
     }
 
+    fn pause_goal(&self) {
+        let mut goal = self.goal.lock().expect("goal lock");
+        let _ = goal.apply(crate::goal::Action::Pause);
+        self.emit(json!({"type":"goal","data":goal.current}));
+    }
+
     fn stop(&self) {
+        self.pause_goal();
         self.stop.store(true, Ordering::SeqCst);
         self.cancellation().cancel();
         self.notify.notify_waiters();
@@ -113,6 +130,19 @@ struct LiveReplay {
 impl LiveReplay {
     fn push(&mut self, event: &Value) {
         let kind = event["type"].as_str().unwrap_or_default();
+        if kind == "compaction_start" {
+            self.events.retain(|value| {
+                !matches!(
+                    value["type"].as_str(),
+                    Some(
+                        "compaction_start"
+                            | "compaction_stream_start"
+                            | "compaction_delta"
+                            | "compaction_end"
+                    )
+                )
+            });
+        }
         if kind == "message" {
             self.events.retain(|value| {
                 !matches!(
@@ -128,13 +158,12 @@ impl LiveReplay {
         }
         if matches!(
             kind,
-            "assistant_delta" | "thinking_delta" | "tool_call_delta"
-        ) && let Some(previous) = self
-            .events
-            .iter_mut()
-            .rev()
-            .find(|value| value["type"] == event["type"] && value["index"] == event["index"])
-        {
+            "assistant_delta" | "thinking_delta" | "tool_call_delta" | "compaction_delta"
+        ) && let Some(previous) = self.events.iter_mut().rev().find(|value| {
+            value["type"] == event["type"]
+                && value["index"] == event["index"]
+                && value["id"] == event["id"]
+        }) {
             let mut text =
                 crate::lossless_json::JsString::from_value(&previous["delta"]).unwrap_or_default();
             text.push_js(
@@ -193,6 +222,7 @@ struct Runtime {
     shared: Arc<Shared>,
     retry_attempt: u32,
     overflow_recovery_attempted: bool,
+    compactions: u32,
 }
 
 pub async fn run_worker(paths: AppPaths, id: String) -> Result<()> {
@@ -234,6 +264,9 @@ pub async fn run_worker(paths: AppPaths, id: String) -> Result<()> {
         .collect();
     let system_prompt = crate::prompt::load(&paths, &header.cwd);
     let shared = Arc::new(Shared::new());
+    shared.goal.lock().expect("goal lock").current =
+        crate::goal::restore(header.goal_before.clone(), &entries);
+    let compactions = session::current_segment(&session_dir)?.0.saturating_sub(1);
     let socket = session::control_socket(&paths, &id)?;
     let listener_shared = shared.clone();
     let socket_listener = bind_control_socket(&socket)?;
@@ -268,6 +301,7 @@ pub async fn run_worker(paths: AppPaths, id: String) -> Result<()> {
         shared: shared.clone(),
         retry_attempt: 0,
         overflow_recovery_attempted: false,
+        compactions,
     };
     runtime.emit_usage();
     runtime.shared.emit(json!({"type":"status","state":"idle"}));
@@ -295,6 +329,8 @@ pub async fn run_worker(paths: AppPaths, id: String) -> Result<()> {
 
     // Cancellation, model/provider errors and shutdown use the same persistence
     // boundary as a settled turn. Do not lose partial assistant/tool messages.
+    runtime.shared.pause_goal();
+    runtime.sync_goal_changes();
     let persisted = runtime.flush_pending();
     shared.stop();
     listener.abort();
@@ -358,7 +394,7 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
                 let replay = shared.replay.lock().expect("live replay lock");
                 (
                     shared.events.subscribe(),
-                    json!({"events":replay.events,"busy":shared.busy.load(Ordering::SeqCst),"usage":*shared.usage.lock().expect("usage lock"),"modelSelection":*shared.model_selection.lock().expect("model selection lock")}),
+                    json!({"events":replay.events,"compacting":shared.compacting.load(Ordering::SeqCst),"busy":shared.busy.load(Ordering::SeqCst),"usage":*shared.usage.lock().expect("usage lock"),"modelSelection":*shared.model_selection.lock().expect("model selection lock")}),
                 )
             };
             write_reply(&mut write, true, "subscribed", snapshot).await?;
@@ -398,10 +434,64 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             shared.notify.notify_one();
             write_reply(&mut write, true, "message queued", state).await?;
         }
+        ControlRequest::GoalMessage {
+            content,
+            attachments,
+        } => {
+            let mut queues = shared.queues.lock().await;
+            let outcome = {
+                let mut goal = shared.goal.lock().expect("goal lock");
+                goal.apply(crate::goal::Action::Set {
+                    objective: content.clone(),
+                })
+                .map(|_| goal.current.clone())
+            };
+            let goal = match outcome {
+                Ok(goal) => goal,
+                Err(error) => {
+                    write_reply(&mut write, false, &error.to_string(), Value::Null).await?;
+                    return Ok(());
+                }
+            };
+            queues.follow_up.enqueue(QueuedMessage {
+                id: uuid::Uuid::now_v7().to_string(),
+                content,
+                attachments,
+                source_session: None,
+                delivery: DeliveryKind::Queue,
+                editing: false,
+                edit_token: None,
+            });
+            let mut state = queue_state_value(&queues, shared.busy.load(Ordering::SeqCst));
+            state["goal"] = json!(goal);
+            drop(queues);
+            shared.emit(json!({"type":"goal","data":goal}));
+            shared.emit(json!({"type":"queue_state","data":state}));
+            write_reply(&mut write, true, "goal message queued", state).await?;
+            shared.notify.notify_one();
+        }
+        ControlRequest::Goal { action } => {
+            let result = {
+                let mut goal = shared.goal.lock().expect("goal lock");
+                goal.apply(action).map(|_| goal.current.clone())
+            };
+            match result {
+                Ok(goal) => {
+                    shared.emit(json!({"type":"goal","data":goal}));
+                    write_reply(&mut write, true, "goal updated", json!(goal)).await?;
+                    shared.notify.notify_one();
+                }
+                Err(error) => {
+                    write_reply(&mut write, false, &error.to_string(), Value::Null).await?
+                }
+            }
+        }
         ControlRequest::Status => {
             let queues = shared.queues.lock().await;
             let state = queue_state_value(&queues, shared.busy.load(Ordering::SeqCst));
             let mut state = state;
+            state["compacting"] = json!(shared.compacting.load(Ordering::SeqCst));
+            state["goal"] = json!(shared.goal.lock().expect("goal lock").current);
             state["usage"] = shared.usage.lock().expect("usage lock").clone();
             state["modelSelection"] = shared
                 .model_selection
@@ -427,6 +517,7 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
         ControlRequest::Compact {
             custom_instructions,
         } => {
+            shared.pause_goal();
             *shared.compaction.lock().await = Some(custom_instructions);
             shared.cancellation().cancel();
             write_reply(&mut write, true, "compaction requested", json!({})).await?;
@@ -591,10 +682,30 @@ impl Runtime {
             || self.shared.model_change.lock().await.is_some()
             || self.shared.cwd_change.lock().await.is_some()
             || self.shared.compaction.lock().await.is_some()
+            || {
+                let goal = self.shared.goal.lock().expect("goal lock");
+                goal.active() || !goal.pending.is_empty()
+            }
+    }
+
+    fn sync_goal_changes(&mut self) -> bool {
+        let pending = std::mem::take(&mut self.shared.goal.lock().expect("goal lock").pending);
+        let changed = !pending.is_empty();
+        for goal in pending {
+            let entry = self.entry(SessionEntryKind::Custom {
+                custom_type: "bashkitten.goal".into(),
+                data: Some(json!(goal)),
+            });
+            self.pending_entries.push(entry);
+        }
+        changed
     }
 
     async fn process_available_work(&mut self) -> Result<bool> {
-        let mut did_work = false;
+        let mut did_work = self.sync_goal_changes();
+        if did_work {
+            self.flush_pending()?;
+        }
         let compaction = { self.shared.compaction.lock().await.take() };
         if let Some(instructions) = compaction {
             self.flush_pending()?;
@@ -633,8 +744,25 @@ impl Runtime {
             .await
             .drain_at_boundary_if(true, |message| !message.editing);
         self.emit_queue_state().await;
-        let Some(drained) = drained else {
-            return Ok(did_work);
+        let messages = if let Some(drained) = drained {
+            drained.messages
+        } else {
+            if self.shared.queues.lock().await.has_messages() {
+                return Ok(did_work);
+            }
+            let goal = self.shared.goal.lock().expect("goal lock").current.clone();
+            let Some(goal) = goal.filter(|g| g.status == "active") else {
+                return Ok(did_work);
+            };
+            vec![QueuedMessage {
+                id: uuid::Uuid::now_v7().to_string(),
+                content: crate::goal::reminder(&goal),
+                attachments: vec![],
+                source_session: None,
+                delivery: DeliveryKind::Queue,
+                editing: false,
+                edit_token: None,
+            }]
         };
         did_work = true;
         if let Some(last) = self
@@ -646,10 +774,11 @@ impl Runtime {
         {
             let _ = self.check_compaction(&last, false).await?;
         }
-        for queued in drained.messages {
+        for queued in messages {
             self.push_user_message(queued).await?;
         }
         self.run_agent_turn().await?;
+        self.sync_goal_changes();
         self.flush_pending()?;
         Ok(did_work)
     }
@@ -898,6 +1027,25 @@ impl Runtime {
             }
             Ok(())
         }.await;
+        if result.is_err()
+            || self.shared.cancellation().is_cancelled()
+            || self
+                .logical_messages
+                .iter()
+                .rev()
+                .find(|m| matches!(m, AgentMessage::Assistant { .. }))
+                .is_some_and(|m| {
+                    matches!(
+                        m,
+                        AgentMessage::Assistant {
+                            stop_reason: agent::StopReason::Error | agent::StopReason::Aborted,
+                            ..
+                        }
+                    )
+                })
+        {
+            self.shared.pause_goal();
+        }
         self.shared.busy.store(false, Ordering::SeqCst);
         self.shared.emit(json!({"type":"agent_settled"}));
         result
@@ -906,13 +1054,14 @@ impl Runtime {
     async fn run_agent_turn_inner(&mut self) -> Result<Option<AgentMessage>> {
         let mut last_message = None;
         loop {
+            self.sync_goal_changes();
             if self.shared.cancellation().is_cancelled() {
                 break;
             }
             self.shared.emit(json!({"type":"turn_start"}));
             let request = self.provider_request()?;
             let endpoint = self.endpoint()?;
-            let response = self.collect_response(&endpoint, request, true).await;
+            let response = self.collect_response(&endpoint, request, true, None).await;
             let message = response.message(
                 &self.header.provider,
                 &self.header.model_id,
@@ -1007,6 +1156,7 @@ impl Runtime {
         endpoint: &ProviderEndpoint,
         request: ProviderRequest,
         publish: bool,
+        compaction_request: Option<&str>,
     ) -> ResponseAssembly {
         let mut response = ResponseAssembly::default();
         let cancellation = self.shared.cancellation();
@@ -1027,10 +1177,16 @@ impl Runtime {
                 };
                 match event {
                     Some(Ok(event)) => {
-                        if let Some(event) = response.push(event)
-                            && publish
-                        {
-                            self.shared.emit(event);
+                        if let Some(mut event) = response.push(event) {
+                            if publish {
+                                self.shared.emit(event);
+                            } else if event["type"] == "assistant_delta"
+                                && let Some(id) = compaction_request
+                            {
+                                event["type"] = json!("compaction_delta");
+                                event["id"] = json!(id);
+                                self.shared.emit(event);
+                            }
                         }
                     }
                     Some(Err(error)) => {
@@ -1184,8 +1340,10 @@ impl Runtime {
         let policy = self.config.retry;
         let mut attempt = 0;
         let response = loop {
+            let stream_id = uuid::Uuid::new_v4().to_string();
+            self.shared.emit(json!({"type":"compaction_stream_start","id":stream_id,"label":label,"attempt":attempt+1}));
             let response = self
-                .collect_response(&endpoint, request.clone(), false)
+                .collect_response(&endpoint, request.clone(), false, Some(&stream_id))
                 .await;
             let message = response.message(
                 &self.header.provider,
@@ -1305,6 +1463,7 @@ impl Runtime {
             let mut header = self.header.clone();
             header.thinking_level = self.thinking.clone();
             header.initial_cwd = Some(header.cwd.clone());
+            header.goal_before=crate::goal::restore(self.header.goal_before.clone(), &self.entries[..kept]);
             agent::accumulate_session_usage(&mut header.usage_before, &self.entries[..kept]);
             if let Some(rate) = crate::usage::latest_cache_hit_rate(&self.entries[..kept]) {
                 header.cache_hit_rate_before = rate;
@@ -1322,6 +1481,7 @@ impl Runtime {
                 Err(error) => { self.last_entry_id = previous_id; return Err(error); }
             };
             self.header = header;
+            self.compactions=segment.saturating_sub(1);
             self.entries = retained;
             self.logical_messages = agent::build_session_context(&self.entries, None);
             self.messages = self.logical_messages.iter().filter_map(to_provider_message).collect();
@@ -1483,6 +1643,18 @@ impl Runtime {
         let mut request = ProviderRequest::new(&self.header.model_id, self.messages.clone());
         request.supports_images = self.model.input.iter().any(|input| input == "image");
         request.system_prompt = self.system_prompt.clone();
+        if let Some(goal) = self
+            .shared
+            .goal
+            .lock()
+            .expect("goal lock")
+            .current
+            .as_ref()
+            .filter(|goal| goal.status == "active")
+        {
+            request.system_prompt.push_str("\n\n");
+            request.system_prompt.push_str(&crate::goal::reminder(goal));
+        }
         request.logical_messages = Some(
             self.logical_messages
                 .iter()
@@ -1588,7 +1760,7 @@ impl Runtime {
             .chain(&self.pending_entries)
             .cloned()
             .collect();
-        let snapshot = crate::usage::snapshot_with_cache(
+        let mut snapshot = crate::usage::snapshot_with_cache(
             &entries,
             &self.logical_messages,
             self.header.usage_before,
@@ -1597,6 +1769,7 @@ impl Runtime {
             self.header.provider == "openai-codex",
             self.config.compaction.enabled,
         );
+        snapshot.compactions = self.compactions;
         self.shared.emit(json!({"type":"usage","data":snapshot}));
     }
 
@@ -1645,7 +1818,7 @@ pub fn saved_usage(
     let (model_id, _) = session::effective_model(&dir, &header);
     let model = models::find_model(config, &model_id, false, false);
     let messages = agent::build_session_context(&entries, None);
-    Ok(crate::usage::snapshot_with_cache(
+    let mut snapshot = crate::usage::snapshot_with_cache(
         &entries,
         &messages,
         header.usage_before,
@@ -1661,6 +1834,18 @@ pub fn saved_usage(
             .unwrap_or(0),
         model_id.starts_with("openai-codex/"),
         config.compaction.enabled,
+    );
+    snapshot.compactions = session::current_segment(&dir)?.0.saturating_sub(1);
+    Ok(snapshot)
+}
+
+pub fn saved_goal(paths: &AppPaths, id: &str) -> Result<Option<crate::goal::Goal>> {
+    session::validate_id(id)?;
+    let dir = paths.session_dir(id);
+    let header = session::read_header(&dir)?;
+    Ok(crate::goal::restore(
+        header.goal_before,
+        &load_current_entries(&dir)?,
     ))
 }
 
@@ -2613,6 +2798,73 @@ mod runtime_tests {
     }
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn goal_continues_after_final_text_and_completion_stops_further_turns() {
+        let tool = format!(
+            "data: {}\n\ndata: [DONE]\n\n",
+            json!({"choices":[{"delta":{"tool_calls":[{"index":0,"id":"wait","function":{"name":"bash","arguments":"{\"command\":\"sleep 0.2\"}"}}]},"finish_reason":"tool_calls"}]})
+        );
+        let text = |value: &str| {
+            format!(
+                "data: {}\n\ndata: [DONE]\n\n",
+                json!({"choices":[{"delta":{"content":value},"finish_reason":"stop"}]})
+            )
+        };
+        let (url, requests, server) = sequence_server(vec![
+            (200, text("First milestone")),
+            (200, tool),
+            (200, text("Goal verified")),
+        ])
+        .await;
+        let root = tempfile::tempdir().unwrap();
+        let paths = fixture_paths(root.path(), &url);
+        let (id, task) = worker(&paths, root.path()).await;
+        let mut events = connect(&paths, &id, ControlRequest::Subscribe).await;
+        next(&mut events).await;
+        let mut reply = connect(
+            &paths,
+            &id,
+            ControlRequest::GoalMessage {
+                content: "Complete both milestones".into(),
+                attachments: vec![],
+            },
+        )
+        .await;
+        assert_eq!(next(&mut reply).await["ok"], true);
+        until(&mut events, |event| event["type"] == "tool_start").await;
+        assert_eq!(requests.lock().await.len(), 2);
+        let mut reply = connect(
+            &paths,
+            &id,
+            ControlRequest::Goal {
+                action: crate::goal::Action::Complete {
+                    summary: Some("Both milestones verified".into()),
+                    goal_id: None,
+                },
+            },
+        )
+        .await;
+        assert_eq!(next(&mut reply).await["data"]["status"], "complete");
+        tokio::time::timeout(Duration::from_secs(5), task)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert_eq!(requests.lock().await.len(), 3);
+        let restored = saved_goal(&paths, &id).unwrap().unwrap();
+        assert_eq!(restored.status, "complete");
+        assert_eq!(
+            restored.summary.as_deref(),
+            Some("Both milestones verified")
+        );
+        assert!(
+            requests.lock().await[1]
+                .to_string()
+                .contains("Complete both milestones")
+        );
+        server.abort();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn queue_edit_holds_fifo_head_and_preserves_attachments_until_saved() {
         exercise_held_queue_edit(false).await;
     }
@@ -3036,6 +3288,8 @@ mod runtime_tests {
         let mut events = connect(&paths, &id, ControlRequest::Subscribe).await;
         next(&mut events).await;
         prompt(&paths, &id).await;
+        let delta = until(&mut events, |event| event["type"] == "compaction_delta").await;
+        assert_eq!(delta["delta"], "checkpoint");
         let compacted = until(&mut events, |event| event["type"] == "compaction_end").await;
         assert_eq!(compacted["aborted"], false);
         assert_eq!(
@@ -3049,6 +3303,12 @@ mod runtime_tests {
         let header = session::read_header(&dir).unwrap();
         let entries = load_current_entries(&dir).unwrap();
         assert_eq!(session::current_segment(&dir).unwrap().0, 2);
+        assert_eq!(
+            saved_usage(&paths, &id, &AppConfig::load(&paths).unwrap())
+                .unwrap()
+                .compactions,
+            1
+        );
         let mut total = agent::session_usage_totals(&entries);
         total.merge(header.usage_before);
         assert_eq!(total.input, 3470);
@@ -3077,6 +3337,12 @@ mod runtime_tests {
         stop(&paths, &id, task).await;
         assert_eq!(fs::read(dir.join("000001.jsonl")).unwrap(), old);
         assert_eq!(session::current_segment(&dir).unwrap().0, 2);
+        assert_eq!(
+            saved_usage(&paths, &id, &AppConfig::load(&paths).unwrap())
+                .unwrap()
+                .compactions,
+            1
+        );
         let requests = requests.lock().await;
         assert_eq!(requests.len(), 3);
         assert_eq!(
@@ -3214,6 +3480,32 @@ mod runtime_tests {
         assert!(value.to_string().contains("early-output"));
         assert!(value.to_string().contains("aborted"));
         stop(&paths, &sibling, sibling_task).await;
+        server.abort();
+    }
+
+    #[tokio::test]
+    async fn deletion_waits_for_worker_cancellation_and_keeps_project_files() {
+        let (url, _requests, server)=sequence_server(vec![(200, format!("data: {}\n\ndata: [DONE]\n\n",json!({"choices":[{"delta":{"tool_calls":[{"index":0,"id":"wait","function":{"name":"bash","arguments":"{\"command\":\"sleep 5\"}"}}]},"finish_reason":"tool_calls"}]})))]).await;
+        let root = tempfile::tempdir().unwrap();
+        let paths = fixture_paths(root.path(), &url);
+        fs::write(root.path().join("keep.txt"), "working file").unwrap();
+        let (id, task) = worker(&paths, root.path()).await;
+        let mut events = connect(&paths, &id, ControlRequest::Subscribe).await;
+        next(&mut events).await;
+        prompt(&paths, &id).await;
+        until(&mut events, |event| event["type"] == "tool_start").await;
+        let delete_paths = paths.clone();
+        let delete_id = id.clone();
+        tokio::task::spawn_blocking(move || session::delete(&delete_paths, &delete_id))
+            .await
+            .unwrap()
+            .unwrap();
+        task.await.unwrap().unwrap();
+        assert!(!paths.session_dir(&id).exists());
+        assert_eq!(
+            fs::read_to_string(root.path().join("keep.txt")).unwrap(),
+            "working file"
+        );
         server.abort();
     }
 

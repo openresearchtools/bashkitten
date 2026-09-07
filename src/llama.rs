@@ -2,14 +2,14 @@
 //! distinct from the OpenAI completions inference endpoint.
 use crate::config::{GpuLayers, LlamaConfig};
 use crate::tools::CancellationToken;
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Installation {
@@ -62,6 +62,24 @@ pub fn validate_local_settings(config: &LlamaConfig) -> Result<()> {
         bail!("Router port must be between 1 and 65535");
     }
     launch_environment(config)?;
+    for device in &config.gpu_devices {
+        if device.is_empty()
+            || device.len() > 128
+            || device
+                .chars()
+                .any(|c| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | ':' | '.' | '/')))
+        {
+            bail!("Invalid llama.cpp device selector");
+        }
+    }
+    if config.fit_target_mib == 0 {
+        bail!("Fit target margin must be greater than zero");
+    }
+    if config.fit_context == 0
+        || (config.context_size > 0 && config.fit_context > config.context_size)
+    {
+        bail!("Fit minimum context must be positive and no larger than the router context size");
+    }
     for path in &config.model_search_dirs {
         if !path.is_absolute()
             || path
@@ -482,6 +500,146 @@ fn installed_package(output: &str) -> Option<Installation> {
     None
 }
 
+/// A device advertised by the installed llama.cpp build. IDs are the exact
+/// values accepted by `--device`; the display fields are parsed only for a
+/// friendly settings picker.
+#[derive(Clone, Debug, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct LlamaDevice {
+    pub id: String,
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub total_memory_mib: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub free_memory_mib: Option<u64>,
+}
+
+const DEVICE_OUTPUT_LIMIT: usize = 64 * 1024;
+const DEVICE_LINE_LIMIT: usize = 512;
+const DEVICE_COUNT_LIMIT: usize = 64;
+const DEVICE_PROBE_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// Parse `llama-server --list-devices` output. The format is intentionally
+/// line based because it is a human-facing diagnostic, while the selector ID
+/// before the first colon is stable and is what `--device` consumes.
+pub fn parse_devices(output: &str) -> Vec<LlamaDevice> {
+    output
+        .lines()
+        .take(DEVICE_COUNT_LIMIT * 2)
+        .filter_map(|line| {
+            if line.len() > DEVICE_LINE_LIMIT {
+                return None;
+            }
+            let line = line.trim();
+            let (id, details) = line.split_once(':')?;
+            let id = id.trim();
+            if id.is_empty()
+                || id.len() > 128
+                || !id
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/'))
+                || (!id.chars().any(|c| c.is_ascii_digit()) && id != "CPU")
+            {
+                return None;
+            }
+            let (name, memory) = details
+                .rsplit_once('(')
+                .map_or((details.trim(), ""), |(name, memory)| {
+                    (name.trim(), memory.trim_end_matches(')').trim())
+                });
+            if name.is_empty() {
+                return None;
+            }
+            let mut numbers = memory.split(',').filter_map(|part| {
+                let mut words = part.split_whitespace();
+                let value = words.next()?.parse::<u64>().ok()?;
+                (words.next()? == "MiB").then_some(value)
+            });
+            Some(LlamaDevice {
+                id: id.into(),
+                name: name.into(),
+                total_memory_mib: numbers.next(),
+                free_memory_mib: numbers.next(),
+            })
+        })
+        .take(DEVICE_COUNT_LIMIT)
+        .collect()
+}
+
+/// Discover devices through the installed binary with the configured CUDA /
+/// Vulkan visibility environment. No hardware probing or network request is
+/// performed by BashKitten itself.
+pub fn list_devices(config: &LlamaConfig) -> Result<Vec<LlamaDevice>> {
+    validate_local_settings(config)?;
+    let mut child = std::process::Command::new("/usr/bin/llama-server")
+        .arg("--list-devices")
+        .envs(launch_environment(config)?)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .context("run llama-server --list-devices")?;
+    let deadline = Instant::now() + DEVICE_PROBE_TIMEOUT;
+    loop {
+        if child.try_wait()?.is_some() {
+            break;
+        }
+        if Instant::now() >= deadline {
+            let _ = child.kill();
+            let _ = child.wait();
+            bail!(
+                "llama-server --list-devices exceeded {} seconds",
+                DEVICE_PROBE_TIMEOUT.as_secs()
+            );
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let output = child
+        .wait_with_output()
+        .context("read llama-server --list-devices")?;
+    let mut bytes = output.stdout;
+    bytes.extend_from_slice(&output.stderr);
+    if bytes.len() > DEVICE_OUTPUT_LIMIT {
+        bail!(
+            "llama-server device listing exceeded {} bytes",
+            DEVICE_OUTPUT_LIMIT
+        );
+    }
+    let text = String::from_utf8_lossy(&bytes);
+    if !output.status.success() {
+        bail!("llama-server --list-devices failed: {}", text.trim());
+    }
+    Ok(parse_devices(&text))
+}
+
+fn server_help() -> String {
+    let output = std::process::Command::new("/usr/bin/llama-server")
+        .arg("--help")
+        .output();
+    output
+        .map(|output| {
+            let mut bytes = output.stdout;
+            bytes.extend_from_slice(&output.stderr);
+            String::from_utf8_lossy(&bytes).into_owned()
+        })
+        .unwrap_or_default()
+}
+
+pub fn fit_supported() -> bool {
+    server_help().contains("--fit")
+}
+
+pub fn predict_supported() -> bool {
+    server_help().contains("--n-predict") || server_help().contains("--predict")
+}
+
+/// llama.cpp's native fitter rejects any explicit `n_gpu_layers`, including
+/// the otherwise convenient `-ngl 999` Auto setting. Leave that parameter
+/// unset only for the Auto/all + fit combination; explicit CPU/count choices
+/// are intentionally represented with fit disabled.
+fn fit_active(config: &LlamaConfig) -> bool {
+    config.fit && matches!(config.gpu_layers, GpuLayers::Auto)
+}
+
 /// Debian launcher difference: router only, owned by its existing systemd unit.
 /// Never return secret-bearing arguments to the browser.
 pub fn launch_arguments(
@@ -523,14 +681,10 @@ pub fn launch_arguments(
         "--models-dir".into(),
         config.models_dir.to_string_lossy().into_owned(),
         "--jinja".into(),
-        "--ctx-size".into(),
-        config.context_size.to_string(),
         "--batch-size".into(),
         config.batch_size.to_string(),
         "--parallel".into(),
         config.parallel_slots.to_string(),
-        "-ngl".into(),
-        layers.to_string(),
         // Prevent the router's default maximum from silently evicting other models.
         "--models-max".into(),
         "0".into(),
@@ -542,6 +696,36 @@ pub fn launch_arguments(
         .into(),
         if config.mmap { "--mmap" } else { "--no-mmap" }.into(),
     ];
+    if config.context_size > 0 {
+        // llama.cpp documents zero as "loaded from model". Leaving this
+        // unset is required for native model context and --fit adjustment.
+        let jinja = args.iter().position(|arg| arg == "--jinja").unwrap() + 1;
+        args.splice(
+            jinja..jinja,
+            ["--ctx-size".into(), config.context_size.to_string()],
+        );
+    }
+    if !fit_supported() || !fit_active(config) {
+        args.extend(["-ngl".into(), layers.to_string()]);
+    }
+    if !config.gpu_devices.is_empty() {
+        args.extend(["--device".into(), config.gpu_devices.join(",")]);
+    }
+    if fit_supported() {
+        let active = fit_active(config);
+        args.extend(["--fit".into(), if active { "on" } else { "off" }.into()]);
+        if active {
+            args.extend([
+                "--fit-target".into(),
+                config.fit_target_mib.to_string(),
+                "--fit-ctx".into(),
+                config.fit_context.to_string(),
+            ]);
+        }
+    }
+    if config.max_new_tokens > 0 && predict_supported() {
+        args.extend(["--n-predict".into(), config.max_new_tokens.to_string()]);
+    }
     if config.cpu_threads > 0 {
         args.extend(["--threads".into(), config.cpu_threads.to_string()]);
     }
@@ -623,10 +807,7 @@ pub fn restore_extra_arguments(args: &mut [String], stored: &[String]) -> Result
 }
 
 pub fn flash_attention_supported() -> bool {
-    std::process::Command::new("/usr/bin/llama-server")
-        .arg("--help")
-        .output()
-        .is_ok_and(|output| String::from_utf8_lossy(&output.stdout).contains("--flash-attn"))
+    server_help().contains("--flash-attn")
 }
 
 /// Native llama.cpp INI, with its documented global < model < CLI precedence.
@@ -640,9 +821,37 @@ pub fn preset_contents(config: &LlamaConfig, flash_supported: bool) -> Result<St
         GpuLayers::Count(n) => n,
     };
     let mut text = format!(
-        "version = 1\n\n[*]\njinja = true\nctx-size = {}\nngl = {layers}\nbatch-size = {}\nparallel = {}\nmmap = {}\nmlock = {}\n",
-        config.context_size, config.batch_size, config.parallel_slots, config.mmap, config.mlock
+        "version = 1\n\n[*]\njinja = true\nbatch-size = {}\nparallel = {}\nmmap = {}\nmlock = {}\n",
+        config.batch_size, config.parallel_slots, config.mmap, config.mlock
     );
+    if !fit_supported() || !fit_active(config) {
+        text.insert_str(
+            "version = 1\n\n[*]\njinja = true\n".len(),
+            &format!("ngl = {layers}\n"),
+        );
+    }
+    if config.context_size > 0 {
+        text.insert_str(
+            "version = 1\n\n[*]\njinja = true\n".len(),
+            &format!("ctx-size = {}\n", config.context_size),
+        );
+    }
+    if !config.gpu_devices.is_empty() {
+        text.push_str(&format!("device = {}\n", config.gpu_devices.join(",")));
+    }
+    if fit_supported() {
+        let active = fit_active(config);
+        text.push_str(&format!("fit = {}\n", if active { "on" } else { "off" },));
+        if active {
+            text.push_str(&format!(
+                "fit-target = {}\nfit-ctx = {}\n",
+                config.fit_target_mib, config.fit_context
+            ));
+        }
+    }
+    if config.max_new_tokens > 0 && predict_supported() {
+        text.push_str(&format!("n-predict = {}\n", config.max_new_tokens));
+    }
     if config.cpu_threads > 0 {
         text.push_str(&format!("threads = {}\n", config.cpu_threads));
     }
@@ -677,6 +886,32 @@ pub fn preset_contents(config: &LlamaConfig, flash_supported: bool) -> Result<St
             "\n[{}]\nctx-size = {}\n",
             model.id, model.context_window
         ));
+        if let Some(value) = model.llama_max_new_tokens
+            && value > 0
+            && predict_supported()
+        {
+            text.push_str(&format!("n-predict = {value}\n"));
+        }
+        if fit_supported() {
+            if let Some(value) = model.llama_fit {
+                text.push_str(&format!(
+                    "fit = {}\n",
+                    if value && fit_active(config) {
+                        "on"
+                    } else {
+                        "off"
+                    }
+                ));
+            }
+            if fit_active(config) {
+                if let Some(value) = model.llama_fit_target_mib {
+                    text.push_str(&format!("fit-target = {value}\n"));
+                }
+                if let Some(value) = model.llama_fit_context {
+                    text.push_str(&format!("fit-ctx = {value}\n"));
+                }
+            }
+        }
         if !model.llama_model_path.as_os_str().is_empty() {
             text.push_str(&format!("model = {}\n", model.llama_model_path.display()));
         }
@@ -705,7 +940,17 @@ pub fn managed_launch_arguments(
         let key = args[index].as_str();
         if matches!(
             key,
-            "--ctx-size" | "-ngl" | "--batch-size" | "--parallel" | "--threads" | "--flash-attn"
+            "--ctx-size"
+                | "-ngl"
+                | "--batch-size"
+                | "--parallel"
+                | "--threads"
+                | "--flash-attn"
+                | "--device"
+                | "--fit"
+                | "--fit-target"
+                | "--fit-ctx"
+                | "--n-predict"
         ) {
             index += 2;
         } else if matches!(key, "--jinja" | "--mmap" | "--no-mmap" | "--mlock") {
@@ -1472,5 +1717,81 @@ mod tests {
         assert!(args.contains(&"--no-models-autoload".into()));
         config.extra_arguments = vec!["--model=x.gguf".into()];
         assert!(launch_arguments(&config, true, true).is_err());
+    }
+    #[test]
+    fn device_listing_parser_keeps_friendly_metadata_and_ignores_headers() {
+        let devices = parse_devices(
+            "Available devices:\n  CUDA0: NVIDIA GeForce RTX 5090 (23983 MiB, 23463 MiB free)\n  Vulkan1: Intel Arc (8192 MiB, 4000 MiB free)\n  malformed: no memory\n",
+        );
+        assert_eq!(devices.len(), 2);
+        assert_eq!(devices[0].id, "CUDA0");
+        assert_eq!(devices[0].name, "NVIDIA GeForce RTX 5090");
+        assert_eq!(devices[0].total_memory_mib, Some(23983));
+        assert_eq!(devices[0].free_memory_mib, Some(23463));
+        assert_eq!(devices[1].id, "Vulkan1");
+    }
+    #[test]
+    fn selected_devices_and_installed_fit_controls_are_emitted() {
+        let config = LlamaConfig {
+            gpu_devices: vec!["CUDA0".into(), "Vulkan1".into()],
+            fit: true,
+            fit_target_mib: 512,
+            fit_context: 2048,
+            max_new_tokens: 1024,
+            ..Default::default()
+        };
+        let args = launch_arguments(&config, true, false).unwrap();
+        assert!(args.windows(2).any(|v| v == ["--device", "CUDA0,Vulkan1"]));
+        if fit_supported() {
+            assert!(args.windows(2).any(|v| v == ["--fit", "on"]));
+            assert!(args.windows(2).any(|v| v == ["--fit-target", "512"]));
+            assert!(args.windows(2).any(|v| v == ["--fit-ctx", "2048"]));
+        }
+        if predict_supported() {
+            assert!(args.windows(2).any(|v| v == ["--n-predict", "1024"]));
+        }
+    }
+    #[test]
+    fn zero_router_context_leaves_ctx_size_unset_for_native_fit() {
+        let config = LlamaConfig {
+            context_size: 0,
+            fit_context: 4096,
+            ..Default::default()
+        };
+        let args = launch_arguments(&config, true, false).unwrap();
+        assert!(!args.iter().any(|arg| arg == "--ctx-size"));
+        if fit_supported() {
+            assert!(args.windows(2).any(|v| v == ["--fit", "on"]));
+            assert!(!args.iter().any(|arg| arg == "-ngl"));
+        }
+        let ini = preset_contents(&config, false).unwrap();
+        assert!(!ini.contains("ctx-size = 0"));
+        if fit_supported() {
+            assert!(ini.contains("fit = on\n"));
+            assert!(!ini.contains("ngl = 999\n"));
+        }
+    }
+    #[test]
+    fn preset_can_override_fit_context_and_max_new_tokens() {
+        let config = LlamaConfig {
+            models: vec![crate::config::ModelPreset {
+                id: "fit-model".into(),
+                context_window: 8192,
+                llama_max_new_tokens: Some(1024),
+                llama_fit: Some(false),
+                llama_fit_target_mib: Some(256),
+                llama_fit_context: Some(4096),
+                ..Default::default()
+            }],
+            ..Default::default()
+        };
+        let ini = preset_contents(&config, false).unwrap();
+        assert!(ini.contains("[fit-model]\nctx-size = 8192\n"));
+        if fit_supported() {
+            assert!(ini.contains("fit = off\nfit-target = 256\nfit-ctx = 4096\n"));
+        }
+        if predict_supported() {
+            assert!(ini.contains("n-predict = 1024\n"));
+        }
     }
 }

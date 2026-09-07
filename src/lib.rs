@@ -36,3 +36,7 @@ pub mod streaming_json;
 pub mod provider_http;
 
 pub mod codex_websocket;
+
+pub mod download;
+
+pub mod goal;

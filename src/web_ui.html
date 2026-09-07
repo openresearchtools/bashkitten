@@ -165,8 +165,15 @@
     }
     .session:hover { background: var(--surface); }
     .session.active { background: var(--surface-2); }
+    .session { padding-right: 46px; }
+    .session-more { position:absolute; right:5px; top:3px; width:26px; height:26px; border:0; background:transparent; color:var(--muted); border-radius:5px; }
+    .session-more:hover, .session-more:focus-visible { background:var(--surface-2); color:var(--text); }
+    #sessionActions { position:fixed; z-index:20; min-width:150px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:7px; box-shadow:0 6px 20px var(--shadow); }
+    #sessionActions button { display:block; width:100%; text-align:left; padding:8px 10px; border:0; background:transparent; }
+    #sessionActions button:hover, #sessionActions button:focus-visible { background:var(--surface-2); }
+    .dialog-actions .delete-confirm { background:var(--danger); color:#fff; border:0; }
     .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 430; text-overflow: ellipsis; white-space: nowrap; }
-    .running-dot { position: absolute; top: 12px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+    .running-dot { position: absolute; top: 12px; right: 35px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
     #workspace { position: relative; display: grid; min-width: 0; min-height: 0; height: 100%; overflow: hidden; grid-template-rows: 58px minmax(0, 1fr) auto; }
     .topbar { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line-soft); }
     .chat-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
@@ -354,6 +361,14 @@
     #model { width: 100px; } #thinking { width: 82px; }
     .toolbar-spacer { flex: 1; }
     #attachBtn { width: 27px; height: 27px; }
+    #composerActions { position:absolute; z-index:12; bottom:43px; left:8px; min-width:180px; padding:5px; background:var(--surface); border:1px solid var(--line); box-shadow:0 4px 18px #0002; }
+    #composerActions button { display:block; width:100%; text-align:left; border:0; padding:9px 12px; background:transparent; color:var(--text); }
+    #composerActions button:hover, #composerActions button:focus-visible { background:var(--hover); }
+    .compaction-output { max-height:330px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; font-size:12px; margin:7px 0; }
+    #compactionStatus { padding:10px 12px; border-top:1px solid var(--line); color:var(--text); font-size:13px; }
+    #goalStatus { max-height:4.5em; overflow:auto; padding:3px 8px; }
+    #goalChip { display:inline-flex; align-items:center; gap:8px; margin:0 10px 3px; padding:3px 7px; border:1px solid var(--line); color:var(--text); font-size:12px; }
+    #goalChip button { padding:0; width:18px; height:18px; border:0; background:transparent; color:var(--muted); }
     #sendBtn { display: grid; flex: 0 0 30px; width: 30px; height: 30px; padding: 0; place-items: center; border-radius: 6px; background: var(--text); color: var(--bg); font-size: 13px; line-height: 1; }
     #sendBtn:hover { background: var(--muted); }
     #sendBtn[data-mode="pause"] { font-size: 12px; letter-spacing: -2px; }
@@ -525,7 +540,11 @@
               <label class="check wide"><input id="llamaEnabled" type="checkbox"> Enable managed router</label>
               <label class="wide">Models directory<span class="folder-field"><input id="llamaDirectory"><button id="llamaDirectoryBrowse" type="button">Browse…</button></span></label>
               <label>Router port<input id="llamaPort" type="number" min="1" max="65535"></label>
-              <label>Context size<input id="llamaContext" type="number" min="0"></label>
+              <label>Context size<input id="llamaContext" type="number" min="0"><small class="meta">0 uses the loaded model's native context and lets llama.cpp fit it.</small></label>
+              <label>Maximum new tokens<input id="llamaMaxNew" type="number" min="0"><small class="meta">0 leaves llama.cpp's default (unlimited).</small></label>
+              <label class="check"><input id="llamaFit" type="checkbox"> Fit model to device memory<small class="meta">Uses native fitting with Auto layers; explicit CPU/count layers disable fitting.</small></label>
+              <label>Fit target margin (MiB)<input id="llamaFitTarget" type="number" min="1"></label>
+              <label>Fit minimum context<input id="llamaFitContext" type="number" min="1"></label>
               <label>GPU layers<select id="llamaGpu"><option value="auto">Auto / all available layers</option><option value="cpu">CPU only</option><option value="count">Explicit count</option></select></label>
               <label>Layer count<input id="llamaLayers" type="number" min="0"></label>
               <label>CPU threads (0 = default)<input id="llamaThreads" type="number" min="0"></label>
@@ -537,13 +556,18 @@
               <label class="check"><input id="llamaMmap" type="checkbox"> Memory map</label>
               <label class="check"><input id="llamaMlock" type="checkbox"> Memory lock</label>
               <label class="check wide"><input id="llamaAutoload" type="checkbox"> Allow router model autoload</label>
-              <fieldset class="wide"><legend>GPU visibility</legend>
+              <fieldset class="wide"><legend>Available devices</legend>
+                <p id="llamaDevicesNotice" class="meta">Refresh to list devices from the installed llama.cpp build.</p>
+                <div id="llamaDevices"></div>
+                <button id="llamaRefreshDevices" type="button">Refresh devices</button>
+              </fieldset>
+              <details class="wide"><summary>Advanced GPU visibility</summary>
                 <p class="meta">Choose device indices visible to llama.cpp, such as 0 or 0,1. CUDA also accepts GPU UUIDs. Unchecked uses the service environment; an enabled empty value hides every device.</p>
                 <label class="check"><input id="llamaCudaOverride" type="checkbox"> Set CUDA_VISIBLE_DEVICES</label>
                 <label>Visible CUDA devices<input id="llamaCudaDevices" placeholder="0,1" spellcheck="false" disabled></label>
                 <label class="check"><input id="llamaVulkanOverride" type="checkbox"> Set GGML_VK_VISIBLE_DEVICES</label>
                 <label>Visible Vulkan devices<input id="llamaVulkanDevices" placeholder="0,1" spellcheck="false" disabled></label>
-              </fieldset>
+              </details>
               <label class="wide">Extra arguments (one argument per line)<textarea id="llamaExtra" rows="3" spellcheck="false"></textarea></label>
             </div>
             <details><summary>Generated launch configuration</summary><pre id="llamaEnvironment" class="tool-output"></pre><pre id="llamaArgs" class="tool-output"></pre><pre id="llamaPresetIni" class="tool-output"></pre></details>
@@ -567,8 +591,12 @@
               <div class="settings-grid">
                 <label class="wide">Model ID<input id="llamaPresetId" readonly></label>
                 <label>Display name<input id="llamaPresetName"></label>
-                <label>Context window<input id="llamaPresetContext" type="number" min="1"></label>
-                <label>Maximum output tokens<input id="llamaPresetMax" type="number" min="1"></label>
+                <label>Context window<input id="llamaPresetContext" type="number" min="1"><small class="meta">The router's reported loaded context is used after fitting.</small></label>
+                <label>Maximum output tokens<input id="llamaPresetMax" type="number" min="1"><small class="meta">Registry ceiling; fit can reduce the effective ceiling.</small></label>
+                <label>Maximum new tokens<input id="llamaPresetNew" type="number" min="0" placeholder="Use maximum output tokens"></label>
+                <label>Fit minimum context<input id="llamaPresetFitContext" type="number" min="1" placeholder="Inherit router setting"></label>
+                <label>Fit target margin (MiB)<input id="llamaPresetFitTarget" type="number" min="1" placeholder="Inherit router setting"></label>
+                <label>Fit override<select id="llamaPresetFit"><option value="">Inherit router setting</option><option value="on">On</option><option value="off">Off</option></select></label>
                 <label class="check"><input id="llamaPresetImage" type="checkbox"> Image input</label>
                 <label class="check"><input id="llamaPresetReasoning" type="checkbox"> Reasoning supported</label>
                 <label>Thinking levels (comma separated)<input id="llamaPresetLevels" value="off"></label>
@@ -579,11 +607,24 @@
               <label>Advanced model overrides (llama.cpp INI entries)<textarea id="llamaPresetOptions" rows="4" spellcheck="false" placeholder="ngl = 32"></textarea></label>
               <button id="llamaSavePreset" type="button">Save model preset</button>
             </details>
-            <details class="settings-section"><summary>Download from Hugging Face</summary>
+            <details class="settings-section" id="hfDownloadSection"><summary>Download from Hugging Face</summary>
+              <label>Download folder<span class="folder-field"><input id="hfDownloadFolder"><button id="hfDownloadBrowse" type="button">Browse…</button></span></label>
+              <label>Hugging Face access token<input id="hfToken" type="password" autocomplete="new-password" placeholder="Optional token for gated or private repositories"></label>
+              <label class="check"><input id="hfRememberToken" type="checkbox"> Save token on this computer</label>
+              <div class="subscription-actions"><button id="hfSaveSettings" type="button">Save download settings</button><button id="hfForgetToken" type="button">Remove saved token</button></div>
+              <p id="hfTokenStatus" class="meta"></p>
               <label>Search or repository<input id="llamaHfQuery" placeholder="organization/model-GGUF"></label>
               <div class="subscription-actions"><button id="llamaHfSearch" type="button">Search</button><button id="llamaHfDetails" type="button">Open repository</button></div>
               <div id="llamaHfResults"></div>
-              <div id="llamaHfSelection" class="hidden"><p id="llamaHfRepository" class="meta"></p><p id="llamaHfGated" class="meta"></p><label>Quantization<select id="llamaHfQuantization"></select></label><button id="llamaHfDownload" type="button">Download</button></div>
+              <div id="llamaHfSelection" class="hidden">
+                <p id="llamaHfRepository" class="meta"></p><p id="llamaHfGated" class="meta"></p>
+                <label>File filter<input id="hfFileFilter" type="search" placeholder="GGUF name, quantization or folder"></label>
+                <div class="subscription-actions"><button id="hfSelectVisible" type="button">Select visible files</button><button id="hfClearFiles" type="button">Clear selection</button></div>
+                <div id="hfFileList" style="max-height:330px;overflow:auto"></div><p id="hfFileSummary" class="meta"></p>
+                <label>Concurrent connections<input id="hfConnections" type="number" min="1" max="32" value="8"></label>
+                <button id="llamaHfDownload" type="button">Download selected files</button>
+              </div>
+              <p id="hfNotice" class="meta" role="status"></p><div id="hfJobs"></div>
             </details>
           </section>
           <div id="settingsSaveRow" class="dialog-actions"><button class="primary">Save app settings</button></div>
@@ -592,13 +633,21 @@
       </section>
       <div id="composerWrap">
         <form id="composer">
+          <div id="compactionStatus" class="hidden" role="status" aria-live="polite">Compacting context… You can keep typing; Enter queues your message.</div>
+          <div id="goalStatus" class="meta hidden" role="status"></div>
           <div id="queuePanel" class="hidden" aria-label="Queued messages"></div>
           <div class="compose-box">
             <div id="attachmentTray" class="hidden"></div>
             <textarea id="prompt" rows="2" placeholder="Message BashKitten…" aria-label="Message BashKitten"></textarea>
+            <div id="goalChip" class="hidden"><span>Goal</span><button id="removeGoalChip" type="button" aria-label="Remove goal from message">×</button></div>
             <div class="composer-toolbar">
               <input id="files" class="hidden" type="file" multiple>
-              <button id="attachBtn" class="icon-button" type="button" title="Attach files" aria-label="Attach files">＋</button>
+              <button id="attachBtn" class="icon-button" type="button" title="Add files or actions" aria-label="Add files or actions" aria-haspopup="menu" aria-expanded="false" aria-controls="composerActions">＋</button>
+              <div id="composerActions" class="hidden" role="menu" aria-label="Composer actions">
+                <button id="menuAttach" type="button" role="menuitem">Attach files</button>
+                <button id="menuGoal" type="button" role="menuitem">Goal</button>
+                <button id="menuCompact" type="button" role="menuitem">Compact context</button>
+              </div>
               <select id="model" title="Model"></select>
               <select id="thinking" title="Thinking level"></select>
               <span class="toolbar-spacer"></span>
@@ -639,6 +688,29 @@
     </form>
   </dialog>
 
+  <div id="sessionActions" class="hidden" role="menu" aria-label="Chat actions">
+    <button id="renameChat" type="button" role="menuitem">Rename chat</button>
+    <button id="deleteChat" type="button" role="menuitem">Delete chat</button>
+  </div>
+  <dialog id="renameChatDialog" aria-labelledby="renameChatHeading">
+    <form id="renameChatForm" class="dialog-body">
+      <h2 id="renameChatHeading">Rename chat</h2>
+      <label>Chat name<input id="chatName" required autocomplete="off"></label>
+      <p id="renameChatError" class="meta" role="alert"></p>
+      <div class="dialog-actions"><button type="button" data-close>Cancel</button><button id="saveChatName" class="primary">Save</button></div>
+    </form>
+  </dialog>
+  <dialog id="deleteChatDialog" aria-labelledby="deleteChatHeading">
+    <form id="deleteChatForm" class="dialog-body">
+      <h2 id="deleteChatHeading">Delete chat?</h2>
+      <p id="deleteChatName"></p>
+      <p>This permanently deletes this chat’s history and stored attachments. Any running work in this chat will stop.</p>
+      <p><strong>Your working folder and project files will be kept.</strong></p>
+      <p id="deleteChatError" class="meta" role="alert"></p>
+      <div class="dialog-actions"><button id="cancelChatDelete" type="button" data-close autofocus>Cancel</button><button id="confirmChatDelete" class="primary delete-confirm">Delete chat</button></div>
+    </form>
+  </dialog>
+
   <script>
     let csrf = '';
     let hasUser = false;
@@ -648,6 +720,8 @@
     let config = null;
     let pendingCwd = '';
     let pendingFiles = [];
+    let goalDraft = false;
+    function renderGoalChip(){ $('#goalChip').classList.toggle('hidden',!goalDraft); setRunButton(queueState.busy || Boolean(current?.running)); }
     let pendingRetainedAttachments = [];
     let folderView = {path: '', parent: null}, folderSelection = null, folderGeneration = 0;
     let activeSettingsTab = 'app';
@@ -659,6 +733,7 @@
     let editingQueueSnapshot = null;
     let renderedTurn = null;
     let displayedUsage = null;
+    let isCompacting = false;
     let viewerZoom = 1;
     let historyRenderTarget = null;
     let oldestSegment = 0;
@@ -1156,13 +1231,21 @@
 
     function resetUsage() {
       displayedUsage = null;
+      renderGoal(null);
+      setCompacting(false);
       $('#usage').textContent = '';
     }
 
     function renderUsage(value = displayedUsage) {
       displayedUsage = value;
-      $('#usage').textContent = value?.text || '';
+      const count=value?.compactions ?? Math.max(0,(current?.current_segment||1)-1);
+      $('#usage').textContent = value ? (value.text+' · '+count+(count===1?' compaction':' compactions')+(isCompacting?' · Compacting…':'')) : '';
     }
+
+    function liveCompaction(){let trace=$('#liveCompaction');if(!trace){trace=document.createElement('details');trace.id='liveCompaction';trace.className='turn-work';trace.open=true;const summary=document.createElement('summary');summary.textContent='Compacting context…';const body=document.createElement('div');body.className='turn-work-body';trace.append(summary,body);$('#chatInner').append(trace);}return trace;}
+    function compactionStream(event){const trace=liveCompaction(),body=trace.querySelector('.turn-work-body');let output=[...body.querySelectorAll('pre')].find(node=>node.dataset.request===event.id);if(!output){const label=document.createElement('div');label.className='meta';label.textContent=event.label || 'Summary';output=document.createElement('pre');output.className='compaction-output';output.tabIndex=0;output.dataset.request=event.id;body.append(label,output);}if(event.delta){const follow=output.scrollTop+output.clientHeight>=output.scrollHeight-40;output.textContent+=event.delta;if(follow)output.scrollTop=output.scrollHeight;}trace.open=true;}
+
+    function setCompacting(active){isCompacting=Boolean(active);$('#compactionStatus').classList.toggle('hidden',!isCompacting);renderUsage();}
 
     function formatTokens(value) {
       if (value < 1000) return String(value);
@@ -1232,9 +1315,10 @@
     function setRunButton(running) {
       const button = $('#sendBtn');
       const editing = Boolean(editingQueueId);
-      button.dataset.mode = editing ? 'edit' : (running ? 'pause' : 'play');
-      button.textContent = running && !editing ? 'Ⅱ' : '▶';
-      button.title = editing ? (queuedItems().find(item => item.id === editingQueueId)?.kind === 'steer' ? 'Send edited steering message' : 'Save queued message') : (running ? 'Stop current run' : 'Send');
+      const command = !editing && (goalDraft || (!pendingFiles.length && !pendingRetainedAttachments.length && /^\/(compact|goal)(?:\s|$)/.test($('#prompt').value.trim())));
+      button.dataset.mode = editing ? 'edit' : command ? 'command' : (running ? 'pause' : 'play');
+      button.textContent = running && !editing && !command ? 'Ⅱ' : '▶';
+      button.title = editing ? (queuedItems().find(item => item.id === editingQueueId)?.kind === 'steer' ? 'Send edited steering message' : 'Save queued message') : goalDraft ? 'Send goal' : command ? 'Run command' : (running ? 'Stop current run' : 'Send');
       button.setAttribute('aria-label', button.title);
     }
 
@@ -1291,7 +1375,7 @@
         if (current) current.running = true;
         if (renderedTurn?.work) renderedTurn.work.open = true;
         setRunButton(true);
-        $('#composerHint').textContent = editingQueueId ? 'Editing queued message · Esc to cancel' : 'Agent is working';
+        $('#composerHint').textContent = editingQueueId ? 'Editing queued message · Esc to cancel' : isCompacting ? 'Compacting context… Enter queues your message.' : 'Agent is working';
 
       } else if (event.type === 'agent_settled') {
         finishRenderedTurn(Date.now());
@@ -1312,6 +1396,8 @@
         }, 120);
       } else if (event.type === 'usage') {
         renderUsage(event.data);
+      } else if (event.type === 'goal') {
+        renderGoal(event.data);
       } else if (event.type === 'queue_state') {
         renderQueueState(event.data);
       } else if (event.type === 'model_change') {
@@ -1326,14 +1412,21 @@
       } else if (event.type === 'cwd_error') {
         $('#composerHint').textContent = event.message;
       } else if (event.type === 'compaction_start') {
+        setCompacting(true);
+        liveCompaction();
         queueState.busy = true;
         setRunButton(true);
         $('#composerHint').textContent = 'Compacting context…';
+      } else if (event.type === 'compaction_stream_start' || event.type === 'compaction_delta') {
+        setCompacting(true);compactionStream(event);
       } else if (event.type === 'compaction_end') {
+        setCompacting(false);
+        if(event.aborted||event.errorMessage){const trace=$('#liveCompaction');if(trace){trace.querySelector('summary').textContent=event.errorMessage||'Compaction cancelled';trace.removeAttribute('id');}}
         $('#composerHint').textContent = event.errorMessage || (event.aborted ? 'Compaction cancelled' : 'Context compacted');
         refreshQueue().catch(() => {});
       } else if (event.type === 'segment_change') {
         current.current_segment = event.segment;
+        renderUsage();
         renderEntry(event.entry);
       } else if (event.type === 'auto_retry_start' || event.type === 'summarization_retry_scheduled') {
         $('#composerHint').textContent = `Retrying (${event.attempt}/${event.maxAttempts}): ${event.errorMessage}`;
@@ -1348,10 +1441,12 @@
       else if (entry.type === 'compaction') {
         if (entry.id && renderedEntries.has(entry.id)) return;
         if (entry.id) renderedEntries.add(entry.id);
-        const details = document.createElement('details');
-        details.className = 'turn-work';
-        details.innerHTML = `<summary><span>Compacted ${escapeHtml(formatTokens(entry.tokensBefore || 0))} tokens</span></summary><div class="turn-work-body"><div class="thinking-block"><pre>${escapeHtml(entry.summary || '')}</pre></div></div>`;
-        $('#chatInner').append(details);
+        const details=$('#liveCompaction') || document.createElement('details');
+        details.removeAttribute('id');details.className='turn-work';details.open=false;
+        const summary=document.createElement('summary');summary.textContent='Compacted '+formatTokens(entry.tokensBefore||0)+' tokens';
+        const body=document.createElement('div');body.className='turn-work-body';
+        const output=document.createElement('pre');output.className='compaction-output';output.tabIndex=0;output.textContent=entry.summary||'';body.append(output);details.replaceChildren(summary,body);
+        if(!details.isConnected)$('#chatInner').append(details);
       }
     }
 
@@ -1403,6 +1498,9 @@
       if (activeSettingsTab === 'llama') await loadLlamaStatus();
       if (activeSettingsTab === 'subscriptions') await refreshSubscription();
     }
+
+    let displayedGoal = null;
+    function renderGoal(goal){displayedGoal=goal;const row=$('#goalStatus');row.classList.toggle('hidden',!goal);row.textContent=goal?'Goal '+goal.status+': '+goal.objective+(goal.summary?' · '+goal.summary:''):'';}
 
     function queuedItems() {
       return [
@@ -1476,6 +1574,8 @@
       const value = await api(`/api/sessions/${current.id}/status`);
       if (view !== sessionView) return;
       renderQueueState(value.data);
+      renderGoal(value.data?.goal);
+      if(value.data?.compacting!==undefined || !value.data?.busy)setCompacting(value.data?.compacting);
       applyModelSelection(value.data?.modelSelection);
       if (value.data?.usage) renderUsage(value.data.usage);
     }
@@ -1621,6 +1721,8 @@
             dot.title = 'Running';
             item.append(dot);
           }
+          const more=document.createElement('button');more.type='button';more.className='session-more';more.textContent='⋯';more.setAttribute('aria-label','Actions for '+session.title);more.setAttribute('aria-haspopup','menu');
+          more.onclick=event=>{event.stopPropagation();showSessionActions(session,more);};item.append(more);
           item.onclick = () => openSession(session);
           group.append(item);
         }
@@ -1628,6 +1730,42 @@
       }
       root.scrollTop = scrollTop;
     }
+
+    let managedChat=null, chatActionPending=false;
+    function closeSessionActions(){ $('#sessionActions').classList.add('hidden'); }
+    function showSessionActions(session,button){
+      managedChat={...session};const menu=$('#sessionActions'),box=button.getBoundingClientRect();menu.classList.remove('hidden');
+      menu.style.left=Math.max(8,Math.min(box.left,window.innerWidth-menu.offsetWidth-8))+'px';
+      menu.style.top=Math.max(8,Math.min(box.bottom,window.innerHeight-menu.offsetHeight-8))+'px';
+      $('#renameChat').focus();
+    }
+    $('#renameChat').onclick=()=>{closeSessionActions();$('#chatName').value=managedChat.title;$('#renameChatError').textContent='';$('#renameChatDialog').showModal();$('#chatName').select();};
+    $('#deleteChat').onclick=()=>{closeSessionActions();$('#deleteChatName').textContent=managedChat.title;$('#deleteChatError').textContent='';$('#deleteChatDialog').showModal();$('#cancelChatDelete').focus();};
+    $('#renameChatForm').onsubmit=async event=>{
+      event.preventDefault();if(chatActionPending)return;chatActionPending=true;$('#saveChatName').disabled=true;
+      const target=managedChat;
+      try {const result=await api('/api/sessions/'+encodeURIComponent(target.id),{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({name:$('#chatName').value})});
+        for(const row of sessionCache)if(row.id===target.id)row.title=result.title;
+        if(current?.id===target.id)current.title=result.title;
+        renderSessionSidebar(sessionCache);$('#renameChatDialog').close();
+      }catch(error){$('#renameChatError').textContent=error.message;}
+      finally{chatActionPending=false;$('#saveChatName').disabled=false;}
+    };
+    $('#deleteChatForm').onsubmit=async event=>{
+      event.preventDefault();if(chatActionPending)return;chatActionPending=true;$('#confirmChatDelete').disabled=true;$('#cancelChatDelete').disabled=true;
+      const target=managedChat;
+      try {await api('/api/sessions/'+encodeURIComponent(target.id),{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({confirm:true})});
+        if(loadingSessions)await loadingSessions.catch(()=>{});
+        sessionCache=sessionCache.filter(row=>row.id!==target.id);
+        if(current?.id===target.id){editingQueueId=null;editingQueueToken=null;editingQueueSnapshot=null;await beginNewSession();}
+        renderSessionSidebar(sessionCache);$('#deleteChatDialog').close();
+      }catch(error){$('#deleteChatError').textContent=error.message;}
+      finally{chatActionPending=false;$('#confirmChatDelete').disabled=false;$('#cancelChatDelete').disabled=false;}
+    };
+    $('#deleteChatDialog').oncancel=event=>{if(chatActionPending)event.preventDefault();};
+    document.addEventListener('click',event=>{if(!event.target.closest('#sessionActions,.session-more'))closeSessionActions();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSessionActions();});
+    $('#sessionActions').onkeydown=event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();(document.activeElement===$('#renameChat')?$('#deleteChat'):$('#renameChat')).focus();}};
 
     async function loadSessions(append = false) {
       if (loadingSessions) return loadingSessions;
@@ -1761,12 +1899,15 @@
               applyModelSelection(value.data?.modelSelection);
               for (const item of value.data?.events || []) consume(item);
               if (value.data?.busy) consume({type:'agent_start'});
+              queueState.busy=Boolean(value.data?.busy);if(current)current.running=queueState.busy;setRunButton(queueState.busy);
+              if(value.data?.compacting!==undefined || !value.data?.busy)setCompacting(value.data?.compacting);
               resolve();
               return;
             }
             consume(value);
           } catch {}
         };
+        stream.onerror=()=>{if(sessionView===view&&subscribed)refreshQueue().then(()=>{if(!queueState.busy){stream.close();if(source===stream)source=null;}}).catch(()=>{});};
         stream.addEventListener('offline', () => {
           clearTimeout(timeout);
           stream.close();
@@ -1775,6 +1916,8 @@
           else if (sessionView === view) {
             if (current) current.running = false;
             renderQueueState({busy: false});
+            setCompacting(false);
+            refreshQueue().catch(()=>{});
             $('#composerHint').textContent = 'Paste, drag, or attach files';
           }
         });
@@ -1789,6 +1932,7 @@
       closeImageViewer();
       current = {...session};
       oldestSegment = 0;
+      setCompacting(false);
       loadingHistory = false;
       liveToolCalls.clear();
       showChatView();
@@ -1796,6 +1940,7 @@
       source = null;
       pendingFiles = [];
       pendingRetainedAttachments = [];
+      goalDraft=false;renderGoalChip();
       editingQueueSnapshot = null;
       renderAttachments();
       $('#title').textContent = session.title;
@@ -1859,10 +2004,11 @@
       source = null;
       pendingFiles = [];
       pendingRetainedAttachments = [];
+      goalDraft=false;renderGoalChip();
       editingQueueId = null;
       renderedTurn = null;
       renderedEntries = new Set();
-      displayedUsage = null;
+      resetUsage();
       renderAttachments();
       renderQueueState();
       pendingCwd = config?.default_cwd || '';
@@ -2010,6 +2156,7 @@
       } catch (error) { $('#authError').textContent = error.message; }
     };
 
+    window.addEventListener('focus',()=>{if(current)refreshQueue().catch(()=>{});});
     $('#newBtn').onclick = beginNewSession;
     async function loadFolder(path, nearest = false) {
       const generation = ++folderGeneration;
@@ -2094,7 +2241,14 @@
     };
     document.querySelectorAll('[data-close]').forEach(button => button.onclick = () => button.closest('dialog').close());
 
-    $('#attachBtn').onclick = () => $('#files').click();
+    function closeComposerActions(){ $('#composerActions').classList.add('hidden'); $('#attachBtn').setAttribute('aria-expanded','false'); }
+    $('#attachBtn').onclick=()=>{const menu=$('#composerActions'),open=menu.classList.contains('hidden');menu.classList.toggle('hidden',!open);$('#attachBtn').setAttribute('aria-expanded',String(open));$('#menuCompact').disabled=!current;if(open)$('#menuAttach').focus();};
+    $('#menuAttach').onclick=()=>{closeComposerActions();$('#files').click();};
+    $('#menuCompact').onclick=()=>{closeComposerActions();runSessionCommand('/compact');};
+    $('#menuGoal').onclick=()=>{closeComposerActions();goalDraft=true;renderGoalChip();$('#prompt').focus();};
+    $('#removeGoalChip').onclick=()=>{goalDraft=false;renderGoalChip();$('#prompt').focus();};
+    document.addEventListener('click',event=>{if(!$('#composerActions').contains(event.target)&&!$('#attachBtn').contains(event.target))closeComposerActions();});
+    $('#composerActions').onkeydown=event=>{if(event.key==='Escape'){event.preventDefault();closeComposerActions();$('#attachBtn').focus();}else if(['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();const items=[...$('#composerActions').querySelectorAll('button:not(:disabled)')],index=items.indexOf(document.activeElement);items[(index+(event.key==='ArrowDown'?1:items.length-1))%items.length]?.focus();}};
     $('#viewerClose').onclick = closeImageViewer;
     $('#viewerOut').onclick = () => setViewerZoom(viewerZoom / 1.25);
     $('#viewerIn').onclick = () => setViewerZoom(viewerZoom * 1.25);
@@ -2114,7 +2268,7 @@
     composeBox.addEventListener('dragover', event => { event.preventDefault(); composeBox.classList.add('dragging'); });
     composeBox.addEventListener('dragleave', event => { if (!event.relatedTarget || !composeBox.contains(event.relatedTarget)) composeBox.classList.remove('dragging'); });
     composeBox.addEventListener('drop', event => { event.preventDefault(); composeBox.classList.remove('dragging'); addAttachments(event.dataTransfer.files); });
-    $('#prompt').addEventListener('input', event => { event.target.style.height = 'auto'; event.target.style.height = `${Math.min(event.target.scrollHeight, 190)}px`; });
+    $('#prompt').addEventListener('input', event => { event.target.style.height = 'auto'; event.target.style.height = `${Math.min(event.target.scrollHeight, 190)}px`; setRunButton(queueState.busy || Boolean(current?.running)); });
     $('#prompt').addEventListener('keydown', event => {
       if (event.key === 'Escape' && editingQueueId) { event.preventDefault(); cancelQueueEdit(); }
       else if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); $('#composer').requestSubmit(); }
@@ -2124,20 +2278,68 @@
     $('#thinking').onchange = async () => { try { await applyCurrentModel(); } catch (error) { alert(error.message); } };
     $('#defaultModel').onchange = () => setThinking($('#defaultModel'), $('#defaultThinking'));
 
+    async function runSessionCommand(text, consumeDraft = false, goalAction = null) {
+      const compact = /^\/compact(?:\s|$)/.test(text);
+      const argument = text.slice(compact ? 8 : 5).trim();
+      const draft = {text:$('#prompt').value, files:[...pendingFiles], retained:[...pendingRetainedAttachments]};
+      let createdId = null;
+      $('#sendBtn').disabled = true;
+      try {
+        if (!current) {
+          if (compact || !argument || (!goalAction && ['pause','resume','clear','complete'].includes(argument))) throw new Error('Open a chat first, or set a new goal with an objective.');
+          const form = new FormData();
+          form.append('prompt', argument); form.append('cwd', pendingCwd);
+          form.append('model', $('#model').value); form.append('thinking', $('#thinking').value);
+          const result = await api('/api/sessions', {method:'POST',body:form});
+          createdId = result.id;
+          const sessions = await loadSessions();
+          await openSession(sessions.find(session => session.id === result.id));
+        }
+        const id = current.id;
+        if (!compact && !argument) {
+          await refreshQueue();
+          $('#composerHint').textContent = 'Use /goal <objective>, /goal pause, /goal resume, /goal complete or /goal clear.';
+        } else {
+          await api(`/api/sessions/${id}/resume`, {method:'POST'});
+          if (current?.id !== id) return false;
+          await connectSession(id);
+          if (compact) {
+            await api(`/api/sessions/${id}/compact`, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({instructions:argument || null})});
+            if (current?.id === id) $('#composerHint').textContent = 'Compaction requested…';
+          } else {
+            const action = goalAction || (['pause','resume','clear','complete'].includes(argument) ? {action:argument} : {action:'set',objective:argument});
+            const result = await api(`/api/sessions/${id}/goal`, {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(action)});
+            if (current?.id === id) {renderGoal(result.data); $('#composerHint').textContent = 'Goal updated.';}
+          }
+        }
+        if (consumeDraft && current?.id === id && ($('#prompt').value === text || createdId)) {
+          $('#prompt').value = ''; $('#prompt').dispatchEvent(new Event('input'));
+        }
+        return true;
+      } catch (error) {
+        $('#composerHint').textContent = error.message;
+        return false;
+      } finally {
+        if (!consumeDraft && createdId && current?.id === createdId) {
+          $('#prompt').value=draft.text; pendingFiles=draft.files; pendingRetainedAttachments=draft.retained;
+          renderAttachments(); $('#prompt').dispatchEvent(new Event('input'));
+        }
+        $('#sendBtn').disabled=false; setRunButton(queueState.busy);
+      }
+    }
+
     $('#composer').onsubmit = async event => {
       event.preventDefault();
       if ($('#sendBtn').disabled) return;
       const text = $('#prompt').value.trim();
       if (editingQueueId) { await saveQueueEdit(); return; }
       if (!text && !pendingFiles.length && !pendingRetainedAttachments.length) return;
-      if (current && !pendingFiles.length && !pendingRetainedAttachments.length && /^\/compact(?:\s|$)/.test(text)) {
-        $('#prompt').value = '';
-        try {
-          await api(`/api/sessions/${current.id}/compact`, {method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({instructions: text.slice(8).trim() || null})});
-          if (!source) await connectSession(current.id);
-        } catch (error) { $('#composerHint').textContent = error.message; }
+      if (!goalDraft && !pendingFiles.length && !pendingRetainedAttachments.length && /^\/(compact|goal)(?:\s|$)/.test(text)) {
+        await runSessionCommand(text, true);
         return;
       }
+      if(goalDraft&&!text){$('#composerHint').textContent='Enter the goal in your message.';return;}
+      const sendingGoal=goalDraft;goalDraft=false;renderGoalChip();
       const files = [...pendingFiles];
       const retained = [...pendingRetainedAttachments];
       $('#prompt').value = '';
@@ -2168,15 +2370,18 @@
         }
         const messageForm = new FormData();
         messageForm.append('content', text);
+        if(sendingGoal)messageForm.append('goal','true');
         messageForm.append('delivery', 'queue');
         for (const file of files) messageForm.append('file', file);
         for (const path of retained) messageForm.append('retained_attachment', path);
         const result = await api(`/api/sessions/${current.id}/messages`, {method: 'POST', body: messageForm});
         renderQueueState(result.data);
+        if(sendingGoal)renderGoal(result.data.goal);
         setTimeout(() => refreshQueue().catch(() => {}), 100);
         if (current) current.running = true;
         setRunButton(true);
       } catch (error) {
+        goalDraft ||= sendingGoal;renderGoalChip();
         $('#prompt').value = [text, $('#prompt').value].filter(value => value.trim()).join('\n\n');
         $('#prompt').dispatchEvent(new Event('input'));
         pendingFiles.unshift(...files);
@@ -2364,12 +2569,17 @@
     $('#compatibleRemoveModel').onclick=()=>{const provider=config.compatible_providers[compatibleIndex];if(!provider||compatibleModelIndex<0)return;provider.models.splice(compatibleModelIndex,1);compatibleModelIndex=0;renderCompatibleModels();};
     $('#compatibleSave').onclick=async()=>{try{collectCompatibleProvider();await api('/api/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});await loadSettings();await loadModels();$('#compatibleNotice').textContent='Provider and model presets saved.';}catch(error){compatibleError(error);}};
 
-    let llamaCatalog = [], llamaLocalModels = [], llamaModelFolders = [], llamaPresetPath = '', llamaHfDetails = null, llamaPoll = null;
+    let llamaCatalog = [], llamaLocalModels = [], llamaModelFolders = [], llamaDevices = [], llamaPresetPath = '', llamaHfDetails = null, llamaPoll = null;
     const llamaPost = (path, body = {}) => api('/api/llama/' + path, {method:'POST', headers:{'content-type':'application/json'}, body:JSON.stringify(body)});
     function llamaError(error) { $('#llamaNotice').textContent = error.message === 'fetch failed' ? 'Could not connect to the server. Use Refresh models to retry.' : error.message; }
     function populateLlamaSettings() {
       const c=config.llama;
       $('#llamaDirectory').value=c.models_dir;
+      $('#llamaMaxNew').value=c.max_new_tokens || 0;
+      $('#llamaFit').checked=c.fit !== false;
+      $('#llamaFitTarget').value=c.fit_target_mib || 1024;
+      $('#llamaFitContext').value=c.fit_context || 4096;
+      renderLlamaDevices(llamaDevices);
       llamaModelFolders = [...(c.model_search_dirs || [])]; renderLlamaFolders();
       for (const [name, control, input] of [['CUDA_VISIBLE_DEVICES', 'llamaCudaOverride', 'llamaCudaDevices'], ['GGML_VK_VISIBLE_DEVICES', 'llamaVulkanOverride', 'llamaVulkanDevices']]) {
         const enabled = Object.hasOwn(c.gpu_environment || {}, name);
@@ -2389,6 +2599,9 @@
       if ($('#llamaCudaOverride').checked) c.gpu_environment.CUDA_VISIBLE_DEVICES = $('#llamaCudaDevices').value.trim();
       if ($('#llamaVulkanOverride').checked) c.gpu_environment.GGML_VK_VISIBLE_DEVICES = $('#llamaVulkanDevices').value.trim();
       c.port=Number($('#llamaPort').value);c.context_size=Number($('#llamaContext').value);
+      c.max_new_tokens=Number($('#llamaMaxNew').value)||0;
+      c.fit=$('#llamaFit').checked;c.fit_target_mib=Number($('#llamaFitTarget').value)||1024;c.fit_context=Number($('#llamaFitContext').value)||4096;
+      c.gpu_devices=[...document.querySelectorAll('#llamaDevices input[type="checkbox"]:checked')].map(input=>input.value);
       c.gpu_layers=$('#llamaGpu').value==='count'?{count:Number($('#llamaLayers').value)}:$('#llamaGpu').value;
       for(const [id,key] of [['llamaThreads','cpu_threads'],['llamaBatch','batch_size'],['llamaParallel','parallel_slots']]) c[key]=Number($('#'+id).value);
       for(const [id,key] of [['llamaFlash','flash_attention'],['llamaMmap','mmap'],['llamaMlock','mlock'],['llamaAutoload','autoload']]) c[key]=$('#'+id).checked;
@@ -2400,12 +2613,32 @@
         const value=await api('/api/llama/status');
         $('#llamaStatus').textContent=value.installation?`${value.installation.package} · ${value.installation.backend} · ${value.running?'Running':'Stopped'}`:'llama.cpp is unavailable: install llama-cpp or llama-cpp-cuda.';
         $('#llamaFlash').disabled=!value.flashAttentionSupported;
+        $('#llamaFit').disabled=!value.fitSupported;
+        $('#llamaFitTarget').disabled=!value.fitSupported;$('#llamaFitContext').disabled=!value.fitSupported;
+        $('#llamaMaxNew').disabled=!value.predictSupported;
         $('#llamaArgs').textContent=['/usr/bin/llama-server',...value.arguments].map(arg=>/^[a-zA-Z0-9_./:=<>-]+$/.test(arg)?arg:JSON.stringify(arg)).join(' ');
         $('#llamaPresetIni').textContent=value.presetIni||'';
         $('#llamaEnvironment').textContent=Object.entries(value.environment || {}).map(([key, value])=>key+'='+JSON.stringify(value)).join('\n') || 'GPU visibility: inherited service environment';
+        llamaDevices=value.devices || []; renderLlamaDevices(llamaDevices, value.deviceError);
         llamaLocalModels=value.localModels || []; renderLocalModels(); renderLlamaSources(value.localSources || []);
         llamaCatalog=value.catalog; renderLlamaCatalog();renderLlamaOperation(value.operation);
       } catch(error) {llamaError(error);}
+    }
+    function renderLlamaDevices(devices=[], error='') {
+      const root=$('#llamaDevices'); if(!root)return; root.replaceChildren();
+      if(!error) {
+        const allowed=new Set(devices.map(device=>device.id));
+        config.llama.gpu_devices=(config.llama.gpu_devices||[]).filter(id=>allowed.has(id));
+      }
+      if(error) $('#llamaDevicesNotice').textContent='Device listing failed: '+error;
+      else if(!devices.length) $('#llamaDevicesNotice').textContent='No accelerator devices were reported. llama.cpp will use its normal device selection.';
+      else $('#llamaDevicesNotice').textContent='Select devices for offloading. The IDs below come directly from llama.cpp.';
+      for(const device of devices) {
+        const label=document.createElement('label');label.className='check wide';
+        const input=document.createElement('input');input.type='checkbox';input.value=device.id;input.checked=(config.llama.gpu_devices||[]).includes(device.id);
+        const memory=[device.totalMemoryMib&&`${device.totalMemoryMib} MiB total`,device.freeMemoryMib&&`${device.freeMemoryMib} MiB free`].filter(Boolean).join(', ');
+        label.append(input,document.createTextNode(` ${device.name} (${device.id}${memory?', '+memory:''})`));root.append(label);
+      }
     }
     function renderLlamaCatalog() {
       const root=$('#llamaCatalog');root.replaceChildren();
@@ -2471,8 +2704,12 @@
     $('#llamaAddFolder').onclick=()=>openFolderPicker('Add model folder',llamaModelFolders.at(-1)||$('#llamaDirectory').value,path=>{if(!llamaModelFolders.includes(path))llamaModelFolders.push(path);renderLlamaFolders();$('#llamaNotice').textContent='Folder added. Save folders and scan to list its models.';});
     $('#llamaScan').onclick=async()=>{await loadLlamaStatus();};
     $('#llamaSaveFolders').onclick=async()=>{try{config.llama.model_search_dirs=[...llamaModelFolders];await api('/api/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});await loadLlamaStatus();$('#llamaNotice').textContent='Model folders saved and scanned.';}catch(error){llamaError(error);}};
-    $('#llamaCudaOverride').onchange=()=>{$('#llamaCudaDevices').disabled=!$('#llamaCudaOverride').checked;};
-    $('#llamaVulkanOverride').onchange=()=>{$('#llamaVulkanDevices').disabled=!$('#llamaVulkanOverride').checked;};
+    function invalidateLlamaDevicesDraft(){config.llama.gpu_devices=[];llamaDevices=[];$('#llamaDevicesNotice').textContent='Visibility settings changed. Refresh devices before selecting them again.';$('#llamaDevices').replaceChildren();}
+    $('#llamaCudaOverride').onchange=()=>{$('#llamaCudaDevices').disabled=!$('#llamaCudaOverride').checked;invalidateLlamaDevicesDraft();};
+    $('#llamaVulkanOverride').onchange=()=>{$('#llamaVulkanDevices').disabled=!$('#llamaVulkanOverride').checked;invalidateLlamaDevicesDraft();};
+    $('#llamaCudaDevices').onchange=invalidateLlamaDevicesDraft;
+    $('#llamaVulkanDevices').onchange=invalidateLlamaDevicesDraft;
+    $('#llamaRefreshDevices').onclick=async()=>{try{const gpu_environment={};if($('#llamaCudaOverride').checked)gpu_environment.CUDA_VISIBLE_DEVICES=$('#llamaCudaDevices').value.trim();if($('#llamaVulkanOverride').checked)gpu_environment.GGML_VK_VISIBLE_DEVICES=$('#llamaVulkanDevices').value.trim();const value=await api('/api/llama/devices',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({gpuEnvironment:gpu_environment})});llamaDevices=value.devices||[];renderLlamaDevices(llamaDevices);}catch(error){$('#llamaDevicesNotice').textContent='Device listing failed: '+error.message;}};
     $('#llamaSaveSettings').onclick=async()=>{try{collectLlamaSettings();await api('/api/settings',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});$('#llamaKey').value='';delete config.llama.api_key;await loadLlamaStatus();$('#llamaNotice').textContent='Router settings saved. Restart the router to apply launch changes.';}catch(error){llamaError(error);}};
     async function llamaModelAction(model,action) {
       let retainOthers=true;
@@ -2506,6 +2743,10 @@
       $('#llamaPresetEditor').scrollIntoView({block:'nearest'});
       $('#llamaPresetEditor').open=true;$('#llamaPresetId').value=preset.id;$('#llamaPresetName').value=preset.name;
       $('#llamaPresetContext').value=preset.context_window||'';$('#llamaPresetMax').value=preset.max_tokens||'';
+      $('#llamaPresetNew').value=preset.llama_max_new_tokens??'';
+      $('#llamaPresetFitContext').value=preset.llama_fit_context??'';
+      $('#llamaPresetFitTarget').value=preset.llama_fit_target_mib??'';
+      $('#llamaPresetFit').value=preset.llama_fit==null?'':(preset.llama_fit?'on':'off');
       $('#llamaPresetImage').checked=preset.input.includes('image');$('#llamaPresetReasoning').checked=Boolean(preset.reasoning);$('#llamaPresetEffort').checked=Boolean(preset.supports_reasoning_effort);
       $('#llamaPresetLevels').value=preset.thinking_levels.join(', ');presetThinking();$('#llamaPresetThinking').value=preset.default_thinking;
       $('#llamaPresetParameters').value=JSON.stringify(preset.request_parameters,null,2);
@@ -2519,30 +2760,34 @@
     $('#llamaSavePreset').onclick=async()=>{
       try {
         const id=$('#llamaPresetId').value;
-        const preset={...(config.llama.models.find(p=>p.id===id)||{}),id,name:$('#llamaPresetName').value,context_window:Number($('#llamaPresetContext').value),max_tokens:Number($('#llamaPresetMax').value),input:$('#llamaPresetImage').checked?['text','image']:['text'],reasoning:$('#llamaPresetReasoning').checked,thinking_levels:$('#llamaPresetLevels').value.split(',').map(v=>v.trim()).filter(Boolean),default_thinking:$('#llamaPresetThinking').value,supports_reasoning_effort:$('#llamaPresetEffort').checked,request_parameters:JSON.parse($('#llamaPresetParameters').value),llama_options:$('#llamaPresetOptions').value,llama_model_path:llamaPresetPath};
+        const preset={...(config.llama.models.find(p=>p.id===id)||{}),id,name:$('#llamaPresetName').value,context_window:Number($('#llamaPresetContext').value),max_tokens:Number($('#llamaPresetMax').value),llama_max_new_tokens:$('#llamaPresetNew').value?Number($('#llamaPresetNew').value):null,llama_fit_context:$('#llamaPresetFitContext').value?Number($('#llamaPresetFitContext').value):null,llama_fit_target_mib:$('#llamaPresetFitTarget').value?Number($('#llamaPresetFitTarget').value):null,llama_fit:$('#llamaPresetFit').value===''?null:$('#llamaPresetFit').value==='on',input:$('#llamaPresetImage').checked?['text','image']:['text'],reasoning:$('#llamaPresetReasoning').checked,thinking_levels:$('#llamaPresetLevels').value.split(',').map(v=>v.trim()).filter(Boolean),default_thinking:$('#llamaPresetThinking').value,supports_reasoning_effort:$('#llamaPresetEffort').checked,request_parameters:JSON.parse($('#llamaPresetParameters').value),llama_options:$('#llamaPresetOptions').value,llama_model_path:llamaPresetPath};
         await llamaPost('preset',preset);const index=config.llama.models.findIndex(p=>p.id===id);if(index<0)config.llama.models.push(preset);else config.llama.models[index]=preset;
         await loadModels();await loadLlamaStatus();$('#llamaNotice').textContent='Model preset saved. Restart the router once to enable the preset file; later edits apply when the unloaded model is refreshed and loaded.';
       }catch(error){llamaError(error);}
     };
-    async function inspectHf(id) {
-      try {
-        const colon=id.indexOf(':',id.lastIndexOf('/')+1);const quant=colon>=0?id.slice(colon+1):null;if(colon>=0)id=id.slice(0,colon);
-        $('#llamaNotice').textContent='Loading model details…';llamaHfDetails=await llamaPost('hf/details',{id});
-        $('#llamaHfSelection').classList.remove('hidden');$('#llamaHfRepository').textContent=llamaHfDetails.id;
-        $('#llamaHfGated').textContent=llamaHfDetails.gated?`${llamaHfDetails.gated==='manual'?'Manual approval is required':'Accept the access terms'} at https://huggingface.co/${llamaHfDetails.id}. The llama.cpp server needs HF_TOKEN with access.`:'';
-        $('#llamaHfQuantization').replaceChildren(...llamaHfDetails.quantizations.map(q=>new Option(`${q.name}${q.name==='Q4_K_M'?' · recommended':''}${q.size==null?'':` · ${new Intl.NumberFormat().format(q.size)+' bytes'}`}`,q.name)));
-        if(quant){if(![...$('#llamaHfQuantization').options].some(o=>o.value===quant))$('#llamaHfQuantization').append(new Option(quant,quant));$('#llamaHfQuantization').value=quant;}
-        $('#llamaNotice').textContent='';
-      }catch(error){llamaError(error);}
-    }
-    $('#llamaHfDetails').onclick=()=>inspectHf($('#llamaHfQuery').value.trim());
-    $('#llamaHfSearch').onclick=async()=>{try{const value=await llamaPost('hf/search',{query:$('#llamaHfQuery').value.trim()});$('#llamaHfResults').replaceChildren(...value.models.map(model=>{const button=document.createElement('button');button.type='button';button.textContent=model.id;button.onclick=()=>inspectHf(model.id);return button;}));}catch(error){llamaError(error);}};
-    $('#llamaHfDownload').onclick=async()=>{
-      if(!llamaHfDetails)return;
-      if(llamaHfDetails.gated&&!confirm(`Hugging Face access required\n${llamaHfDetails.id}\n\n${$('#llamaHfGated').textContent}\n\nContinue?`))return;
-      const quant=$('#llamaHfQuantization').value;const model=llamaHfDetails.id+(quant?':'+quant:'');
-      try{renderLlamaOperation((await llamaPost('operation',{action:'download',model})).operation);}catch(error){llamaError(error);}
-    };
+    let hfRepository = null, hfSelected = new Set(), hfJobsPoll = null;
+    const hfPost=(path, body={})=>api('/api/downloads'+path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+    const hfToken=()=>$('#hfToken').value.trim() || null;
+    const hfBytes=value=>{let bytes=Number(value)||0,index=0;const units=['B','KiB','MiB','GiB','TiB'];while(bytes>=1024&&index<units.length-1){bytes/=1024;index++;}return bytes.toFixed(index?1:0)+' '+units[index];};
+    async function loadDownloadSettings(){try{const value=await api('/api/downloads/settings');$('#hfDownloadFolder').value=value.destination;$('#hfTokenStatus').textContent=value.hasToken?'A token is saved. Leave the field blank to use it.':'Entered tokens stay in memory unless you choose to save them.';$('#hfForgetToken').disabled=!value.hasToken;await refreshDownloads();}catch(error){$('#hfNotice').textContent=error.message;}}
+    $('#hfDownloadSection').ontoggle=()=>{if($('#hfDownloadSection').open)loadDownloadSettings();else clearTimeout(hfJobsPoll);};
+    $('#hfDownloadBrowse').onclick=()=>openFolderPicker('Download folder',$('#hfDownloadFolder').value,path=>{$('#hfDownloadFolder').value=path;});
+    async function saveDownloadSettings(clear=false){const value=await hfPost('/settings',{destination:$('#hfDownloadFolder').value,token:$('#hfRememberToken').checked?hfToken():null,clear_token:clear});if($('#hfRememberToken').checked||clear)$('#hfToken').value='';$('#hfTokenStatus').textContent=value.hasToken?'A token is saved. Leave the field blank to use it.':'No token is saved.';$('#hfForgetToken').disabled=!value.hasToken;}
+    $('#hfSaveSettings').onclick=async()=>{try{await saveDownloadSettings();$('#hfNotice').textContent='Download settings saved.';}catch(error){$('#hfNotice').textContent=error.message;}};
+    $('#hfForgetToken').onclick=async()=>{try{await saveDownloadSettings(true);}catch(error){$('#hfNotice').textContent=error.message;}};
+    function visibleHfFiles(){const filter=$('#hfFileFilter').value.trim().toLowerCase();return (hfRepository?.files||[]).filter(file=>file.path.toLowerCase().includes(filter));}
+    function renderHfFiles(){const root=$('#hfFileList');root.replaceChildren();for(const file of visibleHfFiles()){const label=document.createElement('label');label.className='check';const box=document.createElement('input');box.type='checkbox';box.checked=hfSelected.has(file.path);box.onchange=()=>{if(box.checked)hfSelected.add(file.path);else hfSelected.delete(file.path);renderHfSummary();};label.append(box,document.createTextNode(file.path+' · '+(file.size==null?'size unknown':hfBytes(file.size))));root.append(label);}renderHfSummary();}
+    function renderHfSummary(){const files=(hfRepository?.files||[]).filter(file=>hfSelected.has(file.path));$('#hfFileSummary').textContent=files.length+' selected · '+hfBytes(files.reduce((sum,file)=>sum+(file.size||0),0));$('#llamaHfDownload').disabled=!files.length;}
+    $('#hfFileFilter').oninput=renderHfFiles;
+    $('#hfSelectVisible').onclick=()=>{for(const file of visibleHfFiles())hfSelected.add(file.path);renderHfFiles();};
+    $('#hfClearFiles').onclick=()=>{hfSelected.clear();renderHfFiles();};
+    async function inspectHf(input){try{const id=input.trim().replace(/^https:\/\/huggingface.co\//,'').replace(/\/$/,'');$('#hfNotice').textContent='Loading repository files…';hfRepository=await hfPost('/repository',{id,token:hfToken()});hfSelected.clear();$('#llamaHfSelection').classList.remove('hidden');$('#llamaHfRepository').textContent=hfRepository.id;$('#llamaHfGated').textContent=hfRepository.gated?'This repository requires access. Accept its terms at huggingface.co/'+hfRepository.id+' and use a token with permission.':'';$('#hfFileFilter').value='';renderHfFiles();$('#hfNotice').textContent='Select the files to save with their original names and folders.';}catch(error){$('#hfNotice').textContent=error.message;}}
+    $('#llamaHfDetails').onclick=()=>inspectHf($('#llamaHfQuery').value);
+    $('#llamaHfSearch').onclick=async()=>{try{const value=await hfPost('/search',{query:$('#llamaHfQuery').value.trim(),token:hfToken()});$('#llamaHfResults').replaceChildren(...value.models.map(model=>{const button=document.createElement('button');button.type='button';button.textContent=model.id;button.onclick=()=>inspectHf(model.id);return button;}));}catch(error){$('#hfNotice').textContent=error.message;}};
+    $('#llamaHfDownload').onclick=async()=>{if(!hfRepository||!hfSelected.size)return;try{$('#llamaHfDownload').disabled=true;const enteredToken=hfToken();await saveDownloadSettings();const value=await hfPost('',{repo_id:hfRepository.id,revision:hfRepository.revision,destination:$('#hfDownloadFolder').value,connections:Number($('#hfConnections').value),files:hfRepository.files.filter(file=>hfSelected.has(file.path)),token:enteredToken});renderDownloads(value.jobs);$('#hfNotice').textContent='Download started. Completed files appear in Local model folders.';}catch(error){$('#hfNotice').textContent=error.message;}finally{renderHfSummary();}};
+    async function refreshDownloads(){const value=await api('/api/downloads');renderDownloads(value.jobs);}
+    function renderDownloads(jobs){clearTimeout(hfJobsPoll);const root=$('#hfJobs');root.replaceChildren();let active=false;for(const job of jobs){const row=document.createElement('div');row.className='settings-section';const title=document.createElement('strong');title.textContent=job.manifest.repo_id+' · '+job.status;row.append(title);const folder=document.createElement('p');folder.className='meta';folder.textContent=job.manifest.destination+'/'+job.manifest.repo_id;row.append(folder);const progress=document.createElement('progress');const total=job.files.reduce((n,f)=>n+(f.total||0),0),done=job.files.reduce((n,f)=>n+(f.downloaded||0),0);progress.max=total||1;progress.value=done;row.append(progress);const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent=hfBytes(done)+' / '+hfBytes(total)+' · '+job.files.length+' files';details.append(summary);for(const file of job.files){const line=document.createElement('p');line.className='meta';const speed=file.bytesPerSecond;line.textContent=file.path+' · '+file.status+' · '+hfBytes(file.downloaded)+' / '+hfBytes(file.total)+(job.status==='downloading'&&speed>0?' · '+hfBytes(speed)+'/s · '+Math.ceil((file.total-file.downloaded)/speed)+'s remaining':'')+(file.error?' · '+file.error:'');details.append(line);}row.append(details);if(job.error){const error=document.createElement('p');error.className='meta';error.textContent=job.error;row.append(error);}const actions=document.createElement('div');actions.className='subscription-actions';for(const [action,label] of job.status==='downloading'?[['pause','Pause'],['cancel','Cancel']]:job.status==='paused'?[['resume','Resume'],['cancel','Cancel']]:['failed','cancelled','interrupted'].includes(job.status)?[['resume','Resume download']]:[]){const button=document.createElement('button');button.type='button';button.textContent=label;button.onclick=async()=>{try{renderDownloads((await hfPost('/control',{id:job.id,action,token:hfToken()})).jobs);}catch(error){$('#hfNotice').textContent=error.message;}};actions.append(button);}row.append(actions);root.append(row);active||=['downloading','paused','cancelling','queued'].includes(job.status);}if(active&&$('#hfDownloadSection').open)hfJobsPoll=setTimeout(()=>refreshDownloads().catch(error=>{$('#hfNotice').textContent=error.message;}),750);}
+
 
     let oauthActive = false;
     let subscriptionConnected = null;

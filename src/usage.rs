@@ -11,6 +11,12 @@ pub struct Snapshot {
     pub context: Option<agent::CurrentContextUsage>,
     pub latest_cache_hit_rate: Option<f64>,
     pub text: String,
+    #[serde(skip_serializing_if = "is_zero")]
+    pub compactions: u32,
+}
+
+fn is_zero(value: &u32) -> bool {
+    *value == 0
 }
 
 // JavaScript Number.toFixed rounds the exact binary value to the nearest
@@ -151,6 +157,7 @@ pub fn snapshot_with_cache(
         context,
         latest_cache_hit_rate,
         text: parts.join(" "),
+        compactions: 0,
     }
 }
 

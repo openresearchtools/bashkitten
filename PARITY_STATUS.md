@@ -35,6 +35,45 @@ Detailed evidence: `docs/parity-runtime-2026-09-07.md`,
 Fixtures use the pinned checkout only during development. The native build,
 normal tests and installed application require no Pi, Node.js or npm runtime.
 
+### Requested controls and chat management — 2026-09-08
+
+Installed in the normal port-3939 app, with 155 native tests, strict Clippy,
+formatting, embedded-JavaScript syntax and `dpkg --verify` passing. Evidence:
+`tests/live/2026-09-08-native-controls.json`.
+
+- Native SimpleHF repository listing and original-name downloads, pause/resume,
+  cancellation and optional private saved token. Real browser download of
+  `ggml-org/models/tinyllamas/stories15M-q4_0.gguf` produced a 19,077,344-byte regular
+  GGUF file with mode 0600; range/resume/gated-token tests use local HTTP fixtures.
+- Actual installed llama.cpp device discovery showed CUDA0, NVIDIA GeForce RTX
+  5090 Laptop GPU. Native fit, context, output limits and per-model INI settings
+  are covered by the launcher/registry tests and the documented source review.
+- The plus menu offers Attach files, a removable Goal chip, and Compact context.
+  An installed Luna task completed a real converter project, marked the goal
+  complete through the ordinary CLI, and exited without further continuation.
+- Actual summary text streamed into a scrollable chat activity during manual
+  compaction of a stress-test fork, survived reload, and was retained as an
+  expandable completed entry. A message queued while compacting ran afterward
+  and identified the original project's latest two requested feature groups.
+- Sidebar rename persists only the title. Confirmed deletion stops the selected
+  worker and removes only the ID-derived session directory. Native tests cover
+  cancellation, working-file/sibling preservation, symlink refusal, contained
+  attachment symlinks and HTTP authentication/CSRF/confirmation. Browser checks
+  verified rename/reload, the confirmation's light-mode buttons, and Cancel.
+
+The original full-context website run naturally compacted at **262,501 tokens**
+with its **272,000-token** context and ordinary 16,384 reserve/20,000 recent-token
+settings unchanged. It produced `000002.jsonl` and accepted subsequent turns.
+The independent website probes passed 11 domain and 8 HTTP cases. Browser review
+verified persistent catalogue filters and administrator form writes; missing
+role navigation was sent back to the same Luna session for correction.
+
+Final package SHA-256:
+`c26c6a5215b0ebb50e8f8e2df0b8f859932490c78ab5c87159b039c0f3c4c124`.
+Intentional differences and sources: `docs/native-downloads-goals-2026-09-07.md`,
+`docs/settings-llama-fit-devices-2026-09-07.md`, and
+`docs/chat-management-2026-09-07.md`.
+
 ### Authentication diagnosis and successful revalidation
 
 The initial native Codex calls returned `Provided authentication token is

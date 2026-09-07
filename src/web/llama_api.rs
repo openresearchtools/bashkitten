@@ -3,6 +3,7 @@
 use super::*;
 use crate::llama::{Client, Progress};
 use crate::tools::CancellationToken;
+use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 #[derive(Clone, Default)]
@@ -30,6 +31,10 @@ impl Operations {
 pub fn routes() -> Router<WebState> {
     Router::new()
         .route("/api/llama/status", get(status))
+        .route(
+            "/api/llama/devices",
+            get(devices).post(devices_with_environment),
+        )
         .route("/api/llama/refresh", post(refresh))
         .route("/api/llama/operation", get(operation_status).post(start))
         .route("/api/llama/cancel", post(cancel))
@@ -64,14 +69,65 @@ async fn status(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<
     } else {
         false
     };
+    let (devices, device_error) = if installation.is_some() {
+        let device_config = config.clone();
+        match tokio::task::spawn_blocking(move || crate::llama::list_devices(&device_config))
+            .await
+            .map_err(anyhow::Error::from)?
+        {
+            Ok(value) => (value, None),
+            Err(error) => (Vec::new(), Some(error.to_string())),
+        }
+    } else {
+        (Vec::new(), None)
+    };
+    let fit_supported = installation.is_some() && crate::llama::fit_supported();
+    let predict_supported = installation.is_some() && crate::llama::predict_supported();
     let running = tokio::process::Command::new("systemctl")
         .args(["--user", "is-active", "--quiet", "bashkitten-llama.service"])
         .status()
         .await
         .is_ok_and(|s| s.success());
     Ok(Json(
-        json!({"installation":installation,"running":running,"flashAttentionSupported":flash,"arguments":crate::llama::managed_launch_arguments(&config,&state.paths,false,flash)?,"presetIni":if config.models.is_empty(){String::new()}else{crate::llama::preset_contents(&config,flash)?},"catalog":public_catalog(config.catalog.clone()),"operation":state.llama_operation.status(),"localSources":local_sources,"localModels":local_models,"environment":crate::llama::launch_environment(&config)?}),
+        json!({"installation":installation,"running":running,"flashAttentionSupported":flash,"fitSupported":fit_supported,"predictSupported":predict_supported,"arguments":crate::llama::managed_launch_arguments(&config,&state.paths,false,flash)? ,"presetIni":if config.models.is_empty(){String::new()}else{crate::llama::preset_contents(&config,flash)?},"catalog":public_catalog(config.catalog.clone()),"operation":state.llama_operation.status(),"localSources":local_sources,"localModels":local_models,"environment":crate::llama::launch_environment(&config)?,"devices":devices,"deviceError":device_error}),
     ))
+}
+
+async fn devices(State(state): State<WebState>, headers: HeaderMap) -> ApiResult<Json<Value>> {
+    authenticated(&state, &headers)?;
+    let config = state.config.read().unwrap().llama.clone();
+    let devices = tokio::task::spawn_blocking(move || crate::llama::list_devices(&config))
+        .await
+        .map_err(anyhow::Error::from)?
+        .map_err(|error| ApiError(StatusCode::BAD_GATEWAY, error.to_string()))?;
+    Ok(Json(json!({"devices":devices})))
+}
+
+#[derive(Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+struct DeviceRequest {
+    #[serde(default, alias = "gpu_environment")]
+    gpu_environment: Option<BTreeMap<String, String>>,
+}
+
+/// Read-only device discovery with draft visibility values from the settings
+/// form. It is POST so the browser can send the draft without putting selectors
+/// in a URL; it does not mutate configuration or require router restart.
+async fn devices_with_environment(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    Json(body): Json<DeviceRequest>,
+) -> ApiResult<Json<Value>> {
+    authenticated(&state, &headers)?;
+    let mut config = state.config.read().unwrap().llama.clone();
+    if let Some(environment) = body.gpu_environment {
+        config.gpu_environment = environment;
+    }
+    let devices = tokio::task::spawn_blocking(move || crate::llama::list_devices(&config))
+        .await
+        .map_err(anyhow::Error::from)?
+        .map_err(|error| ApiError(StatusCode::BAD_GATEWAY, error.to_string()))?;
+    Ok(Json(json!({"devices":devices})))
 }
 
 // Pi persists converted model metadata, not launch arguments that might contain

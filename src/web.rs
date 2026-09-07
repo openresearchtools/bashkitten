@@ -10,7 +10,7 @@ use axum::extract::{DefaultBodyLimit, Multipart, Path as AxumPath, Query, State}
 use axum::http::{HeaderMap, HeaderValue, StatusCode, header};
 use axum::response::sse::{Event, KeepAlive};
 use axum::response::{Html, IntoResponse, Response, Sse};
-use axum::routing::{get, post};
+use axum::routing::{delete, get, post};
 use axum::{Json, Router};
 use futures_util::Stream;
 use serde::{Deserialize, Serialize};
@@ -26,6 +26,7 @@ use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
 
 const COOKIE: &str = "bashkitten_session";
+mod download_api;
 mod llama_api;
 
 #[derive(Clone)]
@@ -38,6 +39,7 @@ pub struct WebState {
     restart_error: Arc<RwLock<Option<String>>>,
     pub oauth: crate::oauth::LoginManager,
     pub llama_operation: llama_api::Operations,
+    pub downloads: download_api::Downloads,
 }
 
 #[derive(Debug)]
@@ -142,6 +144,7 @@ fn router_with_restart_error(
     restart_error: Option<String>,
 ) -> Result<Router> {
     let csrf_tokens = Arc::new(RwLock::new(auth::prepare_csrf_tokens(&paths)?));
+    let downloads = download_api::Downloads::load(&paths)?;
     let state = WebState {
         paths,
         csrf_tokens,
@@ -151,6 +154,7 @@ fn router_with_restart_error(
         config: Arc::new(RwLock::new(config)),
         oauth: crate::oauth::LoginManager::default(),
         llama_operation: Default::default(),
+        downloads,
     };
     Ok(Router::new()
         .route("/", get(index))
@@ -170,6 +174,10 @@ fn router_with_restart_error(
         .route("/api/sessions/{id}/messages", post(send_message))
         .route("/api/sessions/{id}/fork", post(fork_session))
         .route(
+            "/api/sessions/{id}",
+            delete(delete_session).patch(rename_session),
+        )
+        .route(
             "/api/sessions/{id}/attachments/{upload}/{name}",
             get(download_attachment),
         )
@@ -177,6 +185,7 @@ fn router_with_restart_error(
         .route("/api/sessions/{id}/queue", post(mutate_queue))
         .route("/api/sessions/{id}/stop", post(stop_session))
         .route("/api/sessions/{id}/compact", post(compact_session))
+        .route("/api/sessions/{id}/goal", post(update_session_goal))
         .route("/api/sessions/{id}/model", post(change_model))
         .route("/api/sessions/{id}/cwd", post(change_cwd))
         .route("/api/folders", get(list_folders).post(create_folder))
@@ -190,6 +199,7 @@ fn router_with_restart_error(
         .route("/api/provider/logout", post(provider_logout))
         .route("/api/llama/restart", post(restart_llama))
         .merge(llama_api::routes())
+        .merge(download_api::routes())
         .layer(DefaultBodyLimit::max(32 * 1024 * 1024))
         .layer(axum::middleware::from_fn(
             |request: axum::extract::Request, next: axum::middleware::Next| async move {
@@ -387,6 +397,7 @@ struct MessageForm {
     delivery: Option<String>,
     files: Vec<(String, Vec<u8>)>,
     retained_attachments: Vec<PathBuf>,
+    goal: bool,
 }
 
 async fn parse_form(mut multipart: Multipart) -> ApiResult<MessageForm> {
@@ -420,6 +431,7 @@ async fn parse_form(mut multipart: Multipart) -> ApiResult<MessageForm> {
             "thinking" => form.thinking = value,
             "parent" if !value.is_empty() => form.parent = Some(value),
             "delivery" => form.delivery = Some(value),
+            "goal" => form.goal = value == "true",
             "retained_attachment" => form.retained_attachments.push(PathBuf::from(value)),
             _ => {}
         }
@@ -578,6 +590,7 @@ async fn send_message(
     if !session::socket_is_live(&socket) {
         session::start_worker(&state.paths, &id)?;
     }
+    let _guard = session::lock_session(&state.paths, &id)?;
     let mut attachments = retained_attachments(&state.paths, &id, form.retained_attachments)?;
     attachments.extend(save_attachments(&state.paths, &id, form.files)?);
     let delivery = if form.delivery.as_deref() == Some("steer") {
@@ -585,16 +598,20 @@ async fn send_message(
     } else {
         Delivery::Queue
     };
-    let reply = session::send(
-        &state.paths,
-        &id,
-        &ControlRequest::Send {
+    let request = if form.goal {
+        ControlRequest::GoalMessage {
+            content: form.prompt,
+            attachments,
+        }
+    } else {
+        ControlRequest::Send {
             delivery,
             content: form.prompt,
             attachments,
             source_session: None,
-        },
-    )?;
+        }
+    };
+    let reply = session::send(&state.paths, &id, &request)?;
     Ok(logical_json(serde_json::to_value(reply).expect("reply")))
 }
 
@@ -709,17 +726,34 @@ async fn session_status(
             "message": "offline",
             "data": {
                 "busy": false,
+                "compacting": false,
                 "steering": 0,
                 "queued": 0,
                 "steeringMessages": [],
                 "queuedMessages": [],
                 "modelSelection": {"model": model, "thinking": thinking},
+                "goal": crate::worker::saved_goal(&state.paths,&id)?,
                 "usage": crate::worker::saved_usage(&state.paths, &id, &state.config.read().expect("config lock"))?
             }
         })));
     }
     let reply = session::send(&state.paths, &id, &ControlRequest::Status)?;
     Ok(logical_json(serde_json::to_value(reply).expect("reply")))
+}
+
+async fn update_session_goal(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+    Json(action): Json<crate::goal::Action>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let socket = session::control_socket(&state.paths, &id)?;
+    if !session::socket_is_live(&socket) {
+        session::start_worker(&state.paths, &id)?;
+    }
+    let reply = session::send(&state.paths, &id, &ControlRequest::Goal { action })?;
+    Ok(Json(serde_json::to_value(reply).expect("control reply")))
 }
 
 #[derive(Deserialize)]
@@ -870,6 +904,42 @@ async fn create_folder(
     Ok(Json(json!({"ok": true, "path": created})))
 }
 
+#[derive(Deserialize)]
+struct RenameSession {
+    name: String,
+}
+#[derive(Deserialize)]
+struct DeleteSession {
+    confirm: bool,
+}
+async fn rename_session(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+    Json(body): Json<RenameSession>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    let title = tokio::task::spawn_blocking(move || session::rename(&state.paths, &id, &body.name))
+        .await
+        .context("wait for chat rename")??;
+    Ok(Json(json!({"ok":true,"title":title})))
+}
+async fn delete_session(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    AxumPath(id): AxumPath<String>,
+    Json(body): Json<DeleteSession>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    if !body.confirm {
+        return Err(anyhow::anyhow!("Confirm chat deletion first").into());
+    }
+    tokio::task::spawn_blocking(move || session::delete(&state.paths, &id))
+        .await
+        .context("wait for chat deletion")??;
+    Ok(Json(json!({"ok":true})))
+}
+
 async fn stop_session(
     State(state): State<WebState>,
     headers: HeaderMap,
@@ -956,7 +1026,7 @@ async fn events(
                         }
                         match next {
                             Some(Ok(Some(line))) => yield Ok(Event::default().data(line)),
-                            Some(_) => break,
+                            Some(_) => {yield Ok(Event::default().event("offline").data("Agent session finished"));break;}
                             None => {},
                         }
                     }
@@ -1320,6 +1390,125 @@ const INDEX_HTML: &str = include_str!("web_ui.html");
 mod tests {
     use super::*;
 
+    #[tokio::test]
+    async fn chat_management_requires_confirmation_login_origin_and_csrf() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let config = AppConfig {
+            web_port: port,
+            ..Default::default()
+        };
+        config.save(&paths).unwrap();
+        let login = auth::signup(&paths, "fixture", "fixture-password").unwrap();
+        let id = session::create(
+            &paths,
+            &NewSession {
+                cwd: root.path().into(),
+                model: "p/m".into(),
+                thinking: "off".into(),
+                model_parameters: json!({}),
+                prompt: "Rename me".into(),
+                attachments: vec![],
+                parent: None,
+            },
+        )
+        .unwrap();
+        let app = router(paths.clone(), config).unwrap();
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let http = reqwest::Client::new();
+        let origin = format!("http://127.0.0.1:{port}");
+        let url = format!("{origin}/api/sessions/{id}");
+        let cookie = format!("{COOKIE}={}", login.token);
+        for method in [reqwest::Method::DELETE, reqwest::Method::PATCH] {
+            let body = if method == reqwest::Method::DELETE {
+                json!({"confirm":true})
+            } else {
+                json!({"name":"Renamed"})
+            };
+            assert_eq!(
+                http.request(method.clone(), &url)
+                    .json(&body)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status(),
+                StatusCode::FORBIDDEN
+            );
+            assert_eq!(
+                http.request(method.clone(), &url)
+                    .header(header::COOKIE, &cookie)
+                    .json(&body)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status(),
+                StatusCode::FORBIDDEN
+            );
+            assert_eq!(
+                http.request(method, &url)
+                    .header(header::COOKIE, &cookie)
+                    .header(header::ORIGIN, "http://other.invalid")
+                    .header("x-bashkitten-csrf", &login.csrf)
+                    .json(&body)
+                    .send()
+                    .await
+                    .unwrap()
+                    .status(),
+                StatusCode::FORBIDDEN
+            );
+        }
+        let authorized = |method| {
+            http.request(method, &url)
+                .header(header::COOKIE, &cookie)
+                .header(header::ORIGIN, &origin)
+                .header("x-bashkitten-csrf", &login.csrf)
+        };
+        assert!(
+            authorized(reqwest::Method::PATCH)
+                .json(&json!({"name":"Renamed 🐈"}))
+                .send()
+                .await
+                .unwrap()
+                .status()
+                .is_success()
+        );
+        assert_eq!(
+            fs::read_to_string(paths.session_dir(&id).join("title")).unwrap(),
+            "Renamed 🐈\n"
+        );
+        assert_eq!(
+            authorized(reqwest::Method::DELETE)
+                .json(&json!({"confirm":false}))
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::BAD_REQUEST
+        );
+        assert!(paths.session_dir(&id).exists());
+        assert!(
+            authorized(reqwest::Method::DELETE)
+                .json(&json!({"confirm":true}))
+                .send()
+                .await
+                .unwrap()
+                .status()
+                .is_success()
+        );
+        assert!(!paths.session_dir(&id).exists());
+        assert!(root.path().exists());
+        server.abort();
+    }
+
     #[test]
     fn recovered_attachments_stay_inside_the_original_session() {
         use std::os::unix::fs::{PermissionsExt, symlink};
@@ -1567,6 +1756,7 @@ mod tests {
             csrf_tokens: Default::default(),
             oauth: Default::default(),
             llama_operation: Default::default(),
+            downloads: Default::default(),
         };
         recover_web_restart(&state);
         assert_eq!(AppConfig::load(&paths).unwrap().web_port, 3939);

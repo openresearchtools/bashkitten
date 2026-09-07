@@ -1,0 +1,54 @@
+{
+  "pi": "9841914c71a74d81abe07f751aefd271fd924e63",
+  "naturalCompaction": {
+    "session": "01a07db9-bff1-7612-922c-8a733b7d9f97",
+    "model": "openai-codex/gpt-5.6-luna",
+    "thinking": "high",
+    "contextWindow": 272000,
+    "reserveTokens": 16384,
+    "keepRecentTokens": 20000,
+    "segments": [
+      "000001.jsonl",
+      "000002.jsonl"
+    ],
+    "compactions": [
+      {
+        "id": "630893a2",
+        "tokensBefore": 262501,
+        "timestamp": "2026-09-07T22:36:12.688Z"
+      }
+    ],
+    "followupAfterCompaction": true
+  },
+  "streamedCompaction": {
+    "session": "01a07e0f-c6be-73d3-8d76-b6375b3d09d5",
+    "browserSawSummaryDeltas": true,
+    "reloadRestoredPartialSummary": true,
+    "queuedWhileCompacting": true,
+    "queuedFollowupIdentifiedLatestFeatureGroups": true,
+    "completedSummaryExpandable": true
+  },
+  "goal": {
+    "session": "01a07e14-2eff-7110-b715-ced45cbb7fb6",
+    "model": "openai-codex/gpt-5.6-luna",
+    "completedViaCli": true,
+    "workerStopped": true,
+    "renamedTitle": "Goal acceptance \u2014 converter"
+  },
+  "download": {
+    "repository": "ggml-org/models",
+    "file": "tinyllamas/stories15M-q4_0.gguf",
+    "bytes": 19077344,
+    "sha256": "66967fbece6dbe97886593fdbb73589584927e29119ec31f08090732d1861739",
+    "regularFile": true,
+    "mode": "0600"
+  },
+  "devices": {
+    "package": "llama-cpp-cuda",
+    "id": "CUDA0",
+    "name": "NVIDIA GeForce RTX 5090 Laptop GPU"
+  },
+  "nativeTests": 155,
+  "strictClippy": "passed",
+  "packageSha256": "c26c6a5215b0ebb50e8f8e2df0b8f859932490c78ab5c87159b039c0f3c4c124"
+}

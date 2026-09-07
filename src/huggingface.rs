@@ -1,7 +1,7 @@
 //! Pinned Pi extensions/llama/huggingface.ts. Called only by explicit model
 //! search/details actions; opening settings does not contact Hugging Face.
 use crate::tools::CancellationToken;
-use anyhow::{Result, bail};
+use anyhow::{Context, Result, bail};
 use regex::Regex;
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
@@ -198,7 +198,16 @@ impl Client {
         }
     }
     async fn request(&self, path: &str, cancel: &CancellationToken) -> Result<Value> {
-        // Allowed network category: user explicitly requested HF search/details.
+        self.request_page(path, cancel)
+            .await
+            .map(|(value, _)| value)
+    }
+    async fn request_page(
+        &self,
+        path: &str,
+        cancel: &CancellationToken,
+    ) -> Result<(Value, reqwest::header::HeaderMap)> {
+        // Allowed network category: user explicitly requested HF search/details/files.
         let mut request = self.http.get(format!("{}{path}", self.base_url));
         if let Some(token) = self.token.as_ref().filter(|token| !token.is_empty()) {
             request = request.bearer_auth(token);
@@ -218,10 +227,75 @@ impl Client {
                 }
                 bail!("{error}");
             }
-            Ok(payload)
+            Ok((payload, headers))
         };
         tokio::select! {biased;_=cancel.cancelled()=>bail!("This operation was aborted"),result=tokio::time::timeout(Duration::from_secs(15),operation)=>result.map_err(|_|anyhow::anyhow!("The operation was aborted due to timeout"))?}
     }
+    /// Paginated file listing ported from SimpleHF gui/main.rs at the recorded pin.
+    pub async fn repository(&self, id: &str, cancel: &CancellationToken) -> Result<Value> {
+        crate::download::validate_repo_id(id).map_err(anyhow::Error::msg)?;
+        let metadata = self.request(&format!("/api/models/{id}"), cancel).await?;
+        let revision = metadata["sha"]
+            .as_str()
+            .filter(|s| !s.is_empty())
+            .context("Hugging Face did not return a repository revision")?;
+        let revision_path: String =
+            url::form_urlencoded::byte_serialize(revision.as_bytes()).collect();
+        let mut next = Some(format!(
+            "/api/models/{id}/tree/{revision_path}?recursive=true&expand=false"
+        ));
+        let mut seen = std::collections::HashSet::new();
+        let mut files = BTreeMap::new();
+        while let Some(path) = next.take() {
+            anyhow::ensure!(
+                seen.insert(path.clone()),
+                "Hugging Face returned a repeated listing page"
+            );
+            let (payload, headers) = self.request_page(&path, cancel).await?;
+            let entries = payload
+                .as_array()
+                .context("Hugging Face returned invalid repository files")?;
+            for entry in entries {
+                if entry["type"] != "file" {
+                    continue;
+                }
+                if let Some(path) = entry["path"].as_str() {
+                    crate::download::safe_relative(path).map_err(anyhow::Error::msg)?;
+                    files.insert(path.to_owned(), json!({"path":path,"size":entry["size"]}));
+                }
+            }
+            for link in headers
+                .get("link")
+                .and_then(|v| v.to_str().ok())
+                .unwrap_or("")
+                .split(',')
+            {
+                if !link.contains("rel=\"next\"") {
+                    continue;
+                }
+                if let (Some(start), Some(end)) = (link.find('<'), link.find('>')) {
+                    let base = url::Url::parse(&self.base_url)?;
+                    let url = base.join(&link[start + 1..end])?;
+                    anyhow::ensure!(
+                        url.origin() == base.origin()
+                            && url.username().is_empty()
+                            && url.password().is_none()
+                            && url.path().starts_with(&format!("/api/models/{id}/tree/")),
+                        "Invalid Hugging Face listing continuation"
+                    );
+                    next = Some(format!(
+                        "{}{}",
+                        url.path(),
+                        url.query().map(|q| format!("?{q}")).unwrap_or_default()
+                    ));
+                }
+            }
+        }
+        Ok(
+            json!({"id":id,"revision":revision,"gated":metadata["gated"],"files":files.into_values().collect::<Vec<_>>()}),
+        )
+    }
+
     pub async fn search(&self, query: &str, cancel: &CancellationToken) -> Result<Value> {
         let params = url::form_urlencoded::Serializer::new(String::new())
             .extend_pairs([
@@ -267,6 +341,54 @@ mod tests {
     use super::*;
     use axum::{Router, body::Body, http::Response, routing::any};
     use std::sync::{Arc, Mutex};
+
+    #[tokio::test]
+    async fn repository_listing_follows_pages_and_rejects_foreign_continuations() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let base_url = format!("http://{}", listener.local_addr().unwrap());
+        let host = base_url.clone();
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let observed = calls.clone();
+        let app=Router::new().fallback(any(move|request:axum::extract::Request|{
+            let host=host.clone();let observed=observed.clone();async move {
+                assert_eq!(request.headers()["authorization"],"Bearer listing-token");
+                observed.lock().unwrap().push(request.uri().to_string());
+                let path=request.uri().path();
+                let (payload,link)=if path.ends_with("/tree/abc123") {
+                    if request.uri().query()==Some("cursor=2") {(json!([{"type":"file","path":"nested/config.json","size":3}]),String::new())}
+                    else {(json!([{"type":"directory","path":"nested"},{"type":"file","path":"model Q4.gguf","size":99}]),format!("<{host}{path}?cursor=2>; rel=\"next\""))}
+                } else if path.ends_with("/tree/bad") {(json!([]),"<https://foreign.example/steal>; rel=\"next\"".into())}
+                else {(json!({"id":"org/model","sha":if path.ends_with("bad"){ "bad" }else{"abc123"},"gated":"manual"}),String::new())};
+                Response::builder().header("link",link).body(Body::from(payload.to_string())).unwrap()
+            }
+        }));
+        let server = tokio::spawn(async move {
+            axum::serve(listener, app).await.unwrap();
+        });
+        let client = Client {
+            base_url,
+            http: reqwest::Client::new(),
+            token: Some("listing-token".into()),
+        };
+        let value = client
+            .repository("org/model", &Default::default())
+            .await
+            .unwrap();
+        assert_eq!(value["revision"], "abc123");
+        assert_eq!(value["gated"], "manual");
+        assert_eq!(value["files"].as_array().unwrap().len(), 2);
+        assert_eq!(value["files"][1]["path"], "nested/config.json");
+        assert!(
+            client
+                .repository("org/bad", &Default::default())
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("Invalid Hugging Face listing continuation")
+        );
+        assert_eq!(calls.lock().unwrap().len(), 5);
+        server.abort();
+    }
 
     #[tokio::test]
     async fn explicit_http_actions_preserve_paths_gated_details_and_error_redaction() {

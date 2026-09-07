@@ -58,6 +58,28 @@ connect directly; BashKitten does not use an HTTP proxy. Model downloads, cached
 GGUF discovery, extra model folders, and GPU visibility controls are under
 **llama.cpp**. Opening that tab does not start a Hugging Face search or download.
 
+The composer **+** menu offers Attach files, Goal, and Compact context. Goal
+adds a removable chip: send the ordinary message to make it the session goal.
+`/goal OBJECTIVE` is also supported. Active goals continue normal turns until the
+agent completes them with `bashkitten goal complete` through `bash`; Pause stops
+automatic continuation. `/goal pause`, `/goal resume`, and `/goal clear` manage it.
+`/compact` uses Pi's normal compaction path. The chat streams the summary while
+compacting, restores its partial text after reload, and retains the finished
+summary in an expandable scroll pane. The header shows the compaction count.
+
+Each sidebar chat has a **⋯** menu for Rename chat and Delete chat. Deletion asks
+for confirmation and removes only the selected chat's session directory,
+including history and copied attachments. Its working folder and project files
+are kept. A running worker is stopped before its storage is removed.
+
+The llama.cpp settings list devices reported by the installed server with the
+chosen GPU visibility environment. Native fit controls, fit memory margin,
+minimum context, and maximum new tokens map directly to supported server flags.
+The Hugging Face downloader is embedded Rust code adapted from SimpleHF. Select
+repository files and a destination; files keep their original names and nested
+paths. Downloads support pause, resume, cancellation and an optional saved HF
+token. The default destination is `~/.local/share/bashkitten/models`.
+
 Useful CLI commands:
 
 ```sh
