@@ -1084,7 +1084,6 @@
     function renderToolCall(block, body) {
       let details = findTool(block.id);
       if (details) {
-        details.title = JSON.stringify(block.arguments || {});
         const presentation = toolPresentation(block);
         details.querySelector('.tool-name').textContent = presentation.action;
         details.querySelector('.tool-focus').textContent = presentation.focus;
@@ -1097,7 +1096,6 @@
       details = document.createElement('details');
       details.className = 'activity';
       details.dataset.call = block.id;
-      details.title = JSON.stringify(block.arguments || {});
       const summary = document.createElement('summary');
       const icon = document.createElement('span');
       icon.className = 'tool-icon';

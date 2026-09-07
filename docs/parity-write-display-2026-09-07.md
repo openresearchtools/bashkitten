@@ -15,7 +15,9 @@ the write call's exact content in the existing scrollable tool body, including
 when reconstructing history. Display completion status on the compact summary
 row, and show failed-write errors alongside the attempted content. This uses
 the documented Web UI presentation difference; tool messages and persisted
-history are unchanged. Render content as text, never HTML.
+history are unchanged. Render content as text, never HTML. Do not put the raw
+tool arguments in an HTML `title` tooltip: the retained pane supplies the
+content view without a second hover overlay.
 
 The shared folder dialog's generic action-button rule also overrides the
 primary button background, leaving white text on a light dialog until hover.
@@ -44,3 +46,12 @@ Only the Web service restarted; the active website worker retained PID 511812
 and its unchanged 272,000-token model context and compaction configuration.
 This verifies the UI corrections; the long-run automatic-compaction test is
 still in progress and is not included in this pass claim.
+
+The follow-up removal of raw-argument hover tooltips was rebuilt and installed
+with SHA-256
+`1f0136e67d9fa282548831ae64db4f408ad541a51c86f16c7af6acdd3546cd5a`.
+After authenticated reload, 85 tool activities had zero `title` tooltips,
+20 write panes remained present, and the same historical `db.py` pane retained
+all 25,279 characters. Browser errors/warnings were empty. All 131 Rust tests,
+embedded JavaScript syntax and installed-package integrity passed; the website
+worker again retained PID 511812.
