@@ -52,12 +52,21 @@ See `tests/live/2026-09-07-codex-auth.json` and
 
 ### Installed release
 
+The subsequent write-display/folder-button correction is installed in the same
+port-3939 service. Completed writes retain their exact contents in an expandable
+scroll pane, result status stays on the summary row, and primary dialog actions
+retain their light-mode background without hover. All 131 tests passed again;
+the live Luna website worker continued through the Web-only restart. See
+`docs/parity-write-display-2026-09-07.md` for the current package hash and browser
+evidence. The full-context website/automatic-compaction stress test is ongoing.
+
 The final Debian package installs all four native binaries under `/usr/bin`.
 The normal `bashkitten-web.service` was restarted on port 3939 with that binary;
 provider credential bytes were unchanged by deployment. The old user-local
 service/desktop overrides were removed and CLI links now resolve to `/usr/bin`.
-Earlier binaries remain only as a rollback backup. Only the normal Web service
-and shared target remain running. See `tests/live/2026-09-07-release.json`.
+Earlier binaries remain only as a rollback backup. At that delivery, only the
+normal Web service and shared target were running; the real website test now
+also has its normal session service. See `tests/live/2026-09-07-release.json`.
 
 The package was also installed and exercised in a disposable Debian container:
 CLI and agent startup, all shared libraries, the eight-model offline catalog,

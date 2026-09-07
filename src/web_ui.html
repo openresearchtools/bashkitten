@@ -316,11 +316,11 @@
     .activity summary { display: flex; min-height: 32px; align-items: center; gap: 8px; padding: 3px 2px; cursor: pointer; list-style: none; font-size: 13px; }
     .activity summary::-webkit-details-marker { display: none; }
     .tool-icon { display: inline-grid; width: 17px; height: 17px; flex: 0 0 auto; place-items: center; border: 1px solid var(--muted); border-radius: 4px; color: var(--muted); font: 9px ui-monospace, monospace; }
-    .activity .tool-name { color: var(--text); font-weight: 450; }
+    .activity .tool-name { color: var(--text); font-weight: 450; white-space: nowrap; }
     .activity .tool-focus { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .activity summary::after { margin-left: auto; color: var(--muted); content: "⌄"; font-size: 14px; transform: rotate(-90deg); transition: transform .12s; }
+    .activity summary::after { color: var(--muted); content: "⌄"; font-size: 14px; transform: rotate(-90deg); transition: transform .12s; }
     .activity[open] summary::after { transform: rotate(0deg); }
-    .activity .tool-state { display: block; padding: 6px 10px; border-top: 1px solid var(--line-soft); color: var(--ok); font-size: 12px; text-align: right; }
+    .activity .tool-state { margin-left: auto; flex: 0 0 auto; color: var(--ok); font-size: 12px; white-space: nowrap; }
     .activity.error .tool-state { color: var(--danger); }
     .tool-body { margin: 1px 20px 7px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--activity); }
     .tool-body pre { max-height: 330px; margin: 0; padding: 10px 12px; border: 0; border-radius: 0; background: transparent; }
@@ -376,7 +376,8 @@
     .dialog-body label { display: block; margin: 11px 0; color: var(--muted); font-size: 12px; }
     .dialog-body input, .dialog-body select { display: block; width: 100%; margin-top: 5px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); }
     .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
-    .dialog-actions button { padding: 8px 13px; border: 1px solid var(--line); border-radius: 8px; background: transparent; }
+    .dialog-actions button { padding: 8px 13px; border: 1px solid var(--line); border-radius: 8px; }
+    .dialog-actions button:not(.primary) { background: transparent; }
     .dialog-actions .primary { border: 0; }
     #folderDialog { width: min(620px, calc(100vw - 28px)); }
     .folder-toolbar { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; }
@@ -1065,6 +1066,21 @@
       return [...(historyRenderTarget || document).querySelectorAll('.activity[data-call]')].reverse().find(node => node.dataset.call === callId);
     }
 
+    function renderToolSource(details, block) {
+      details.querySelector('.tool-arguments')?.remove();
+      if (block.name !== 'write' || typeof block.arguments?.content !== 'string') return;
+      let source = details.querySelector('.tool-source');
+      if (!source) {
+        source = document.createElement('pre');
+        source.className = 'tool-source';
+        source.setAttribute('aria-label', 'Written content');
+        source.tabIndex = 0;
+        details.querySelector('.tool-body').prepend(source);
+      }
+      // Use the recorded call, not the current file, when replaying history.
+      source.textContent = block.arguments.content;
+    }
+
     function renderToolCall(block, body) {
       let details = findTool(block.id);
       if (details) {
@@ -1072,7 +1088,7 @@
         const presentation = toolPresentation(block);
         details.querySelector('.tool-name').textContent = presentation.action;
         details.querySelector('.tool-focus').textContent = presentation.focus;
-        details.querySelector('.tool-arguments')?.remove();
+        renderToolSource(details, block);
         // Final message blocks replace streaming placeholders in provider order.
         // Thinking may have been re-created immediately before this call.
         body.append(details);
@@ -1096,11 +1112,11 @@
       const state = document.createElement('span');
       state.className = 'tool-state';
       state.textContent = 'Queued';
-      summary.append(icon, name, focus);
+      summary.append(icon, name, focus, state);
       const toolBody = document.createElement('div');
       toolBody.className = 'tool-body';
-      toolBody.append(state);
       details.append(summary, toolBody);
+      renderToolSource(details, block);
       body.append(details);
       return details;
     }
@@ -1116,23 +1132,24 @@
       const state = details.querySelector('.tool-state');
       state.textContent = live ? 'Running' : (message.isError ? 'Failed' : '✓ Success');
       const toolBody = details.querySelector('.tool-body');
-      [...toolBody.children].forEach(node => { if (node !== state) node.remove(); });
+      const source = toolBody.querySelector('.tool-source');
+      [...toolBody.children].forEach(node => { if (node !== source) node.remove(); });
       const imageBlocks = (Array.isArray(message.content) ? message.content : []).filter(block => block.type === 'image');
       const outputText = textBlocks(message.content);
-      if (outputText || !imageBlocks.length) {
+      if ((!source || message.isError) && (outputText || !imageBlocks.length)) {
         const output = document.createElement('pre');
         output.textContent = outputText || '(no output)';
-        toolBody.insertBefore(output, state);
+        toolBody.append(output);
       }
       if (message.details?.diff) {
         const diff = document.createElement('pre');
         diff.textContent = message.details.diff;
-        toolBody.insertBefore(diff, state);
+        toolBody.append(diff);
       }
       if (imageBlocks.length) {
         details.querySelector('.tool-name').textContent = 'Viewed';
         const label = details.querySelector('.tool-focus')?.textContent || 'Viewed image';
-        renderImages(message.content, toolBody, label, state);
+        renderImages(message.content, toolBody, label);
       }
     }
 
