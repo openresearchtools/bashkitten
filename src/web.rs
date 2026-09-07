@@ -386,6 +386,7 @@ struct MessageForm {
     parent: Option<String>,
     delivery: Option<String>,
     files: Vec<(String, Vec<u8>)>,
+    retained_attachments: Vec<PathBuf>,
 }
 
 async fn parse_form(mut multipart: Multipart) -> ApiResult<MessageForm> {
@@ -419,6 +420,7 @@ async fn parse_form(mut multipart: Multipart) -> ApiResult<MessageForm> {
             "thinking" => form.thinking = value,
             "parent" if !value.is_empty() => form.parent = Some(value),
             "delivery" => form.delivery = Some(value),
+            "retained_attachment" => form.retained_attachments.push(PathBuf::from(value)),
             _ => {}
         }
     }
@@ -470,6 +472,34 @@ fn save_attachments(
         saved.push(path);
     }
     Ok(saved)
+}
+
+fn retained_attachments(
+    paths: &AppPaths,
+    id: &str,
+    requested: Vec<PathBuf>,
+) -> Result<Vec<PathBuf>> {
+    if requested.is_empty() {
+        return Ok(Vec::new());
+    }
+    session::validate_id(id)?;
+    let root = fs::canonicalize(paths.session_dir(id).join("attachments"))?;
+    crate::paths::set_private_dir(&paths.session_dir(id))?;
+    crate::paths::set_private_dir(&root)?;
+    requested
+        .into_iter()
+        .map(|requested| {
+            let path = fs::canonicalize(&requested)
+                .context("Retained attachment is no longer available")?;
+            anyhow::ensure!(
+                path.starts_with(&root) && path.is_file(),
+                "Retained attachment is outside this session"
+            );
+            crate::paths::set_private_dir(path.parent().context("Attachment parent is missing")?)?;
+            crate::paths::set_private_file(&path)?;
+            Ok(path)
+        })
+        .collect()
 }
 
 async fn create_session(
@@ -548,7 +578,8 @@ async fn send_message(
     if !session::socket_is_live(&socket) {
         session::start_worker(&state.paths, &id)?;
     }
-    let attachments = save_attachments(&state.paths, &id, form.files)?;
+    let mut attachments = retained_attachments(&state.paths, &id, form.retained_attachments)?;
+    attachments.extend(save_attachments(&state.paths, &id, form.files)?);
     let delivery = if form.delivery.as_deref() == Some("steer") {
         Delivery::Steer
     } else {
@@ -843,12 +874,12 @@ async fn stop_session(
     State(state): State<WebState>,
     headers: HeaderMap,
     AxumPath(id): AxumPath<String>,
-) -> ApiResult<Json<Value>> {
+) -> ApiResult<Json<crate::lossless_json::Wire<Value>>> {
     require_mutation(&state, &headers)?;
-    tokio::task::spawn_blocking(move || session::stop_worker(&state.paths, &id))
+    let pending = tokio::task::spawn_blocking(move || session::stop_worker(&state.paths, &id))
         .await
         .context("wait for session cancellation")??;
-    Ok(Json(json!({"ok": true})))
+    Ok(logical_json(json!({"ok": true, "data": pending})))
 }
 
 async fn change_model(
@@ -1288,6 +1319,45 @@ const INDEX_HTML: &str = include_str!("web_ui.html");
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn recovered_attachments_stay_inside_the_original_session() {
+        use std::os::unix::fs::{PermissionsExt, symlink};
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("config"),
+            data: root.path().join("data"),
+            runtime: root.path().join("runtime"),
+        };
+        paths.ensure().unwrap();
+        let id = uuid::Uuid::now_v7().to_string();
+        ensure_private_dir(&paths.session_dir(&id).join("attachments")).unwrap();
+        let saved = save_attachments(
+            &paths,
+            &id,
+            vec![("original.txt".into(), b"unchanged attachment".to_vec())],
+        )
+        .unwrap();
+        fs::set_permissions(&saved[0], fs::Permissions::from_mode(0o644)).unwrap();
+        assert_eq!(
+            retained_attachments(&paths, &id, saved.clone()).unwrap(),
+            saved
+        );
+        assert_eq!(fs::read(&saved[0]).unwrap(), b"unchanged attachment");
+        assert_eq!(
+            fs::metadata(&saved[0]).unwrap().permissions().mode() & 0o777,
+            0o600
+        );
+        let outside = root.path().join("not-an-attachment");
+        fs::write(&outside, "private unrelated file").unwrap();
+        assert!(retained_attachments(&paths, &id, vec![outside.clone()]).is_err());
+        let link = saved[0].parent().unwrap().join("escape.txt");
+        symlink(&outside, &link).unwrap();
+        assert!(retained_attachments(&paths, &id, vec![link]).is_err());
+        let other = uuid::Uuid::now_v7().to_string();
+        ensure_private_dir(&paths.session_dir(&other).join("attachments")).unwrap();
+        assert!(retained_attachments(&paths, &other, saved).is_err());
+    }
 
     #[tokio::test]
     async fn offline_stream_is_read_only_and_resume_requires_origin_and_csrf() {

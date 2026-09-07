@@ -648,12 +648,15 @@
     let config = null;
     let pendingCwd = '';
     let pendingFiles = [];
+    let pendingRetainedAttachments = [];
     let folderView = {path: '', parent: null}, folderSelection = null, folderGeneration = 0;
     let activeSettingsTab = 'app';
     let queueState = {busy: false, steeringMessages: [], queuedMessages: []};
     let editingQueueId = null;
     let editingQueueToken = null;
     let queueEditStarting = false;
+    let queueEditSaving = false;
+    let editingQueueSnapshot = null;
     let renderedTurn = null;
     let displayedUsage = null;
     let viewerZoom = 1;
@@ -1228,10 +1231,11 @@
 
     function setRunButton(running) {
       const button = $('#sendBtn');
-      button.dataset.mode = running ? 'pause' : 'play';
-      button.textContent = running ? 'Ⅱ' : '▶';
-      button.title = running ? 'Stop current run' : 'Send';
-      button.setAttribute('aria-label', running ? 'Stop current run' : 'Send');
+      const editing = Boolean(editingQueueId);
+      button.dataset.mode = editing ? 'edit' : (running ? 'pause' : 'play');
+      button.textContent = running && !editing ? 'Ⅱ' : '▶';
+      button.title = editing ? (queuedItems().find(item => item.id === editingQueueId)?.kind === 'steer' ? 'Send edited steering message' : 'Save queued message') : (running ? 'Stop current run' : 'Send');
+      button.setAttribute('aria-label', button.title);
     }
 
     function renderEvent(event) {
@@ -1407,16 +1411,28 @@
       ];
     }
 
+    function recoverQueueDraft() {
+      if (!editingQueueId) return;
+      pendingRetainedAttachments = [...new Set([...pendingRetainedAttachments, ...(editingQueueSnapshot?.attachmentPaths || [])])];
+      editingQueueId = null;
+      editingQueueToken = null;
+      editingQueueSnapshot = null;
+      $('#attachBtn').disabled = false;
+      renderAttachments();
+      $('#composerHint').textContent = 'Queued message is no longer available. Your draft is kept; send to continue.';
+    }
+
     function renderQueueState(value = {}) {
       queueState = {
         busy: Boolean(value.busy),
         steeringMessages: value.steeringMessages || [],
         queuedMessages: value.queuedMessages || []
       };
-      setRunButton(queueState.busy);
       const panel = $('#queuePanel');
       panel.innerHTML = '';
       const items = queuedItems();
+      if (editingQueueId && !queueEditSaving && !items.some(item => item.id === editingQueueId)) recoverQueueDraft();
+      setRunButton(queueState.busy);
       panel.classList.toggle('hidden', !items.length);
       for (const item of items) {
         const row = document.createElement('div');
@@ -1435,7 +1451,7 @@
           steer.className = 'queue-steer';
           steer.textContent = 'Steer';
           steer.title = 'Deliver at the next safe agent boundary';
-          steer.onclick = () => mutateQueued(item.id, 'promote');
+          steer.onclick = () => editingQueueId === item.id ? saveQueueEdit(true) : mutateQueued(item.id, 'promote');
           row.append(steer);
         } else {
           row.append(document.createElement('span'));
@@ -1474,11 +1490,31 @@
           body: JSON.stringify({id, action, content, edit_token:editingQueueId === id ? editingQueueToken : null})
         });
         if (sessionView !== view) return;
-        if (editingQueueId === id && (action === 'edit' || action === 'remove')) cancelQueueEdit(false);
+        if (editingQueueId === id && (action === 'edit' || action === 'remove')) await cancelQueueEdit(false);
         renderQueueState(value.data);
+        return true;
       } catch (error) {
         await refreshQueue().catch(() => {});
-        alert(error.message);
+        if (editingQueueId === id && /no longer owned|no longer exists|no longer running/.test(error.message)) recoverQueueDraft();
+        $('#composerHint').textContent = error.message + ' · Draft kept';
+        return false;
+      }
+    }
+
+    async function saveQueueEdit(promote = false) {
+      if (!editingQueueId || queueEditSaving) return;
+      const text = $('#prompt').value.trim();
+      if (!text && !editingQueueSnapshot?.attachments?.length) return;
+      queueEditSaving = true;
+      $('#sendBtn').disabled = true;
+      try {
+        // Promotion keeps the edit hold, so the worker cannot consume old text.
+        if (promote && !await mutateQueued(editingQueueId, 'promote')) return;
+        await mutateQueued(editingQueueId, 'edit', text);
+      } finally {
+        queueEditSaving = false;
+        $('#sendBtn').disabled = false;
+        renderQueueState(queueState);
       }
     }
 
@@ -1506,7 +1542,9 @@
       } catch (error) { $('#composerHint').textContent = error.message; return; }
       editingQueueId = item.id;
       editingQueueToken = token;
+      editingQueueSnapshot = item;
       pendingFiles = [];
+      pendingRetainedAttachments = [];
       renderAttachments();
       $('#prompt').value = item.content || '';
       $('#prompt').dispatchEvent(new Event('input'));
@@ -1527,12 +1565,14 @@
           renderQueueState(result.data);
         } catch (error) {
           $('#composerHint').textContent = error.message;
-          if (!/no longer owned|no longer exists/.test(error.message)) return;
+          if (!/no longer owned|no longer exists|no longer running/.test(error.message)) return;
         }
       }
       editingQueueId = null;
       editingQueueToken = null;
+      editingQueueSnapshot = null;
       $('#prompt').value = '';
+      pendingRetainedAttachments = [];
       $('#prompt').style.height = 'auto';
       $('#composerHint').textContent = queueState.busy ? 'Agent is working' : 'Paste, drag, or attach files';
       $('#attachBtn').disabled = false;
@@ -1755,6 +1795,8 @@
       source?.close();
       source = null;
       pendingFiles = [];
+      pendingRetainedAttachments = [];
+      editingQueueSnapshot = null;
       renderAttachments();
       $('#title').textContent = session.title;
       $('#folderLabel').textContent = session.cwd || 'Working folder';
@@ -1816,6 +1858,7 @@
       source?.close();
       source = null;
       pendingFiles = [];
+      pendingRetainedAttachments = [];
       editingQueueId = null;
       renderedTurn = null;
       renderedEntries = new Set();
@@ -1848,15 +1891,22 @@
     function renderAttachments() {
       const tray = $('#attachmentTray');
       tray.innerHTML = '';
-      const retained = editingQueueId ? (queuedItems().find(item => item.id === editingQueueId)?.attachments || []) : [];
+      const retained = editingQueueId ? (editingQueueSnapshot?.attachments || []) : pendingRetainedAttachments.map(path => path.split('/').pop());
       tray.classList.toggle('hidden', !pendingFiles.length && !retained.length);
-      for (const name of retained) {
+      retained.forEach((name, index) => {
         const item = document.createElement('div');
         item.className = 'attachment file';
         item.textContent = name;
         item.title = 'Attachment retained with this queued message';
+        if (!editingQueueId) {
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.textContent = '×';
+          remove.onclick = () => { pendingRetainedAttachments.splice(index, 1); renderAttachments(); };
+          item.append(remove);
+        }
         tray.append(item);
-      }
+      });
       pendingFiles.forEach((file, index) => {
         const item = document.createElement('div');
         const isImage = file.type.startsWith('image/');
@@ -2076,9 +2126,11 @@
 
     $('#composer').onsubmit = async event => {
       event.preventDefault();
+      if ($('#sendBtn').disabled) return;
       const text = $('#prompt').value.trim();
-      if (!text && !pendingFiles.length && !editingQueueId) return;
-      if (current && !pendingFiles.length && /^\/compact(?:\s|$)/.test(text)) {
+      if (editingQueueId) { await saveQueueEdit(); return; }
+      if (!text && !pendingFiles.length && !pendingRetainedAttachments.length) return;
+      if (current && !pendingFiles.length && !pendingRetainedAttachments.length && /^\/compact(?:\s|$)/.test(text)) {
         $('#prompt').value = '';
         try {
           await api(`/api/sessions/${current.id}/compact`, {method: 'POST', headers: {'content-type':'application/json'}, body: JSON.stringify({instructions: text.slice(8).trim() || null})});
@@ -2086,17 +2138,12 @@
         } catch (error) { $('#composerHint').textContent = error.message; }
         return;
       }
-      if (editingQueueId) {
-        if (!text && !queuedItems().find(item => item.id === editingQueueId)?.attachments?.length) return;
-        $('#sendBtn').disabled = true;
-        await mutateQueued(editingQueueId, 'edit', text);
-        $('#sendBtn').disabled = false;
-        return;
-      }
       const files = [...pendingFiles];
+      const retained = [...pendingRetainedAttachments];
       $('#prompt').value = '';
       $('#prompt').style.height = 'auto';
       pendingFiles = [];
+      pendingRetainedAttachments = [];
       renderAttachments();
       if ($('#chatInner .welcome')) $('#chatInner').innerHTML = '';
       $('#sendBtn').disabled = true;
@@ -2115,7 +2162,7 @@
           $('#folderLabel').textContent = current.cwd;
           $('#folderBtn').disabled = false;
         }
-        if (!source) {
+        if (!source || !queueState.busy) {
           await api(`/api/sessions/${current.id}/resume`, {method:'POST'});
           await connectSession(current.id);
         }
@@ -2123,38 +2170,52 @@
         messageForm.append('content', text);
         messageForm.append('delivery', 'queue');
         for (const file of files) messageForm.append('file', file);
+        for (const path of retained) messageForm.append('retained_attachment', path);
         const result = await api(`/api/sessions/${current.id}/messages`, {method: 'POST', body: messageForm});
         renderQueueState(result.data);
         setTimeout(() => refreshQueue().catch(() => {}), 100);
         if (current) current.running = true;
         setRunButton(true);
       } catch (error) {
-        const body = messageRow('assistant', 'error');
-        body.textContent = error.message;
+        $('#prompt').value = [text, $('#prompt').value].filter(value => value.trim()).join('\n\n');
+        $('#prompt').dispatchEvent(new Event('input'));
+        pendingFiles.unshift(...files);
+        pendingRetainedAttachments = [...new Set([...retained, ...pendingRetainedAttachments])];
+        renderAttachments();
+        $('#composerHint').textContent = error.message + ' · Draft kept';
       } finally { $('#sendBtn').disabled = false; }
     };
 
     async function stopCurrentRun() {
       if (!current) return;
+      const fallback = queuedItems();
       $('#sendBtn').disabled = true;
       try {
-        await api(`/api/sessions/${current.id}/stop`, {method: 'POST'});
-      } catch (error) {
-        if (!String(error.message).includes('not loaded')) alert(error.message);
-      } finally {
+        const result = await api(`/api/sessions/${current.id}/stop`, {method: 'POST'});
+        const pending = result.data?.queuedMessages ? [...result.data.steeringMessages, ...result.data.queuedMessages] : fallback;
+        const restored = pending.filter(item => item.id !== editingQueueId).map(item => item.content);
+        const draft = $('#prompt').value;
+        pendingRetainedAttachments = [...new Set([...pendingRetainedAttachments, ...pending.flatMap(item => item.attachmentPaths || [])])];
+        recoverQueueDraft();
+        $('#prompt').value = [...restored, draft].filter(value => value?.trim()).join('\n\n');
+        $('#prompt').dispatchEvent(new Event('input'));
+        renderAttachments();
         source?.close();
         source = null;
         current.running = false;
         renderQueueState({busy: false});
-        $('#composerHint').textContent = 'Paste, drag, or attach files';
-        $('#sendBtn').disabled = false;
-        setRunButton(false);
+        $('#composerHint').textContent = restored.length || draft ? 'Draft kept. Send when ready to continue.' : 'Paste, drag, or attach files';
         await loadSessions().catch(() => {});
+      } catch (error) {
+        $('#composerHint').textContent = error.message;
+      } finally {
+        $('#sendBtn').disabled = false;
+        setRunButton(queueState.busy);
       }
     }
 
     $('#sendBtn').onclick = () => {
-      if ($('#sendBtn').dataset.mode === 'pause') stopCurrentRun();
+      if (!editingQueueId && $('#sendBtn').dataset.mode === 'pause') stopCurrentRun();
       else $('#composer').requestSubmit();
     };
 

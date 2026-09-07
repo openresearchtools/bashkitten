@@ -52,6 +52,13 @@ See `tests/live/2026-09-07-codex-auth.json` and
 
 ### Installed release
 
+The queue-composer correction is also installed: saving a held edit takes
+precedence over Pause, Steer sends the edited text, and aborted or missing
+queue references recover resendable drafts with their attachments. All 134
+native tests and strict Clippy pass, with real browser save/steer/stale-edit
+recovery checks. See `docs/parity-queue-composer-2026-09-07.md` for evidence and
+the latest package hash. The full-context stress test remains ongoing.
+
 The subsequent write-display/folder-button correction is installed in the same
 port-3939 service. Completed writes retain their exact contents in an expandable
 scroll pane, result status stays on the summary row, and primary dialog actions

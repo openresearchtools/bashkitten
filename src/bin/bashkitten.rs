@@ -224,7 +224,9 @@ async fn main() -> Result<()> {
                     println!("{}", serde_json::to_string(&entry)?);
                 }
             }
-            SessionCommand::Stop { id } => session::stop_worker(&paths, &id)?,
+            SessionCommand::Stop { id } => {
+                session::stop_worker(&paths, &id)?;
+            }
             SessionCommand::Compact { id, instructions } => {
                 let socket = session::control_socket(&paths, &id)?;
                 if !session::socket_is_live(&socket) {

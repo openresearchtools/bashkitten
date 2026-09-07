@@ -161,7 +161,8 @@ fn queued_message_value(message: &QueuedMessage) -> Value {
         "content": message.content,
         "delivery": message.delivery,
         "editing": message.editing,
-        "attachments": message.attachments.iter().filter_map(|path| path.file_name()).map(|name| name.to_string_lossy()).collect::<Vec<_>>()
+        "attachments": message.attachments.iter().filter_map(|path| path.file_name()).map(|name| name.to_string_lossy()).collect::<Vec<_>>(),
+        "attachmentPaths": message.attachments
     })
 }
 
@@ -410,10 +411,18 @@ async fn handle_connection(stream: UnixStream, shared: Arc<Shared>) -> Result<()
             write_reply(&mut write, true, "status", state).await?;
         }
         ControlRequest::Stop => {
-            write_reply(&mut write, true, "stopping", json!({})).await?;
+            let queues = shared.queues.lock().await;
+            write_reply(
+                &mut write,
+                true,
+                "stopping",
+                queue_state_value(&queues, false),
+            )
+            .await?;
             // Put the acknowledgment on the socket before waking an idle main
             // loop, which may otherwise exit the process before replying.
             shared.stop();
+            drop(queues);
         }
         ControlRequest::Compact {
             custom_instructions,
@@ -2605,6 +2614,73 @@ mod runtime_tests {
 
     #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
     async fn queue_edit_holds_fifo_head_and_preserves_attachments_until_saved() {
+        exercise_held_queue_edit(false).await;
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn stop_returns_pending_drafts_and_attachments_before_worker_exit() {
+        let tool = format!(
+            "data: {}\n\ndata: [DONE]\n\n",
+            json!({"choices":[{"delta":{"tool_calls":[{"index":0,"id":"wait","function":{"name":"bash","arguments":"{\"command\":\"sleep 5\"}"}}]},"finish_reason":"tool_calls"}]})
+        );
+        let (url, requests, server) = sequence_server(vec![(200, tool)]).await;
+        let root = tempfile::tempdir().unwrap();
+        let paths = fixture_paths(root.path(), &url);
+        let attachment = root.path().join("draft.txt");
+        fs::write(&attachment, "retain me").unwrap();
+        let (id, task) = worker(&paths, root.path()).await;
+        let mut events = connect(&paths, &id, ControlRequest::Subscribe).await;
+        next(&mut events).await;
+        prompt(&paths, &id).await;
+        until(&mut events, |event| event["type"] == "tool_start").await;
+        for (delivery, content) in [
+            (Delivery::Queue, "follow-up draft"),
+            (Delivery::Steer, "steering draft"),
+        ] {
+            let mut reply = connect(
+                &paths,
+                &id,
+                ControlRequest::Send {
+                    delivery,
+                    content: content.into(),
+                    attachments: vec![attachment.clone()],
+                    source_session: None,
+                },
+            )
+            .await;
+            assert_eq!(next(&mut reply).await["ok"], true);
+        }
+        let mut reply = connect(&paths, &id, ControlRequest::Stop).await;
+        let snapshot = next(&mut reply).await;
+        assert_eq!(snapshot["ok"], true);
+        assert_eq!(
+            snapshot["data"]["queuedMessages"][0]["content"],
+            "follow-up draft"
+        );
+        assert_eq!(
+            snapshot["data"]["steeringMessages"][0]["content"],
+            "steering draft"
+        );
+        assert_eq!(
+            snapshot["data"]["queuedMessages"][0]["attachmentPaths"][0],
+            attachment.to_str().unwrap()
+        );
+        tokio::time::timeout(Duration::from_secs(5), task)
+            .await
+            .unwrap()
+            .unwrap()
+            .unwrap();
+        assert_eq!(requests.lock().await.len(), 1);
+        assert_eq!(fs::read_to_string(attachment).unwrap(), "retain me");
+        server.abort();
+    }
+
+    #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+    async fn promoted_held_edit_keeps_priority_and_attachments_until_saved() {
+        exercise_held_queue_edit(true).await;
+    }
+
+    async fn exercise_held_queue_edit(promote: bool) {
         let tool = format!(
             "data: {}\n\ndata: [DONE]\n\n",
             json!({"choices":[{"delta":{"tool_calls":[{"index":0,"id":"wait","function":{"name":"bash","arguments":"{\"command\":\"sleep 0.25\"}"}}]},"finish_reason":"tool_calls"}]})
@@ -2720,6 +2796,31 @@ mod runtime_tests {
         let state = next(&mut reply).await;
         assert_eq!(state["data"]["queued"], 2);
         assert_eq!(requests.lock().await.len(), 2);
+        if promote {
+            let mut reply = connect(
+                &paths,
+                &id,
+                ControlRequest::QueueAction {
+                    id: first.clone(),
+                    action: QueueAction::Promote,
+                    content: None,
+                    edit_token: Some("replacement-editor".into()),
+                },
+            )
+            .await;
+            let state = next(&mut reply).await;
+            assert_eq!(state["data"]["steeringMessages"][0]["editing"], true);
+            assert_eq!(
+                state["data"]["steeringMessages"][0]["attachmentPaths"][0],
+                attachment.to_str().unwrap()
+            );
+            tokio::time::sleep(Duration::from_millis(50)).await;
+            assert_eq!(
+                requests.lock().await.len(),
+                2,
+                "a later follow-up bypassed the held steering edit"
+            );
+        }
         let mut reply = connect(
             &paths,
             &id,

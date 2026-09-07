@@ -1709,7 +1709,8 @@ impl<T> AgentQueues<T> {
                 messages: steering,
             });
         }
-        if would_otherwise_stop {
+        // A held steering edit must keep its priority over later follow-ups.
+        if would_otherwise_stop && self.steering.is_empty() {
             let follow_up = self.follow_up.drain_ready(ready);
             if !follow_up.is_empty() {
                 return Some(QueueDrain {

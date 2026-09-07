@@ -853,13 +853,13 @@ pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {
     bail!("Agent session did not create its control socket")
 }
 
-pub fn stop_worker(paths: &AppPaths, id: &str) -> Result<()> {
+pub fn stop_worker(paths: &AppPaths, id: &str) -> Result<Value> {
     validate_id(id)?;
     let socket = control_socket(paths, id)?;
     if !socket_is_live(&socket) {
-        return Ok(());
+        return Ok(Value::Null);
     }
-    send(paths, id, &ControlRequest::Stop)?;
+    let reply = send(paths, id, &ControlRequest::Stop)?;
     let started = Instant::now();
     while socket_is_live(&socket) {
         if started.elapsed() >= Duration::from_secs(30) {
@@ -869,7 +869,7 @@ pub fn stop_worker(paths: &AppPaths, id: &str) -> Result<()> {
         }
         std::thread::sleep(Duration::from_millis(25));
     }
-    Ok(())
+    Ok(reply.data)
 }
 
 pub fn new_message_entry(role: &str, content: Value) -> Value {
