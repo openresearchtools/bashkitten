@@ -18,7 +18,11 @@
         "timestamp": "2026-09-07T22:36:12.688Z"
       }
     ],
-    "followupAfterCompaction": true
+    "followupAfterCompaction": true,
+    "finalFollowupCompleted": true,
+    "independentDomainTests": 11,
+    "independentHttpTests": 8,
+    "browserAdminNavigationCorrected": true
   },
   "streamedCompaction": {
     "session": "01a07e0f-c6be-73d3-8d76-b6375b3d09d5",
@@ -48,7 +52,25 @@
     "id": "CUDA0",
     "name": "NVIDIA GeForce RTX 5090 Laptop GPU"
   },
-  "nativeTests": 155,
+  "nativeTests": 157,
   "strictClippy": "passed",
-  "packageSha256": "c26c6a5215b0ebb50e8f8e2df0b8f859932490c78ab5c87159b039c0f3c4c124"
+  "packageSha256": "c4b8e768275d3bcdff6737833aba4e483c01f349480b0bdb45bde72d3fc16099",
+  "projectDeletion": {
+    "cwd": "/run/media/user/Data/bashkitten-builds/project-delete-browser-x68olfsy",
+    "sessionIds": [
+      "08afb73a-91b9-41b7-a8c5-55456710fc7f",
+      "344f3eda-7158-42c1-af57-f1f2cb192b3b"
+    ],
+    "verified": {
+      "chatDirectoriesRemoved": true,
+      "attachmentsRemoved": true,
+      "workingFilePreserved": true,
+      "unrelatedChatPreserved": true,
+      "browserGroupRemoved": true,
+      "renameSurvivedReload": true
+    },
+    "secondaryClickMenu": true,
+    "keyboardContextMenu": true,
+    "httpFixtureChats": 103
+  }
 }

@@ -164,6 +164,10 @@ fn router_with_restart_error(
         .route("/api/logout", post(logout))
         .route("/api/models", get(list_models))
         .route("/api/sessions", get(list_sessions).post(create_session))
+        .route(
+            "/api/session-groups",
+            get(preview_project_sessions).delete(delete_project_sessions),
+        )
         .route("/api/sessions/{id}/segments/{segment}", get(read_segment))
         .route(
             "/api/sessions/{id}/segments/current",
@@ -912,6 +916,46 @@ struct RenameSession {
 struct DeleteSession {
     confirm: bool,
 }
+#[derive(Deserialize)]
+struct ProjectQuery {
+    cwd: PathBuf,
+}
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct DeleteProject {
+    cwd: PathBuf,
+    session_ids: Vec<String>,
+    confirm: bool,
+}
+async fn preview_project_sessions(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    Query(body): Query<ProjectQuery>,
+) -> ApiResult<Json<Value>> {
+    authenticated(&state, &headers)?;
+    let ids =
+        tokio::task::spawn_blocking(move || session::project_sessions(&state.paths, &body.cwd))
+            .await
+            .context("list project chats")??;
+    Ok(Json(json!({"sessionIds":ids})))
+}
+async fn delete_project_sessions(
+    State(state): State<WebState>,
+    headers: HeaderMap,
+    Json(body): Json<DeleteProject>,
+) -> ApiResult<Json<Value>> {
+    require_mutation(&state, &headers)?;
+    if !body.confirm {
+        return Err(anyhow::anyhow!("Confirm project chat deletion first").into());
+    }
+    let ids = body.session_ids.clone();
+    tokio::task::spawn_blocking(move || {
+        session::delete_project(&state.paths, &body.cwd, &body.session_ids)
+    })
+    .await
+    .context("wait for project chat deletion")??;
+    Ok(Json(json!({"ok":true,"deletedIds":ids})))
+}
 async fn rename_session(
     State(state): State<WebState>,
     headers: HeaderMap,
@@ -1506,6 +1550,103 @@ mod tests {
         );
         assert!(!paths.session_dir(&id).exists());
         assert!(root.path().exists());
+        // Project preview must include chats beyond the sidebar's 100-row page.
+        let mut project_ids = Vec::new();
+        for _ in 0..103 {
+            project_ids.push(
+                session::create(
+                    &paths,
+                    &NewSession {
+                        cwd: root.path().into(),
+                        model: "p/m".into(),
+                        thinking: "off".into(),
+                        model_parameters: json!({}),
+                        prompt: "Project fixture".into(),
+                        attachments: vec![],
+                        parent: None,
+                    },
+                )
+                .unwrap(),
+            );
+        }
+        project_ids.sort();
+        let group_url = format!("{origin}/api/session-groups");
+        assert_eq!(
+            http.get(&group_url)
+                .query(&[("cwd", root.path())])
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::UNAUTHORIZED
+        );
+        let preview: Value = http
+            .get(&group_url)
+            .query(&[("cwd", root.path())])
+            .header(header::COOKIE, &cookie)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(preview["sessionIds"], json!(project_ids));
+        let body = json!({"cwd":root.path(),"sessionIds":project_ids,"confirm":true});
+        for request in [
+            http.delete(&group_url),
+            http.delete(&group_url)
+                .header(header::COOKIE, &cookie)
+                .header(header::ORIGIN, &origin),
+            http.delete(&group_url)
+                .header(header::COOKIE, &cookie)
+                .header(header::ORIGIN, "http://other.invalid")
+                .header("x-bashkitten-csrf", &login.csrf),
+        ] {
+            assert_eq!(
+                request.json(&body).send().await.unwrap().status(),
+                StatusCode::FORBIDDEN
+            );
+        }
+        let authorized_group = || {
+            http.delete(&group_url)
+                .header(header::COOKIE, &cookie)
+                .header(header::ORIGIN, &origin)
+                .header("x-bashkitten-csrf", &login.csrf)
+        };
+        let mut unconfirmed = body.clone();
+        unconfirmed["confirm"] = json!(false);
+        assert_eq!(
+            authorized_group()
+                .json(&unconfirmed)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::BAD_REQUEST
+        );
+        let mut stale = body.clone();
+        stale["sessionIds"] = json!([project_ids[0]]);
+        assert_eq!(
+            authorized_group()
+                .json(&stale)
+                .send()
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::BAD_REQUEST
+        );
+        assert!(project_ids.iter().all(|id| paths.session_dir(id).is_dir()));
+        let deleted: Value = authorized_group()
+            .json(&body)
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(deleted["deletedIds"], json!(project_ids));
+        assert!(project_ids.iter().all(|id| !paths.session_dir(id).exists()));
+        assert!(root.path().is_dir());
         server.abort();
     }
 

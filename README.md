@@ -67,7 +67,9 @@ automatic continuation. `/goal pause`, `/goal resume`, and `/goal clear` manage 
 compacting, restores its partial text after reload, and retains the finished
 summary in an expandable scroll pane. The header shows the compaction count.
 
-Each sidebar chat has a **⋯** menu for Rename chat and Delete chat. Deletion asks
+Secondary-click a sidebar chat for Rename chat and Delete chat. Secondary-click
+a project folder for Delete project chats; this includes every chat recorded
+under that exact folder. Shift+F10 opens the same menus. Deletion asks
 for confirmation and removes only the selected chat's session directory,
 including history and copied attachments. Its working folder and project files
 are kept. A running worker is stopped before its storage is removed.

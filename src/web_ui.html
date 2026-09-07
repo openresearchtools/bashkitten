@@ -165,15 +165,15 @@
     }
     .session:hover { background: var(--surface); }
     .session.active { background: var(--surface-2); }
-    .session { padding-right: 46px; }
-    .session-more { position:absolute; right:5px; top:3px; width:26px; height:26px; border:0; background:transparent; color:var(--muted); border-radius:5px; }
-    .session-more:hover, .session-more:focus-visible { background:var(--surface-2); color:var(--text); }
+    .session { padding-right: 22px; }
+    .session:focus-visible, .folder-heading:focus-visible { outline:1px solid var(--text); outline-offset:-1px; }
     #sessionActions { position:fixed; z-index:20; min-width:150px; padding:4px; background:var(--surface); border:1px solid var(--line); border-radius:7px; box-shadow:0 6px 20px var(--shadow); }
     #sessionActions button { display:block; width:100%; text-align:left; padding:8px 10px; border:0; background:transparent; }
+    #sessionActions button.hidden { display:none; }
     #sessionActions button:hover, #sessionActions button:focus-visible { background:var(--surface-2); }
     .dialog-actions .delete-confirm { background:var(--danger); color:#fff; border:0; }
     .session b { display: block; overflow: hidden; font-size: 13px; font-weight: 430; text-overflow: ellipsis; white-space: nowrap; }
-    .running-dot { position: absolute; top: 12px; right: 35px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
+    .running-dot { position: absolute; top: 12px; right: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--ok); }
     #workspace { position: relative; display: grid; min-width: 0; min-height: 0; height: 100%; overflow: hidden; grid-template-rows: 58px minmax(0, 1fr) auto; }
     .topbar { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 0 18px; border-bottom: 1px solid var(--line-soft); }
     .chat-heading { display: flex; min-width: 0; flex: 1; align-items: center; gap: 10px; }
@@ -691,6 +691,7 @@
   <div id="sessionActions" class="hidden" role="menu" aria-label="Chat actions">
     <button id="renameChat" type="button" role="menuitem">Rename chat</button>
     <button id="deleteChat" type="button" role="menuitem">Delete chat</button>
+    <button id="deleteProject" type="button" role="menuitem" class="hidden">Delete project chats</button>
   </div>
   <dialog id="renameChatDialog" aria-labelledby="renameChatHeading">
     <form id="renameChatForm" class="dialog-body">
@@ -704,7 +705,7 @@
     <form id="deleteChatForm" class="dialog-body">
       <h2 id="deleteChatHeading">Delete chat?</h2>
       <p id="deleteChatName"></p>
-      <p>This permanently deletes this chat’s history and stored attachments. Any running work in this chat will stop.</p>
+      <p id="deleteChatDescription">This permanently deletes this chat’s history and stored attachments. Any running work in this chat will stop.</p>
       <p><strong>Your working folder and project files will be kept.</strong></p>
       <p id="deleteChatError" class="meta" role="alert"></p>
       <div class="dialog-actions"><button id="cancelChatDelete" type="button" data-close autofocus>Cancel</button><button id="confirmChatDelete" class="primary delete-confirm">Delete chat</button></div>
@@ -1706,6 +1707,7 @@
         const label = document.createElement('span');
         label.textContent = folderDisplayName(folder);
         heading.append(label);
+        if(folder)bindSessionContextMenu(heading,{cwd:folder,project:true});
         group.append(heading);
         for (const session of groupSessions) {
           const item = document.createElement('div');
@@ -1721,9 +1723,9 @@
             dot.title = 'Running';
             item.append(dot);
           }
-          const more=document.createElement('button');more.type='button';more.className='session-more';more.textContent='⋯';more.setAttribute('aria-label','Actions for '+session.title);more.setAttribute('aria-haspopup','menu');
-          more.onclick=event=>{event.stopPropagation();showSessionActions(session,more);};item.append(more);
+          bindSessionContextMenu(item,session);
           item.onclick = () => openSession(session);
+          item.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();openSession(session);}});
           group.append(item);
         }
         root.append(group);
@@ -1731,16 +1733,47 @@
       root.scrollTop = scrollTop;
     }
 
-    let managedChat=null, chatActionPending=false;
-    function closeSessionActions(){ $('#sessionActions').classList.add('hidden'); }
-    function showSessionActions(session,button){
-      managedChat={...session};const menu=$('#sessionActions'),box=button.getBoundingClientRect();menu.classList.remove('hidden');
-      menu.style.left=Math.max(8,Math.min(box.left,window.innerWidth-menu.offsetWidth-8))+'px';
-      menu.style.top=Math.max(8,Math.min(box.bottom,window.innerHeight-menu.offsetHeight-8))+'px';
-      $('#renameChat').focus();
+    let managedChat=null, chatActionPending=false, sessionActionAnchor=null;
+    function bindSessionContextMenu(element,target){
+      element.tabIndex=0;element.setAttribute('aria-haspopup','menu');
+      element.oncontextmenu=event=>{event.preventDefault();showSessionActions(target,element,event.clientX,event.clientY);};
+      element.onkeydown=event=>{if(event.key==='ContextMenu'||(event.shiftKey&&event.key==='F10')){event.preventDefault();showSessionActions(target,element);}};
+    }
+    function closeSessionActions(restoreFocus=false){
+      const menu=$('#sessionActions');if(menu.classList.contains('hidden'))return;
+      menu.classList.add('hidden');if(restoreFocus)sessionActionAnchor?.focus();
+    }
+    function showSessionActions(target,anchor,x,y){
+      if(chatActionPending)return;
+      managedChat={...target};sessionActionAnchor=anchor;
+      const menu=$('#sessionActions'),box=anchor.getBoundingClientRect();
+      $('#renameChat').classList.toggle('hidden',!!target.project);$('#deleteChat').classList.toggle('hidden',!!target.project);$('#deleteProject').classList.toggle('hidden',!target.project);
+      menu.setAttribute('aria-label',target.project?'Project actions':'Chat actions');menu.classList.remove('hidden');
+      menu.style.left=Math.max(8,Math.min(x??box.left,window.innerWidth-menu.offsetWidth-8))+'px';
+      menu.style.top=Math.max(8,Math.min(y??box.bottom,window.innerHeight-menu.offsetHeight-8))+'px';
+      (target.project?$('#deleteProject'):$('#renameChat')).focus();
     }
     $('#renameChat').onclick=()=>{closeSessionActions();$('#chatName').value=managedChat.title;$('#renameChatError').textContent='';$('#renameChatDialog').showModal();$('#chatName').select();};
-    $('#deleteChat').onclick=()=>{closeSessionActions();$('#deleteChatName').textContent=managedChat.title;$('#deleteChatError').textContent='';$('#deleteChatDialog').showModal();$('#cancelChatDelete').focus();};
+    async function showDeleteConfirmation(){
+      closeSessionActions();const target=managedChat;
+      $('#deleteChatHeading').textContent=target.project?'Delete project chats?':'Delete chat?';
+      $('#deleteChatName').textContent=target.project?target.cwd:target.title;
+      $('#deleteChatDescription').textContent=target.project?'Counting project chats…':'This permanently deletes this chat’s history and stored attachments. Any running work in this chat will stop.';
+      $('#confirmChatDelete').textContent=target.project?'Delete project chats':'Delete chat';
+      $('#confirmChatDelete').disabled=!!target.project;$('#deleteChatError').textContent='';
+      $('#deleteChatDialog').showModal();$('#cancelChatDelete').focus();
+      if(target.project){
+        try{const result=await api('/api/session-groups?cwd='+encodeURIComponent(target.cwd));
+          if(managedChat!==target||!$('#deleteChatDialog').open)return;
+          target.sessionIds=result.sessionIds;
+          const count=target.sessionIds.length;
+          $('#deleteChatDescription').textContent=`This permanently deletes ${count} ${count===1?'chat':'chats'} and all their stored history and attachments. Any running work in these chats will stop.`;
+          $('#confirmChatDelete').disabled=!count;
+        }catch(error){if(managedChat===target)$('#deleteChatError').textContent=error.message;}
+      }
+    }
+    $('#deleteChat').onclick=showDeleteConfirmation;
+    $('#deleteProject').onclick=showDeleteConfirmation;
     $('#renameChatForm').onsubmit=async event=>{
       event.preventDefault();if(chatActionPending)return;chatActionPending=true;$('#saveChatName').disabled=true;
       const target=managedChat;
@@ -1754,18 +1787,27 @@
     $('#deleteChatForm').onsubmit=async event=>{
       event.preventDefault();if(chatActionPending)return;chatActionPending=true;$('#confirmChatDelete').disabled=true;$('#cancelChatDelete').disabled=true;
       const target=managedChat;
-      try {await api('/api/sessions/'+encodeURIComponent(target.id),{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({confirm:true})});
+      try {const result=await api(target.project?'/api/session-groups':'/api/sessions/'+encodeURIComponent(target.id),{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify(target.project?{cwd:target.cwd,sessionIds:target.sessionIds,confirm:true}:{confirm:true})});
         if(loadingSessions)await loadingSessions.catch(()=>{});
-        sessionCache=sessionCache.filter(row=>row.id!==target.id);
-        if(current?.id===target.id){editingQueueId=null;editingQueueToken=null;editingQueueSnapshot=null;await beginNewSession();}
+        const deleted=new Set(target.project?result.deletedIds:[target.id]);
+        sessionCache=sessionCache.filter(row=>!deleted.has(row.id));
+        if(deleted.has(current?.id)){editingQueueId=null;editingQueueToken=null;editingQueueSnapshot=null;await beginNewSession();}
         renderSessionSidebar(sessionCache);$('#deleteChatDialog').close();
+        await loadSessions();
       }catch(error){$('#deleteChatError').textContent=error.message;}
       finally{chatActionPending=false;$('#confirmChatDelete').disabled=false;$('#cancelChatDelete').disabled=false;}
     };
     $('#deleteChatDialog').oncancel=event=>{if(chatActionPending)event.preventDefault();};
-    document.addEventListener('click',event=>{if(!event.target.closest('#sessionActions,.session-more'))closeSessionActions();});
-    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSessionActions();});
-    $('#sessionActions').onkeydown=event=>{if(event.key==='ArrowDown'||event.key==='ArrowUp'){event.preventDefault();(document.activeElement===$('#renameChat')?$('#deleteChat'):$('#renameChat')).focus();}};
+    document.addEventListener('pointerdown',event=>{if(!event.target.closest('#sessionActions'))closeSessionActions();});
+    document.addEventListener('keydown',event=>{if(event.key==='Escape')closeSessionActions(true);});
+    $('#sessions').addEventListener('scroll',()=>closeSessionActions());window.addEventListener('resize',()=>closeSessionActions());
+    $('#sessionActions').onkeydown=event=>{
+      if(event.key==='Tab'){closeSessionActions(true);return;}
+      if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+        event.preventDefault();const items=[...$('#sessionActions').querySelectorAll('button:not(.hidden)')],index=items.indexOf(document.activeElement);
+        items[(index+(event.key==='ArrowDown'?1:items.length-1))%items.length].focus();
+      }
+    };
 
     async function loadSessions(append = false) {
       if (loadingSessions) return loadingSessions;

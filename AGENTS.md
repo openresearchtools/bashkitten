@@ -36,7 +36,7 @@ The intentional BashKitten differences are limited to those expressly documented
 - The strict no-telemetry and explicit-network policy.
 - Explicitly requested session goals and goal completion through the existing CLI, composer Goal chip, and visible streamed compaction summaries; see `docs/native-downloads-goals-2026-09-07.md`.
 - The embedded SimpleHF Rust downloader and device/fit controls requested by the user; see `docs/native-downloads-goals-2026-09-07.md` and `docs/settings-llama-fit-devices-2026-09-07.md`.
-- Confirmed deletion of a complete session directory and title-file renaming from the sidebar; see `docs/chat-management-2026-09-07.md`. Deletion never targets the working directory.
+- Confirmed deletion of session directories, including all chats grouped under an exact project folder, and title-file renaming from sidebar secondary-click menus; see `docs/chat-management-2026-09-07.md`. Deletion never targets the working directory.
 - Changing an existing session's primary working folder at a completed-turn boundary, updating its current header and recording a folder-change event without moving or rewriting earlier history.
 
 These differences must remain as narrow as possible. Reuse Pi's logical formats and behavior inside them wherever this document requires parity. Keep a parity fixture or source citation for each ported behavior and a documented rationale for each intentional divergence.

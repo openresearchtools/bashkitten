@@ -37,7 +37,7 @@ normal tests and installed application require no Pi, Node.js or npm runtime.
 
 ### Requested controls and chat management — 2026-09-08
 
-Installed in the normal port-3939 app, with 155 native tests, strict Clippy,
+Installed in the normal port-3939 app, with 157 native tests, strict Clippy,
 formatting, embedded-JavaScript syntax and `dpkg --verify` passing. Evidence:
 `tests/live/2026-09-08-native-controls.json`.
 
@@ -55,21 +55,30 @@ formatting, embedded-JavaScript syntax and `dpkg --verify` passing. Evidence:
   compaction of a stress-test fork, survived reload, and was retained as an
   expandable completed entry. A message queued while compacting ran afterward
   and identified the original project's latest two requested feature groups.
-- Sidebar rename persists only the title. Confirmed deletion stops the selected
-  worker and removes only the ID-derived session directory. Native tests cover
+- Sidebar secondary-click menus offer chat rename/delete and project-group
+  deletion; Shift+F10 provides keyboard access without extra visible buttons.
+  Rename persists only the title. Confirmed deletion stops selected
+  workers and removes only ID-derived session directories. Native tests cover
   cancellation, working-file/sibling preservation, symlink refusal, contained
   attachment symlinks and HTTP authentication/CSRF/confirmation. Browser checks
   verified rename/reload, the confirmation's light-mode buttons, and Cancel.
+  An HTTP fixture deletes all 103 project chats across sidebar pagination.
+  Installed-browser confirmation deleted two disposable chat directories and
+  their group while preserving their working file and unrelated conversations.
 
 The original full-context website run naturally compacted at **262,501 tokens**
 with its **272,000-token** context and ordinary 16,384 reserve/20,000 recent-token
 settings unchanged. It produced `000002.jsonl` and accepted subsequent turns.
 The independent website probes passed 11 domain and 8 HTTP cases. Browser review
-verified persistent catalogue filters and administrator form writes; missing
-role navigation was sent back to the same Luna session for correction.
+verified persistent catalogue filters and administrator form writes. The same
+Luna session subsequently implemented missing role navigation and the requested
+admin workflow/member self-service changes, then ended normally. After restarting
+the owned website preview, browser navigation from the admin dashboard to the
+admin desk worked. Independent post-compaction probes again passed all 11 domain
+and 8 HTTP cases; the generated application reports 23 passing project tests.
 
 Final package SHA-256:
-`c26c6a5215b0ebb50e8f8e2df0b8f859932490c78ab5c87159b039c0f3c4c124`.
+`c4b8e768275d3bcdff6737833aba4e483c01f349480b0bdb45bde72d3fc16099`.
 Intentional differences and sources: `docs/native-downloads-goals-2026-09-07.md`,
 `docs/settings-llama-fit-devices-2026-09-07.md`, and
 `docs/chat-management-2026-09-07.md`.

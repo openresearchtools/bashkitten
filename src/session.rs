@@ -867,6 +867,77 @@ pub fn delete(paths: &AppPaths, id: &str) -> Result<()> {
     Ok(())
 }
 
+/// Sidebar groups use the exact recorded directory, not its canonical target.
+pub fn project_sessions(paths: &AppPaths, cwd: &Path) -> Result<Vec<String>> {
+    anyhow::ensure!(cwd.is_absolute(), "Project folder must be absolute");
+    let mut ids: Vec<_> = list(paths)?
+        .into_iter()
+        .filter(|row| {
+            row.cwd
+                .as_deref()
+                .is_some_and(|folder| folder.as_os_str() == cwd.as_os_str())
+        })
+        .map(|row| row.id)
+        .collect();
+    ids.sort();
+    Ok(ids)
+}
+
+pub fn delete_project(paths: &AppPaths, cwd: &Path, confirmed_ids: &[String]) -> Result<()> {
+    let mut ids = confirmed_ids.to_vec();
+    ids.sort();
+    anyhow::ensure!(
+        !ids.is_empty() && ids.windows(2).all(|pair| pair[0] != pair[1]),
+        "Confirm the project's chats first"
+    );
+    let check_membership = || -> Result<()> {
+        anyhow::ensure!(
+            project_sessions(paths, cwd)? == ids,
+            "Project chats changed; reopen deletion and confirm the current chats"
+        );
+        Ok(())
+    };
+    check_membership()?;
+    // A fixed lock order also serializes concurrent group and individual deletes.
+    let _guards = ids
+        .iter()
+        .map(|id| lock_session(paths, id))
+        .collect::<Result<Vec<_>>>()?;
+    check_membership()?;
+    let dirs = ids
+        .iter()
+        .map(|id| paths.session_dir(id))
+        .collect::<Vec<_>>();
+    let canonical_dirs = dirs
+        .iter()
+        .map(fs::canonicalize)
+        .collect::<std::io::Result<Vec<_>>>()?;
+    let check_working_folders = || -> Result<()> {
+        for folder in list(paths)?.into_iter().filter_map(|row| row.cwd) {
+            let folder = fs::canonicalize(&folder).unwrap_or(folder);
+            anyhow::ensure!(
+                !canonical_dirs.iter().any(|dir| folder.starts_with(dir)),
+                "Working folder is inside session storage; move it before deleting project chats"
+            );
+        }
+        Ok(())
+    };
+    check_working_folders()?;
+    // Do not remove any storage if one worker cannot be stopped cleanly.
+    for id in &ids {
+        stop_worker(paths, id)?;
+    }
+    // Pending folder changes can settle while workers stop.
+    check_membership()?;
+    check_working_folders()?;
+    for dir in dirs {
+        // Never follow a project path or an attachment reference for deletion.
+        fs::remove_dir_all(&dir).context("Remove project chat history and attachments")?;
+    }
+    fs::File::open(paths.sessions_dir())?.sync_all()?;
+    Ok(())
+}
+
 pub fn start_worker(paths: &AppPaths, id: &str) -> Result<()> {
     let _guard = lock_session(paths, id)?;
     let executable = std::env::current_exe().context("locate BashKitten executable")?;
@@ -973,6 +1044,94 @@ pub fn save_provider_auth(paths: &AppPaths, value: &Value) -> Result<()> {
 mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
+
+    #[test]
+    fn project_deletion_uses_confirmed_exact_folder_group_and_preserves_working_files() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("c"),
+            data: root.path().join("d"),
+            runtime: root.path().join("r"),
+        };
+        paths.ensure().unwrap();
+        let cwd = root.path().join("project");
+        fs::create_dir_all(cwd.join("nested")).unwrap();
+        fs::write(cwd.join("keep.txt"), "working files").unwrap();
+        let mut request = NewSession {
+            cwd: cwd.clone(),
+            model: "p/m".into(),
+            thinking: "off".into(),
+            model_parameters: json!({}),
+            prompt: "Project chat".into(),
+            attachments: vec![],
+            parent: None,
+        };
+        let first = create(&paths, &request).unwrap();
+        let before = project_sessions(&paths, &cwd).unwrap();
+        let second = create(&paths, &request).unwrap();
+        assert!(delete_project(&paths, &cwd, &before).is_err());
+        assert!(paths.session_dir(&first).exists());
+        request.cwd = cwd.join("nested");
+        let nested = create(&paths, &request).unwrap();
+        request.cwd = root.path().into();
+        let unrelated = create(&paths, &request).unwrap();
+        let ids = project_sessions(&paths, &cwd).unwrap();
+        assert_eq!(ids.len(), 2);
+        assert!(delete_project(&paths, &cwd, &[first.clone(), unrelated.clone()]).is_err());
+        assert!(delete_project(&paths, &cwd, &[first.clone(), first.clone()]).is_err());
+        assert!(project_sessions(&paths, Path::new("relative")).is_err());
+        fs::write(
+            paths.session_dir(&first).join("attachments/copy.txt"),
+            "copy",
+        )
+        .unwrap();
+        std::os::unix::fs::symlink(
+            &cwd,
+            paths.session_dir(&second).join("attachments/workspace"),
+        )
+        .unwrap();
+        delete_project(&paths, &cwd, &ids).unwrap();
+        assert!(!paths.session_dir(&first).exists());
+        assert!(!paths.session_dir(&second).exists());
+        assert!(paths.session_dir(&nested).is_dir());
+        assert!(paths.session_dir(&unrelated).is_dir());
+        assert_eq!(
+            fs::read_to_string(cwd.join("keep.txt")).unwrap(),
+            "working files"
+        );
+        assert!(project_sessions(&paths, &cwd).unwrap().is_empty());
+    }
+
+    #[test]
+    fn project_deletion_refuses_other_chats_working_folders_inside_selected_storage() {
+        let root = tempfile::tempdir().unwrap();
+        let paths = AppPaths {
+            config: root.path().join("c"),
+            data: root.path().join("d"),
+            runtime: root.path().join("r"),
+        };
+        paths.ensure().unwrap();
+        let mut request = NewSession {
+            cwd: root.path().into(),
+            model: "p/m".into(),
+            thinking: "off".into(),
+            model_parameters: json!({}),
+            prompt: "Project chat".into(),
+            attachments: vec![],
+            parent: None,
+        };
+        let first = create(&paths, &request).unwrap();
+        request.cwd = paths.session_dir(&first).join("attachments");
+        let other = create(&paths, &request).unwrap();
+        assert!(
+            delete_project(&paths, root.path(), std::slice::from_ref(&first))
+                .unwrap_err()
+                .to_string()
+                .contains("Working folder")
+        );
+        assert!(paths.session_dir(&first).is_dir());
+        assert!(paths.session_dir(&other).is_dir());
+    }
 
     #[test]
     fn rename_and_delete_only_touch_the_selected_session_storage() {
